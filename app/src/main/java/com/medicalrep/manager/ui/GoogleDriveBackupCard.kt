@@ -57,7 +57,8 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
     var interval by remember { mutableStateOf(prefs.getInt(DriveBackupScheduler.KEY_INTERVAL, 1)) }
     var menuExpanded by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
-    var token by remember { mutableStateOf<String?>(null) }\n    var pendingAction by remember { mutableStateOf<((String) -> Unit)?>(null) }
+    var token by remember { mutableStateOf<String?>(null) }
+    var pendingAction by remember { mutableStateOf<((String) -> Unit)?>(null) }
     var showBackups by remember { mutableStateOf(false) }
     var backups by remember { mutableStateOf<List<DriveBackupItem>>(emptyList()) }
     val scope = rememberCoroutineScope()
@@ -72,7 +73,9 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK && result.data != null) {
             try {
-                val authorization = Identity.getAuthorizationClient(activity).getAuthorizationResultFromIntent(result.data!!)\n                onAuthorized(authorization)\n                authorization.accessToken?.let { access -> pendingAction?.also { action -> pendingAction = null; action(access) } }
+                val authorization = Identity.getAuthorizationClient(activity).getAuthorizationResultFromIntent(result.data!!)
+                onAuthorized(authorization)
+                authorization.accessToken?.let { access -> pendingAction?.also { action -> pendingAction = null; action(access) } }
             } catch (error: Exception) {
                 notify((if (isArabic) "تعذر ربط Google Drive: " else "Google Drive authorization failed: ") + (error.localizedMessage ?: ""))
             }
@@ -87,7 +90,12 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
             .addOnSuccessListener { result ->
                 if (result.hasResolution()) {
                     val pending = result.pendingIntent
-                    if (pending != null) authorizationLauncher.launch(IntentSenderRequest.Builder(pending.intentSender).build())
+                    if (pending != null) {
+                        pendingAction = after
+                        authorizationLauncher.launch(IntentSenderRequest.Builder(pending.intentSender).build())
+                    } else {
+                        notify(if (isArabic) "تعذر بدء طلب إذن Google Drive." else "Could not start Google Drive authorization.")
+                    }
                 } else {
                     val access = result.accessToken
                     if (!access.isNullOrBlank()) {

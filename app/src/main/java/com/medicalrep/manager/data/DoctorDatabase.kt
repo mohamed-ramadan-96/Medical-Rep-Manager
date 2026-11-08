@@ -125,14 +125,33 @@ interface DoctorVisitDao {
 }
 
 @Entity(
+    tableName = "doctor_center_links",
+    primaryKeys = ["doctorId", "centerId"],
+    foreignKeys = [
+        ForeignKey(entity = DoctorEntity::class, parentColumns = ["id"], childColumns = ["doctorId"], onDelete = ForeignKey.CASCADE),
+        ForeignKey(entity = MedicalCenterEntity::class, parentColumns = ["id"], childColumns = ["centerId"], onDelete = ForeignKey.CASCADE)
+    ],
+    indices = [Index("centerId")]
+)
+data class DoctorCenterLinkEntity(
+    val doctorId: Long,
+    val centerId: Long
+)
+
+@Entity(
     tableName = "doctor_availability",
     foreignKeys = [ForeignKey(
         entity = DoctorEntity::class,
         parentColumns = ["id"],
         childColumns = ["doctorId"],
         onDelete = ForeignKey.CASCADE
+    ), ForeignKey(
+        entity = MedicalCenterEntity::class,
+        parentColumns = ["id"],
+        childColumns = ["centerId"],
+        onDelete = ForeignKey.CASCADE
     )],
-    indices = [Index("doctorId"), Index(value = ["doctorId", "dayOfWeek"])]
+    indices = [Index("doctorId"), Index(value = ["doctorId", "dayOfWeek"]), Index("centerId")]
 )
 data class DoctorAvailabilityEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -142,8 +161,24 @@ data class DoctorAvailabilityEntity(
     val endTime: String,
     val notes: String = "",
     val createdAt: Long = System.currentTimeMillis(),
-    @ColumnInfo(defaultValue = "''") val slotGroupId: String = ""
+    @ColumnInfo(defaultValue = "''") val slotGroupId: String = "",
+    val centerId: Long? = null
 )
+
+@Dao
+interface DoctorCenterLinkDao {
+    @Query("SELECT * FROM doctor_center_links")
+    fun observeAll(): Flow<List<DoctorCenterLinkEntity>>
+
+    @Query("SELECT centerId FROM doctor_center_links WHERE doctorId = :doctorId")
+    suspend fun getCenterIds(doctorId: Long): List<Long>
+
+    @Query("DELETE FROM doctor_center_links WHERE doctorId = :doctorId")
+    suspend fun deleteForDoctor(doctorId: Long)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(links: List<DoctorCenterLinkEntity>)
+}
 
 @Dao
 interface DoctorAvailabilityDao {
@@ -262,8 +297,8 @@ interface SpecialtyDao {
 }
 
 @Database(
-    entities = [DoctorEntity::class, MedicalCenterEntity::class, SpecialtyEntity::class, DoctorAttachmentEntity::class, CenterAttachmentEntity::class, DoctorAvailabilityEntity::class, DoctorVisitEntity::class],
-    version = 8,
+    entities = [DoctorEntity::class, MedicalCenterEntity::class, SpecialtyEntity::class, DoctorAttachmentEntity::class, CenterAttachmentEntity::class, DoctorAvailabilityEntity::class, DoctorVisitEntity::class, DoctorCenterLinkEntity::class],
+    version = 9,
     exportSchema = false
 )
 abstract class MedicalRepDatabase : RoomDatabase() {
@@ -272,6 +307,7 @@ abstract class MedicalRepDatabase : RoomDatabase() {
     abstract fun specialtyDao(): SpecialtyDao
     abstract fun doctorAttachmentDao(): DoctorAttachmentDao
     abstract fun centerAttachmentDao(): CenterAttachmentDao
+    abstract fun doctorCenterLinkDao(): DoctorCenterLinkDao
     abstract fun doctorAvailabilityDao(): DoctorAvailabilityDao
     abstract fun doctorVisitDao(): DoctorVisitDao
 
@@ -436,13 +472,60 @@ abstract class MedicalRepDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS doctor_center_links (
+                        doctorId INTEGER NOT NULL,
+                        centerId INTEGER NOT NULL,
+                        PRIMARY KEY(doctorId, centerId),
+                        FOREIGN KEY(doctorId) REFERENCES doctors(id) ON DELETE CASCADE,
+                        FOREIGN KEY(centerId) REFERENCES medical_centers(id) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_doctor_center_links_centerId ON doctor_center_links(centerId)")
+                db.execSQL("""
+                    INSERT OR IGNORE INTO doctor_center_links (doctorId, centerId)
+                    SELECT id, centerId FROM doctors WHERE centerId IS NOT NULL
+                """.trimIndent())
+
+                db.execSQL("""
+                    CREATE TABLE doctor_availability_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        doctorId INTEGER NOT NULL,
+                        dayOfWeek INTEGER NOT NULL,
+                        startTime TEXT NOT NULL,
+                        endTime TEXT NOT NULL,
+                        notes TEXT NOT NULL,
+                        createdAt INTEGER NOT NULL,
+                        slotGroupId TEXT NOT NULL DEFAULT '',
+                        centerId INTEGER,
+                        FOREIGN KEY(doctorId) REFERENCES doctors(id) ON DELETE CASCADE,
+                        FOREIGN KEY(centerId) REFERENCES medical_centers(id) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                db.execSQL("""
+                    INSERT INTO doctor_availability_new
+                    (id, doctorId, dayOfWeek, startTime, endTime, notes, createdAt, slotGroupId, centerId)
+                    SELECT a.id, a.doctorId, a.dayOfWeek, a.startTime, a.endTime, a.notes, a.createdAt, a.slotGroupId, d.centerId
+                    FROM doctor_availability a
+                    LEFT JOIN doctors d ON d.id = a.doctorId
+                """.trimIndent())
+                db.execSQL("DROP TABLE doctor_availability")
+                db.execSQL("ALTER TABLE doctor_availability_new RENAME TO doctor_availability")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_doctor_availability_doctorId ON doctor_availability(doctorId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_doctor_availability_doctorId_dayOfWeek ON doctor_availability(doctorId, dayOfWeek)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_doctor_availability_centerId ON doctor_availability(centerId)")
+            }
+        }
+
         fun getInstance(context: Context): MedicalRepDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
                     MedicalRepDatabase::class.java,
                     "medical_rep_manager.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                     .build().also { INSTANCE = it }
             }
     }

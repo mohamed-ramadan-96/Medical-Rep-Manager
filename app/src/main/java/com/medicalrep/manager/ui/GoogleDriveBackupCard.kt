@@ -61,6 +61,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
     var pendingAction by remember { mutableStateOf<((String) -> Unit)?>(null) }
     var showBackups by remember { mutableStateOf(false) }
     var backupPendingDelete by remember { mutableStateOf<DriveBackupItem?>(null) }
+    var backupPendingDeleteAll by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var backups by remember { mutableStateOf<List<DriveBackupItem>>(emptyList()) }
     val scope = rememberCoroutineScope()
@@ -224,6 +225,56 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
         )
     }
 
+    if (backupPendingDeleteAll) {
+        AlertDialog(
+            onDismissRequest = { if (!busy) backupPendingDeleteAll = false },
+            title = { Text(if (isArabic) "حذف كل النسخ الاحتياطية؟" else "Delete all backups?") },
+            text = {
+                Text(
+                    if (isArabic) "سيتم حذف جميع النسخ الاحتياطية وعددها ${backups.size} من Google Drive نهائيًا. لن تتمكن من استعادتها بعد الحذف. تأكد من أنك لا تحتاج إلى أي نسخة منها."
+                    else "All ${backups.size} backups will be permanently deleted from Google Drive. They cannot be restored afterward. Make sure you no longer need any of them."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !busy && backups.isNotEmpty(),
+                    onClick = {
+                        val access = token
+                        if (access != null) {
+                            scope.launch {
+                                busy = true
+                                try {
+                                    val deleted = withContext(Dispatchers.IO) { DriveBackupEngine.deleteAll(access) }
+                                    backups = emptyList()
+                                    backupPendingDeleteAll = false
+                                    notify(
+                                        if (isArabic) "تم حذف $deleted نسخة احتياطية."
+                                        else "$deleted backups deleted."
+                                    )
+                                } catch (error: Exception) {
+                                    try {
+                                        backups = withContext(Dispatchers.IO) { DriveBackupEngine.list(access) }
+                                    } catch (_: Exception) { }
+                                    backupPendingDeleteAll = false
+                                    showError(
+                                        (if (isArabic) "تعذر إكمال حذف كل النسخ. تم تحديث القائمة بالنسخ المتبقية إن أمكن. التفاصيل: "
+                                         else "Could not delete all backups. The list was refreshed with any remaining backups when possible. Details: ") +
+                                            (error.localizedMessage ?: error.javaClass.simpleName)
+                                    )
+                                } finally { busy = false }
+                            }
+                        }
+                    }
+                ) { Text(if (isArabic) "حذف الكل نهائيًا" else "Delete all permanently") }
+            },
+            dismissButton = {
+                TextButton(onClick = { backupPendingDeleteAll = false }, enabled = !busy) {
+                    Text(if (isArabic) "إلغاء" else "Cancel")
+                }
+            }
+        )
+    }
+
     backupPendingDelete?.let { item ->
         AlertDialog(
             onDismissRequest = { if (!busy) backupPendingDelete = null },
@@ -270,6 +321,19 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
             text = {
                 if (backups.isEmpty()) Text(if (isArabic) "لا توجد نسخ احتياطية." else "No backups found.")
                 else LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            OutlinedButton(
+                                onClick = { backupPendingDeleteAll = true },
+                                enabled = !busy && backups.isNotEmpty()
+                            ) {
+                                Text(if (isArabic) "حذف كل النسخ (${backups.size})" else "Delete all (${backups.size})")
+                            }
+                        }
+                    }
                     items(backups, key = { it.id }) { item ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),

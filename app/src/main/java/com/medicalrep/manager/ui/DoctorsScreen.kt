@@ -219,10 +219,11 @@ private fun DoctorCard(
     isArabic: Boolean,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    onAttachments: () -> Unit
+    onAttachments: () -> Unit,
+    onOpen: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {

@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
@@ -35,6 +36,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -63,15 +65,18 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
     val slots by availabilityDao.observeAll().collectAsState(initial = emptyList())
     val doctors by doctorDao.observeAll().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
-    var editing by remember { mutableStateOf<DoctorAvailabilityEntity?>(null) }
+    var editingGroup by remember { mutableStateOf<List<DoctorAvailabilityEntity>>(emptyList()) }
     var showForm by remember { mutableStateOf(false) }
-    var pendingDelete by remember { mutableStateOf<DoctorAvailabilityEntity?>(null) }
+    var pendingDelete by remember { mutableStateOf<List<DoctorAvailabilityEntity>?>(null) }
+
+    val groupedSlots = slots.groupBy { "${it.doctorId}|${it.startTime}|${it.endTime}|${it.notes}" }
+        .values.sortedWith(compareBy({ it.firstOrNull()?.dayOfWeek ?: 0 }, { it.firstOrNull()?.startTime.orEmpty() }))
 
     Scaffold(
         modifier = Modifier.padding(padding),
         floatingActionButton = {
             if (doctors.isNotEmpty()) {
-                FloatingActionButton(onClick = { editing = null; showForm = true }) {
+                FloatingActionButton(onClick = { editingGroup = emptyList(); showForm = true }) {
                     Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة موعد متاح" else "Add availability")
                 }
             }
@@ -88,7 +93,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                 modifier = Modifier.padding(top = 8.dp)
             )
             Text(
-                if (isArabic) "يمكنك إضافة أكثر من فترة متاحة لكل طبيب خلال الأسبوع." else "Add multiple available time slots for each doctor during the week.",
+                if (isArabic) "اختار أكتر من يوم لنفس الفترة، أو أضف كل يوم بميعاد مختلف." else "Select multiple days for one time slot, or add days separately with different times.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             if (doctors.isEmpty()) {
@@ -97,7 +102,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                     modifier = Modifier.padding(top = 20.dp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            } else if (slots.isEmpty()) {
+            } else if (groupedSlots.isEmpty()) {
                 Text(
                     if (isArabic) "لم تتم إضافة مواعيد متاحة بعد. اضغط + للبدء." else "No availability added yet. Tap + to get started.",
                     modifier = Modifier.padding(top = 20.dp),
@@ -108,8 +113,10 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(slots, key = { it.id }) { slot ->
+                    items(groupedSlots, key = { group -> group.first().id }) { group ->
+                        val slot = group.first()
                         val doctor = doctors.firstOrNull { it.id == slot.doctorId }
+                        val days = group.map { it.dayOfWeek }.distinct().sorted()
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(18.dp),
@@ -117,29 +124,26 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(14.dp),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(doctor?.name ?: if (isArabic) "طبيب غير موجود" else "Unknown doctor", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                                     Text(
-                                        doctor?.name ?: if (isArabic) "طبيب غير موجود" else "Unknown doctor",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        weekDays.firstOrNull { it.first == slot.dayOfWeek }?.second?.let { if (isArabic) it.second else it.first } ?: "",
+                                        days.mapNotNull { day -> weekDays.firstOrNull { it.first == day }?.second?.let { if (isArabic) it.second else it.first } }.joinToString("، "),
                                         color = MaterialTheme.colorScheme.primary
                                     )
-                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                                         Icon(Icons.Default.Schedule, contentDescription = null)
                                         Text("${slot.startTime} – ${slot.endTime}")
                                     }
                                     if (slot.notes.isNotBlank()) Text(slot.notes, style = MaterialTheme.typography.bodySmall)
                                 }
-                                IconButton(onClick = { editing = slot; showForm = true }) {
+                                IconButton(onClick = { editingGroup = group; showForm = true }) {
                                     Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit")
                                 }
-                                IconButton(onClick = { pendingDelete = slot }) {
+                                IconButton(onClick = { pendingDelete = group }) {
                                     Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete")
                                 }
                             }
@@ -153,26 +157,27 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
     if (showForm) {
         AvailabilityFormDialog(
             isArabic = isArabic,
-            initial = editing,
+            initialGroup = editingGroup,
             doctors = doctors,
             onDismiss = { showForm = false },
-            onSave = { slot ->
+            onSave = { newSlots ->
                 scope.launch {
-                    if (slot.id == 0L) availabilityDao.insert(slot) else availabilityDao.update(slot)
+                    editingGroup.forEach { availabilityDao.delete(it) }
+                    newSlots.forEach { availabilityDao.insert(it) }
                 }
                 showForm = false
             }
         )
     }
 
-    pendingDelete?.let { slot ->
+    pendingDelete?.let { group ->
         AlertDialog(
             onDismissRequest = { pendingDelete = null },
-            title = { Text(if (isArabic) "حذف الفترة؟" else "Delete time slot?") },
-            text = { Text(if (isArabic) "سيتم حذف هذه الفترة المتاحة فقط." else "Only this availability slot will be deleted.") },
+            title = { Text(if (isArabic) "حذف المواعيد؟" else "Delete availability?") },
+            text = { Text(if (isArabic) "سيتم حذف الأيام المحددة في هذه المجموعة فقط." else "Only the days in this grouped time slot will be deleted.") },
             confirmButton = {
                 TextButton(onClick = {
-                    scope.launch { availabilityDao.delete(slot) }
+                    scope.launch { group.forEach { availabilityDao.delete(it) } }
                     pendingDelete = null
                 }) { Text(if (isArabic) "حذف" else "Delete") }
             },
@@ -186,85 +191,83 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
 @Composable
 private fun AvailabilityFormDialog(
     isArabic: Boolean,
-    initial: DoctorAvailabilityEntity?,
+    initialGroup: List<DoctorAvailabilityEntity>,
     doctors: List<DoctorEntity>,
     onDismiss: () -> Unit,
-    onSave: (DoctorAvailabilityEntity) -> Unit
+    onSave: (List<DoctorAvailabilityEntity>) -> Unit
 ) {
-    var selectedDoctorId by remember(initial, doctors) {
+    val initial = initialGroup.firstOrNull()
+    var selectedDoctorId by remember(initialGroup, doctors) {
         mutableStateOf(initial?.doctorId ?: doctors.firstOrNull()?.id)
     }
-    var selectedDay by remember(initial) { mutableStateOf(initial?.dayOfWeek ?: 1) }
-    var startTime by remember(initial) { mutableStateOf(initial?.startTime ?: "09:00") }
-    var endTime by remember(initial) { mutableStateOf(initial?.endTime ?: "17:00") }
-    var notes by remember(initial) { mutableStateOf(initial?.notes.orEmpty()) }
+    var selectedDays by remember(initialGroup) {
+        mutableStateOf(initialGroup.map { it.dayOfWeek }.toSet().ifEmpty { setOf(1) })
+    }
+    var startTime by remember(initialGroup) { mutableStateOf(initial?.startTime ?: "09:00") }
+    var endTime by remember(initialGroup) { mutableStateOf(initial?.endTime ?: "17:00") }
+    var notes by remember(initialGroup) { mutableStateOf(initial?.notes.orEmpty()) }
     var doctorMenu by remember { mutableStateOf(false) }
-    var dayMenu by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(
-                if (initial == null) {
-                    if (isArabic) "إضافة فترة متاحة" else "Add availability"
-                } else {
-                    if (isArabic) "تعديل الفترة" else "Edit availability"
-                }
-            )
+            Text(if (initialGroup.isEmpty()) {
+                if (isArabic) "إضافة مواعيد متاحة" else "Add availability"
+            } else {
+                if (isArabic) "تعديل المواعيد" else "Edit availability"
+            })
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(if (isArabic) "الطبيب" else "Doctor", style = MaterialTheme.typography.labelLarge)
-                TextButton(onClick = { doctorMenu = true }) {
-                    Text(doctors.firstOrNull { it.id == selectedDoctorId }?.name ?: if (isArabic) "اختر الطبيب" else "Choose doctor")
-                }
-                DropdownMenu(expanded = doctorMenu, onDismissRequest = { doctorMenu = false }) {
-                    doctors.forEach { doctor ->
-                        DropdownMenuItem(
-                            text = { Text(doctor.name) },
-                            onClick = { selectedDoctorId = doctor.id; doctorMenu = false }
-                        )
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                item {
+                    Text(if (isArabic) "الطبيب" else "Doctor", style = MaterialTheme.typography.labelLarge)
+                    TextButton(onClick = { doctorMenu = true }) {
+                        Text(doctors.firstOrNull { it.id == selectedDoctorId }?.name ?: if (isArabic) "اختر الطبيب" else "Choose doctor")
+                    }
+                    DropdownMenu(expanded = doctorMenu, onDismissRequest = { doctorMenu = false }) {
+                        doctors.forEach { doctor ->
+                            DropdownMenuItem(text = { Text(doctor.name) }, onClick = { selectedDoctorId = doctor.id; doctorMenu = false })
+                        }
                     }
                 }
-
-                Text(if (isArabic) "اليوم" else "Day", style = MaterialTheme.typography.labelLarge)
-                TextButton(onClick = { dayMenu = true }) {
-                    val day = weekDays.first { it.first == selectedDay }.second
-                    Text(if (isArabic) day.second else day.first)
+                item {
+                    Text(if (isArabic) "أيام التواجد (يمكن اختيار أكثر من يوم)" else "Available days (select more than one)", style = MaterialTheme.typography.labelLarge)
                 }
-                DropdownMenu(expanded = dayMenu, onDismissRequest = { dayMenu = false }) {
-                    weekDays.forEach { (number, names) ->
-                        DropdownMenuItem(
-                            text = { Text(if (isArabic) names.second else names.first) },
-                            onClick = { selectedDay = number; dayMenu = false }
+                items(weekDays) { (number, names) ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = number in selectedDays,
+                            onCheckedChange = { checked ->
+                                selectedDays = if (checked) selectedDays + number else selectedDays - number
+                                error = null
+                            }
                         )
+                        Text(if (isArabic) names.second else names.first)
                     }
                 }
-
-                OutlinedTextField(
-                    value = startTime,
-                    onValueChange = { startTime = it; error = null },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text(if (isArabic) "من (HH:MM)" else "From (HH:MM)") },
-                    placeholder = { Text("09:00") }
-                )
-                OutlinedTextField(
-                    value = endTime,
-                    onValueChange = { endTime = it; error = null },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text(if (isArabic) "إلى (HH:MM)" else "To (HH:MM)") },
-                    placeholder = { Text("17:00") }
-                )
-                OutlinedTextField(
-                    value = notes,
-                    onValueChange = { notes = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text(if (isArabic) "ملاحظات (اختياري)" else "Notes (optional)") }
-                )
-                error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                item {
+                    OutlinedTextField(
+                        value = startTime, onValueChange = { startTime = it; error = null },
+                        modifier = Modifier.fillMaxWidth(), singleLine = true,
+                        label = { Text(if (isArabic) "من (HH:MM)" else "From (HH:MM)") }
+                    )
+                }
+                item {
+                    OutlinedTextField(
+                        value = endTime, onValueChange = { endTime = it; error = null },
+                        modifier = Modifier.fillMaxWidth(), singleLine = true,
+                        label = { Text(if (isArabic) "إلى (HH:MM)" else "To (HH:MM)") }
+                    )
+                }
+                item {
+                    OutlinedTextField(
+                        value = notes, onValueChange = { notes = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(if (isArabic) "ملاحظات (اختياري)" else "Notes (optional)") }
+                    )
+                }
+                item { error?.let { Text(it, color = MaterialTheme.colorScheme.error) } }
             }
         },
         confirmButton = {
@@ -272,19 +275,24 @@ private fun AvailabilityFormDialog(
                 val validTime = Regex("(?:[01]\\d|2[0-3]):[0-5]\\d")
                 when {
                     selectedDoctorId == null -> error = if (isArabic) "اختر الطبيب." else "Choose a doctor."
+                    selectedDays.isEmpty() -> error = if (isArabic) "اختار يوم واحد على الأقل." else "Select at least one day."
                     !validTime.matches(startTime) || !validTime.matches(endTime) -> error = if (isArabic) "اكتب الوقت بصيغة HH:MM." else "Enter time in HH:MM format."
                     endTime <= startTime -> error = if (isArabic) "وقت النهاية يجب أن يكون بعد البداية." else "End time must be after start time."
-                    else -> onSave(
-                        DoctorAvailabilityEntity(
-                            id = initial?.id ?: 0L,
-                            doctorId = selectedDoctorId!!,
-                            dayOfWeek = selectedDay,
-                            startTime = startTime,
-                            endTime = endTime,
-                            notes = notes.trim(),
-                            createdAt = initial?.createdAt ?: System.currentTimeMillis()
-                        )
-                    )
+                    else -> {
+                        val oldByDay = initialGroup.associateBy { it.dayOfWeek }
+                        onSave(selectedDays.sorted().map { day ->
+                            val old = oldByDay[day]
+                            DoctorAvailabilityEntity(
+                                id = old?.id ?: 0L,
+                                doctorId = selectedDoctorId!!,
+                                dayOfWeek = day,
+                                startTime = startTime,
+                                endTime = endTime,
+                                notes = notes.trim(),
+                                createdAt = old?.createdAt ?: System.currentTimeMillis()
+                            )
+                        })
+                    }
                 }
             }) { Text(if (isArabic) "حفظ" else "Save") }
         },

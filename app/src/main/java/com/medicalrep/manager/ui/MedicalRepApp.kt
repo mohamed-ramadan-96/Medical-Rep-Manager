@@ -111,11 +111,7 @@ fun MedicalRepApp() {
         ) { innerPadding ->
             when (selectedTab) {
                 0 -> DashboardScreen(isArabic, innerPadding)
-                1 -> PlaceholderScreen(
-                    title = if (isArabic) "الأطباء" else "Doctors",
-                    description = if (isArabic) "ستتمكن هنا من إضافة الأطباء وتنظيم بياناتهم وأرقام التواصل." else "Add doctors and organize their profiles and contact numbers.",
-                    padding = innerPadding
-                )
+                1 -> DoctorsScreen(isArabic = isArabic, padding = innerPadding)
                 2 -> PlaceholderScreen(
                     title = if (isArabic) "المراكز الطبية" else "Medical Centers",
                     description = if (isArabic) "إدارة المراكز والعيادات وربط الأطباء بكل مركز." else "Manage clinics and centers, and link doctors to each location.",

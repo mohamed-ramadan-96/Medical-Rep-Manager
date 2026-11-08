@@ -1,5 +1,15 @@
 package com.medicalrep.manager.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material3.Button
+import androidx.compose.runtime.rememberCoroutineScope
+import android.widget.Toast
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.medicalrep.manager.data.ExcelExporter
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,6 +50,19 @@ import java.util.Locale
 @Composable
 fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    ) { uri ->
+        if (uri != null) scope.launch {
+            try {
+                withContext(Dispatchers.IO) { ExcelExporter.export(context, uri, doctors, centers, visits, isArabic) }
+                Toast.makeText(context, if (isArabic) "تم تصدير ملف Excel بنجاح" else "Excel workbook exported successfully", Toast.LENGTH_LONG).show()
+            } catch (error: Exception) {
+                Toast.makeText(context, (if (isArabic) "فشل التصدير: " else "Export failed: ") + (error.localizedMessage ?: ""), Toast.LENGTH_LONG).show()
+            }
+        }
+    }
     val database = remember { MedicalRepDatabase.getInstance(context) }
     val doctors by database.doctorDao().observeAll().collectAsState(initial = emptyList())
     val centers by database.medicalCenterDao().observeAll().collectAsState(initial = emptyList())
@@ -68,6 +91,12 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                     style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                 Text(if (isArabic) "ملخص نشاطك وبياناتك المسجلة" else "A live overview of your work and records",
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        item {
+            Button(onClick = { exportLauncher.launch("MedicalRepManager_Export.xlsx") }, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Default.FileDownload, contentDescription = null)
+                Text(if (isArabic) "تصدير بيانات Excel (الأطباء والزيارات والمراكز)" else "Export Excel (Doctors, Visits & Centers)", modifier = Modifier.padding(start = 8.dp))
             }
         }
         item {

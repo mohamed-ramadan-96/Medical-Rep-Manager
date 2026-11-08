@@ -29,7 +29,23 @@ jobs:
         with:
           gradle-version: "8.13"
 
+      - name: Restore stable Android signing key
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/medical-rep-manager.jks"
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/medical-rep-manager.jks" >> "$GITHUB_ENV"
+            echo "Stable Android signing key restored."
+          else
+            echo "Stable signing secret is not configured yet; using the default debug key."
+          fi
+
       - name: Build debug APK
+        env:
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: gradle --no-daemon assembleDebug
 
       - name: Upload APK

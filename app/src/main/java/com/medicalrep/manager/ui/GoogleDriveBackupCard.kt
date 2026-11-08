@@ -57,7 +57,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
     var interval by remember { mutableStateOf(prefs.getInt(DriveBackupScheduler.KEY_INTERVAL, 1)) }
     var menuExpanded by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
-    var token by remember { mutableStateOf<String?>(null) }
+    var token by remember { mutableStateOf<String?>(null) }\n    var pendingAction by remember { mutableStateOf<((String) -> Unit)?>(null) }
     var showBackups by remember { mutableStateOf(false) }
     var backups by remember { mutableStateOf<List<DriveBackupItem>>(emptyList()) }
     val scope = rememberCoroutineScope()
@@ -72,7 +72,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK && result.data != null) {
             try {
-                onAuthorized(Identity.getAuthorizationClient(activity).getAuthorizationResultFromIntent(result.data!!))
+                val authorization = Identity.getAuthorizationClient(activity).getAuthorizationResultFromIntent(result.data!!)\n                onAuthorized(authorization)\n                authorization.accessToken?.let { access -> pendingAction?.also { action -> pendingAction = null; action(access) } }
             } catch (error: Exception) {
                 notify((if (isArabic) "تعذر ربط Google Drive: " else "Google Drive authorization failed: ") + (error.localizedMessage ?: ""))
             }

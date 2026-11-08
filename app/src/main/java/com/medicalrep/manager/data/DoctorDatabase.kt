@@ -76,6 +76,9 @@ interface DoctorAttachmentDao {
     @Query("SELECT * FROM doctor_attachments WHERE doctorId = :doctorId ORDER BY createdAt DESC")
     fun observeForDoctor(doctorId: Long): Flow<List<DoctorAttachmentEntity>>
 
+    @Query("SELECT * FROM doctor_attachments WHERE doctorId = :doctorId")
+    suspend fun getForDoctor(doctorId: Long): List<DoctorAttachmentEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(attachment: DoctorAttachmentEntity): Long
 

@@ -292,7 +292,7 @@ private fun DoctorDetailsDialog(
         6 to (if (isArabic) "السبت" else "Saturday"),
         7 to (if (isArabic) "الأحد" else "Sunday")
     )
-    val groupedAvailability = availability.groupBy { "${it.startTime}|${it.endTime}|${it.notes}" }.values.toList()
+    val groupedAvailability = availability.groupBy { it.slotGroupId }.values.toList()
     val upcomingFollowUps = visits.filter { (it.nextFollowUpAt ?: 0L) >= System.currentTimeMillis() }
         .sortedBy { it.nextFollowUpAt }
     val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())

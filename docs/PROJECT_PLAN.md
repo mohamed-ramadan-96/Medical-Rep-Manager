@@ -24,7 +24,7 @@
 - [x] Multiple weekly availability slots per doctor
 - [x] Local visit records with doctor, date/time, outcome, notes, and optional follow-up date
 - [ ] Search and filters
-- [ ] Dashboard statistics
+- [x] Live dashboard statistics: doctors, centers, today's visits, total visits, upcoming follow-ups, and recent activity
 
 ## Phase 4 — Backup
 - [ ] Google Sign-In / OAuth configuration

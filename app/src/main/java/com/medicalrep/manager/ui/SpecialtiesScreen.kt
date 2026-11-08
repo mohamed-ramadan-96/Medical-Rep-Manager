@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -56,7 +57,7 @@ fun SpecialtiesScreen(isArabic: Boolean, padding: androidx.compose.foundation.la
         modifier = Modifier.padding(padding),
         floatingActionButton = {
             FloatingActionButton(onClick = { editing = null; showForm = true }) {
-                Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة تخصص" else "Add specialty")
+                Icon(Icons.Default.Add, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "إضافة تخصص" else "Add specialty")
             }
         }
     ) { inner ->
@@ -95,18 +96,18 @@ fun SpecialtiesScreen(isArabic: Boolean, padding: androidx.compose.foundation.la
                                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Icon(Icons.Default.MedicalServices, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                Icon(Icons.Default.MedicalServices, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                                 Text(
                                     specialty.name,
                                     modifier = Modifier.weight(1f).padding(top = 8.dp),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
-                                IconButton(onClick = { editing = specialty; showForm = true }) {
-                                    Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit")
+                                IconButton(modifier = Modifier.size(40.dp), onClick = { editing = specialty; showForm = true }) {
+                                    Icon(Icons.Default.Edit, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "تعديل" else "Edit")
                                 }
-                                IconButton(onClick = { pendingDelete = specialty }) {
-                                    Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete")
+                                IconButton(modifier = Modifier.size(40.dp), onClick = { pendingDelete = specialty }) {
+                                    Icon(Icons.Default.Delete, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "حذف" else "Delete")
                                 }
                             }
                         }

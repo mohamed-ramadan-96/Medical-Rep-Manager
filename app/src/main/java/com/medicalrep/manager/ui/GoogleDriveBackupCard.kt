@@ -60,6 +60,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
     var token by remember { mutableStateOf<String?>(null) }
     var pendingAction by remember { mutableStateOf<((String) -> Unit)?>(null) }
     var showBackups by remember { mutableStateOf(false) }
+    var backupPendingDelete by remember { mutableStateOf<DriveBackupItem?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var backups by remember { mutableStateOf<List<DriveBackupItem>>(emptyList()) }
     val scope = rememberCoroutineScope()
@@ -223,6 +224,45 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
         )
     }
 
+    backupPendingDelete?.let { item ->
+        AlertDialog(
+            onDismissRequest = { if (!busy) backupPendingDelete = null },
+            title = { Text(if (isArabic) "حذف النسخة الاحتياطية؟" else "Delete backup?") },
+            text = {
+                Text(
+                    if (isArabic) "سيتم حذف النسخة المحددة نهائيًا من Google Drive، ولن يمكن استعادتها بعد ذلك.\n\n${item.name}"
+                    else "This backup will be permanently deleted from Google Drive and cannot be restored.\n\n${item.name}"
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !busy,
+                    onClick = {
+                        val access = token
+                        if (access != null) {
+                            scope.launch {
+                                busy = true
+                                try {
+                                    withContext(Dispatchers.IO) { DriveBackupEngine.delete(access, item) }
+                                    backups = backups.filterNot { it.id == item.id }
+                                    backupPendingDelete = null
+                                    notify(if (isArabic) "تم حذف النسخة الاحتياطية." else "Backup deleted.")
+                                } catch (error: Exception) {
+                                    showError((if (isArabic) "تعذر حذف النسخة: " else "Could not delete backup: ") + (error.localizedMessage ?: error.javaClass.simpleName))
+                                } finally { busy = false }
+                            }
+                        }
+                    }
+                ) { Text(if (isArabic) "حذف نهائي" else "Delete permanently") }
+            },
+            dismissButton = {
+                TextButton(onClick = { backupPendingDelete = null }, enabled = !busy) {
+                    Text(if (isArabic) "إلغاء" else "Cancel")
+                }
+            }
+        )
+    }
+
     if (showBackups) {
         AlertDialog(
             onDismissRequest = { showBackups = false },
@@ -231,26 +271,38 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
                 if (backups.isEmpty()) Text(if (isArabic) "لا توجد نسخ احتياطية." else "No backups found.")
                 else LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(backups, key = { it.id }) { item ->
-                        OutlinedButton(
-                            onClick = {
-                                scope.launch {
-                                    busy = true
-                                    try {
-                                        withContext(Dispatchers.IO) { DriveBackupEngine.restore(context, token!!, item) }
-                                        prefs.edit().putLong(DriveBackupScheduler.KEY_LAST_BACKUP, System.currentTimeMillis()).apply()
-                                        showBackups = false
-                                        notify(if (isArabic) "تمت استعادة النسخة، سيتم تحديث التطبيق الآن." else "Backup restored. The app will refresh now.")
-                                        activity.recreate()
-                                    } catch (error: Exception) {
-                                        showError((if (isArabic) "فشلت الاستعادة: " else "Restore failed: ") + (error.localizedMessage ?: error.javaClass.simpleName))
-                                    } finally { busy = false }
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth()
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                         ) {
-                            Column {
-                                Text(item.name)
-                                Text(item.modifiedTime, style = MaterialTheme.typography.labelSmall)
+                            Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(item.name, style = MaterialTheme.typography.bodyMedium)
+                                Text(item.modifiedTime, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                                    Button(
+                                        onClick = {
+                                            scope.launch {
+                                                busy = true
+                                                try {
+                                                    withContext(Dispatchers.IO) { DriveBackupEngine.restore(context, token!!, item) }
+                                                    prefs.edit().putLong(DriveBackupScheduler.KEY_LAST_BACKUP, System.currentTimeMillis()).apply()
+                                                    showBackups = false
+                                                    notify(if (isArabic) "تمت استعادة النسخة، سيتم تحديث التطبيق الآن." else "Backup restored. The app will refresh now.")
+                                                    activity.recreate()
+                                                } catch (error: Exception) {
+                                                    showError((if (isArabic) "فشلت الاستعادة: " else "Restore failed: ") + (error.localizedMessage ?: error.javaClass.simpleName))
+                                                } finally { busy = false }
+                                            }
+                                        },
+                                        enabled = !busy,
+                                        modifier = Modifier.weight(1f)
+                                    ) { Text(if (isArabic) "استعادة" else "Restore") }
+                                    OutlinedButton(
+                                        onClick = { backupPendingDelete = item },
+                                        enabled = !busy,
+                                        modifier = Modifier.weight(1f)
+                                    ) { Text(if (isArabic) "حذف" else "Delete") }
+                                }
                             }
                         }
                     }

@@ -94,36 +94,63 @@ object DriveBackupEngine {
     }
 
     fun upload(context: Context, token: String, backup: File): DriveBackupItem {
-        val folderId = getOrCreateFolder(token)
-        val stamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US).format(Date())
-        val name = "MedicalRepManager_$stamp.zip"
-        val metadata = JSONObject().put("name", name).put("mimeType", "application/zip")
-            .put("parents", JSONArray().put(folderId))
-        val boundary = "----MRM${UUID.randomUUID().toString().replace("-", "")}"
-        val init = URL("$UPLOAD/files?uploadType=resumable&fields=id,name,modifiedTime")
-            .openConnection() as HttpURLConnection
-        init.requestMethod = "POST"
-        init.doOutput = true
-        init.setRequestProperty("Authorization", "Bearer $token")
-        init.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
-        init.setRequestProperty("X-Upload-Content-Type", "application/zip")
-        init.setRequestProperty("X-Upload-Content-Length", backup.length().toString())
-        init.outputStream.use { it.write(metadata.toString().toByteArray(Charsets.UTF_8)) }
-        check(init.responseCode in 200..299) { "Drive upload setup failed: ${responseText(init)}" }
-        val uploadUrl = init.getHeaderField("Location") ?: error("Drive did not return an upload URL")
-        init.disconnect()
+        var stage = "Drive folder lookup"
+        var targetHost = "www.googleapis.com"
+        try {
+            val folderId = getOrCreateFolder(token)
+            val stamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US).format(Date())
+            val name = "MedicalRepManager_$stamp.zip"
+            val metadata = JSONObject().put("name", name).put("mimeType", "application/zip")
+                .put("parents", JSONArray().put(folderId))
 
-        val put = URL(uploadUrl).openConnection() as HttpURLConnection
-        put.requestMethod = "PUT"
-        put.doOutput = true
-        put.setRequestProperty("Authorization", "Bearer $token")
-        put.setRequestProperty("Content-Type", "application/zip")
-        put.setFixedLengthStreamingMode(backup.length())
-        FileInputStream(backup).use { input -> put.outputStream.use { input.copyTo(it) } }
-        check(put.responseCode in 200..299) { "Backup upload failed: ${responseText(put)}" }
-        val result = JSONObject(put.inputStream.bufferedReader().use { it.readText() })
-        put.disconnect()
-        return DriveBackupItem(result.getString("id"), result.optString("name", name), result.optString("modifiedTime", ""))
+            stage = "starting resumable upload session"
+            val initUrl = "$UPLOAD/files?uploadType=resumable&fields=id,name,modifiedTime"
+            targetHost = URL(initUrl).host
+            val init = URL(initUrl).openConnection() as HttpURLConnection
+            init.connectTimeout = 20000
+            init.readTimeout = 30000
+            init.requestMethod = "POST"
+            init.doOutput = true
+            init.setRequestProperty("Authorization", "Bearer $token")
+            init.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+            init.setRequestProperty("X-Upload-Content-Type", "application/zip")
+            init.setRequestProperty("X-Upload-Content-Length", backup.length().toString())
+            init.outputStream.use { it.write(metadata.toString().toByteArray(Charsets.UTF_8)) }
+            check(init.responseCode in 200..299) { "Drive upload setup failed: ${responseText(init)}" }
+            val uploadUrl = init.getHeaderField("Location") ?: error("Drive did not return an upload URL")
+            init.disconnect()
+
+            stage = "uploading backup archive"
+            val parsedUploadUrl = URL(uploadUrl)
+            targetHost = parsedUploadUrl.host
+            require(parsedUploadUrl.protocol == "https") { "Google returned a non-HTTPS upload URL" }
+            val put = parsedUploadUrl.openConnection() as HttpURLConnection
+            put.connectTimeout = 20000
+            put.readTimeout = 120000
+            put.requestMethod = "PUT"
+            put.doOutput = true
+            put.setRequestProperty("Authorization", "Bearer $token")
+            put.setRequestProperty("Content-Type", "application/zip")
+            put.setFixedLengthStreamingMode(backup.length())
+            FileInputStream(backup).use { input -> put.outputStream.use { input.copyTo(it) } }
+            check(put.responseCode in 200..299) { "Backup upload failed: ${responseText(put)}" }
+            val result = JSONObject(put.inputStream.bufferedReader().use { it.readText() })
+            put.disconnect()
+            return DriveBackupItem(result.getString("id"), result.optString("name", name), result.optString("modifiedTime", ""))
+        } catch (error: Exception) {
+            var cause: Throwable? = error
+            var dnsFailure = false
+            while (cause != null) {
+                if (cause is java.net.UnknownHostException) dnsFailure = true
+                cause = cause.cause
+            }
+            val detail = if (dnsFailure) {
+                "DNS lookup failed during $stage (host: $targetHost)"
+            } else {
+                "Drive request failed during $stage (host: $targetHost): ${error.localizedMessage ?: error.javaClass.simpleName}"
+            }
+            throw java.io.IOException(detail, error)
+        }
     }
 
     fun list(token: String): List<DriveBackupItem> {

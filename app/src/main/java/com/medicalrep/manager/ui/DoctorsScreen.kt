@@ -236,6 +236,7 @@ private fun DoctorFormDialog(
     onDismiss: () -> Unit,
     onSave: (DoctorEntity) -> Unit
 ) {
+    val context = LocalContext.current
     var name by remember(initial) { mutableStateOf(initial?.name.orEmpty()) }
     var selectedSpecialtyId by remember(initial, specialties) { mutableStateOf(initial?.specialtyId ?: specialties.firstOrNull { it.name == initial?.specialty }?.id) }
     var showSpecialtyPicker by remember { mutableStateOf(false) }

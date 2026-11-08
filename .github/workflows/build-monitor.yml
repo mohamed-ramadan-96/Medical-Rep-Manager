@@ -71,6 +71,7 @@ jobs:
           EOF
           )"
 
-            gh api --method POST "repos/${REPOSITORY}/issues" -f title="${issue_title}" -f body="${body}"
+            owner="${REPOSITORY%%/*}"
+            gh api --method POST "repos/${REPOSITORY}/issues" -f title="${issue_title}" -f body="${body}" -f assignees="${owner}"
             echo "Created one notification issue for run #${run_id}."
           done

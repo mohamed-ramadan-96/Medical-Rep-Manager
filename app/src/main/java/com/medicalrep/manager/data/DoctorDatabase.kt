@@ -26,7 +26,9 @@ data class MedicalCenterEntity(
     val address: String = "",
     val phone: String = "",
     val notes: String = "",
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val latitude: Double? = null,
+    val longitude: Double? = null
 )
 
 
@@ -298,7 +300,7 @@ interface SpecialtyDao {
 
 @Database(
     entities = [DoctorEntity::class, MedicalCenterEntity::class, SpecialtyEntity::class, DoctorAttachmentEntity::class, CenterAttachmentEntity::class, DoctorAvailabilityEntity::class, DoctorVisitEntity::class, DoctorCenterLinkEntity::class],
-    version = 9,
+    version = 10,
     exportSchema = false
 )
 abstract class MedicalRepDatabase : RoomDatabase() {
@@ -472,6 +474,13 @@ abstract class MedicalRepDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE medical_centers ADD COLUMN latitude REAL")
+                db.execSQL("ALTER TABLE medical_centers ADD COLUMN longitude REAL")
+            }
+        }
+
         private val MIGRATION_8_9 = object : Migration(8, 9) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("""
@@ -532,7 +541,7 @@ abstract class MedicalRepDatabase : RoomDatabase() {
                     context.applicationContext,
                     MedicalRepDatabase::class.java,
                     "medical_rep_manager.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
                     .build().also { INSTANCE = it }
             }
     }

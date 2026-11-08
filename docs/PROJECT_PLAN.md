@@ -8,11 +8,13 @@
 - [x] GitHub Actions debug APK build
 
 ## Phase 2 — Local data
-- [ ] Room database and migrations
-- [ ] Doctor profiles and multiple phone numbers
-- [ ] Specialties
-- [ ] Medical centers and doctor relationships
-- [ ] Image and document attachments
+- [x] Room database foundation (versioned local database)
+- [x] Doctor profiles: create, edit, delete
+- [x] Multiple phone numbers, specialty, center/clinic text, and notes
+- [x] Doctor search by name, specialty, phone, and center
+- [ ] Structured medical centers and doctor relationships
+- [ ] Doctor photos and document attachments
+- [ ] Database migrations and data validation tests
 
 ## Phase 3 — Daily workflow
 - [ ] Multiple weekly availability slots per doctor

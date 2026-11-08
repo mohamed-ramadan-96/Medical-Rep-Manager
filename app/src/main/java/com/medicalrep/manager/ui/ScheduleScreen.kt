@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -86,7 +87,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
         floatingActionButton = {
             if (doctors.isNotEmpty()) {
                 FloatingActionButton(onClick = { editingGroup = emptyList(); showForm = true }) {
-                    Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة مواعيد متاحة" else "Add availability")
+                    Icon(Icons.Default.Add, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "إضافة مواعيد متاحة" else "Add availability")
                 }
             }
         }
@@ -125,18 +126,18 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text(doctor?.name ?: if (isArabic) "طبيب غير موجود" else "Unknown doctor", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                                     Text(dayNames, color = MaterialTheme.colorScheme.primary)
                                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.Schedule, contentDescription = null)
+                                        Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(20.dp))
                                         Text("${slot.startTime} – ${slot.endTime}")
                                     }
                                     if (slot.notes.isNotBlank()) Text(slot.notes, style = MaterialTheme.typography.bodySmall)
                                 }
-                                IconButton(onClick = { editingGroup = group; showForm = true }) { Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit") }
-                                IconButton(onClick = { pendingDelete = group }) { Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete") }
+                                IconButton(modifier = Modifier.size(40.dp), onClick = { editingGroup = group; showForm = true }) { Icon(Icons.Default.Edit, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "تعديل" else "Edit") }
+                                IconButton(modifier = Modifier.size(40.dp), onClick = { pendingDelete = group }) { Icon(Icons.Default.Delete, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "حذف" else "Delete") }
                             }
                         }
                     }
@@ -277,7 +278,7 @@ private fun AvailabilityFormDialog(
                     }
                 }
                 TextButton(onClick = { drafts = drafts + AvailabilityDraft(); error = null }) {
-                    Icon(Icons.Default.Add, contentDescription = null)
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(20.dp))
                     Text(if (isArabic) "إضافة فترة بمواعيد مختلفة" else "Add another time slot")
                 }
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }

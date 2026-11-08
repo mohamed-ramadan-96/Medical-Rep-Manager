@@ -194,6 +194,7 @@ object DriveBackupEngine {
         val movedSidecars = mutableListOf<Pair<File, File>>()
         val movedAttachmentDirs = mutableListOf<String>()
         var newDbInstalled = false
+        var preserveRollback = false
         val installedAttachmentDirs = mutableListOf<String>()
 
         try {
@@ -400,7 +401,8 @@ object DriveBackupEngine {
                 }
                 if (oldDbMoved && dbOld.exists()) check(dbOld.renameTo(dbTarget)) { "Rollback failed for database" }
             } catch (rollbackError: Exception) {
-                throw java.io.IOException("Restore failed and rollback was incomplete: ${rollbackError.localizedMessage}", error)
+                preserveRollback = true
+                throw java.io.IOException("Restore failed and rollback was incomplete: ${rollbackError.localizedMessage}. Recovery files were preserved in app cache.", error)
             }
             throw error
         } finally {
@@ -408,7 +410,7 @@ object DriveBackupEngine {
             newAttachmentDirs.values.forEach { it.deleteRecursively() }
             File(context.filesDir, "doctor_photos.restore-new").deleteRecursively()
             staging.deleteRecursively()
-            rollback.deleteRecursively()
+            if (!preserveRollback) rollback.deleteRecursively()
         }
     }
 

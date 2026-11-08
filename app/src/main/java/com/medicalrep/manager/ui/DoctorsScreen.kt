@@ -227,24 +227,64 @@ private fun DoctorCard(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                if (doctor.photoUri.isNullOrBlank()) {
-                    Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(52.dp))
-                } else {
-                    AsyncImage(
-                        model = doctor.photoUri,
-                        contentDescription = if (isArabic) "صورة الطبيب" else "Doctor photo",
-                        modifier = Modifier.size(56.dp).clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-                Column(modifier = Modifier.weight(1f).padding(horizontal = 10.dp)) {
-                    Text(doctor.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    if (doctor.specialty.isNotBlank()) {
-                        Text(doctor.specialty, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium)
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    if (doctor.photoUri.isNullOrBlank()) {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(56.dp)
+                        )
+                    } else {
+                        AsyncImage(
+                            model = doctor.photoUri,
+                            contentDescription = if (isArabic) "صورة الطبيب" else "Doctor photo",
+                            modifier = Modifier.size(56.dp).clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    Column(
+                        modifier = Modifier.weight(1f).padding(horizontal = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Text(doctor.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        if (doctor.specialty.isNotBlank()) {
+                            Text(doctor.specialty, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium)
+                        }
                     }
                 }
+                if (doctor.phoneNumbers.isNotBlank()) {
+                    Text(
+                        (if (isArabic) "الهاتف: " else "Phone: ") + doctor.phoneNumbers.replace("\\n", " • "),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                if (centerName.isNotBlank()) {
+                    Text(
+                        (if (isArabic) "المركز: " else "Center: ") + centerName,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                if (doctor.notes.isNotBlank()) {
+                    Text(doctor.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Row(
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
                 IconButton(modifier = Modifier.size(40.dp), onClick = onAttachments) {
                     Icon(Icons.Default.AttachFile, contentDescription = if (isArabic) "المرفقات" else "Attachments", modifier = Modifier.size(20.dp))
                 }
@@ -254,21 +294,6 @@ private fun DoctorCard(
                 IconButton(modifier = Modifier.size(40.dp), onClick = onDelete) {
                     Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete", modifier = Modifier.size(20.dp))
                 }
-            }
-            if (doctor.phoneNumbers.isNotBlank()) {
-                Text(
-                    (if (isArabic) "الهاتف: " else "Phone: ") + doctor.phoneNumbers.replace("\n", " • "),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-            if (centerName.isNotBlank()) {
-                Text(
-                    (if (isArabic) "المركز: " else "Center: ") + centerName,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-            if (doctor.notes.isNotBlank()) {
-                Text(doctor.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

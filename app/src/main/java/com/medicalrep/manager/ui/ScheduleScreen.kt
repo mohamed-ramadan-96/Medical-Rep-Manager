@@ -218,6 +218,10 @@ private fun AvailabilityFormDialog(
         mutableStateOf(initial?.centerId ?: doctorCenterLinks.firstOrNull { it.doctorId == selectedDoctorId }?.centerId ?: doctors.firstOrNull { it.id == selectedDoctorId }?.centerId)
     }
     var error by remember { mutableStateOf<String?>(null) }
+    val linkedCenters = centers.filter { center ->
+        doctorCenterLinks.any { it.doctorId == selectedDoctorId && it.centerId == center.id } ||
+            (doctorCenterLinks.none { it.doctorId == selectedDoctorId } && doctors.firstOrNull { it.id == selectedDoctorId }?.centerId == center.id)
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -230,10 +234,9 @@ private fun AvailabilityFormDialog(
                 }
                 DropdownMenu(expanded = doctorMenu, onDismissRequest = { doctorMenu = false }) {
                     doctors.forEach { doctor ->
-                        DropdownMenuItem(text = { Text(doctor.name) }, onClick = { selectedDoctorId = doctor.id; doctorMenu = false })
+                        DropdownMenuItem(text = { Text(doctor.name) }, onClick = { selectedDoctorId = doctor.id; selectedCenterId = doctorCenterLinks.firstOrNull { it.doctorId == doctor.id }?.centerId ?: doctor.centerId; doctorMenu = false })
                     }
                 }
-                val linkedCenters = centers.filter { center -> doctorCenterLinks.any { it.doctorId == selectedDoctorId && it.centerId == center.id } || (doctorCenterLinks.none { it.doctorId == selectedDoctorId } && doctors.firstOrNull { it.id == selectedDoctorId }?.centerId == center.id) }
                 Text(if (isArabic) "المركز" else "Center", style = MaterialTheme.typography.labelLarge)
                 TextButton(onClick = { centerMenu = true }, enabled = linkedCenters.isNotEmpty()) {
                     Text(linkedCenters.firstOrNull { it.id == selectedCenterId }?.name ?: if (isArabic) "اختر المركز" else "Choose center")

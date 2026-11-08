@@ -21,8 +21,8 @@
 - [ ] Database migrations and data validation tests
 
 ## Phase 3 — Daily workflow
-- [ ] Multiple weekly availability slots per doctor
-- [ ] Visit records and follow-up notes
+- [x] Multiple weekly availability slots per doctor
+- [x] Local visit records with doctor, date/time, outcome, notes, and optional follow-up date
 - [ ] Search and filters
 - [ ] Dashboard statistics
 

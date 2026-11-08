@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -75,6 +76,38 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
         timeInMillis = todayStart; add(Calendar.DAY_OF_YEAR, 1)
     }.timeInMillis }
     val todayVisits = visits.count { it.visitedAt >= todayStart && it.visitedAt < tomorrowStart }
+    val monthStart = remember { Calendar.getInstance().apply {
+        set(Calendar.DAY_OF_MONTH, 1); set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+    }.timeInMillis }
+    val nextMonthStart = remember(monthStart) { Calendar.getInstance().apply {
+        timeInMillis = monthStart; add(Calendar.MONTH, 1)
+    }.timeInMillis }
+    val yearStart = remember { Calendar.getInstance().apply {
+        set(Calendar.DAY_OF_YEAR, 1); set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+    }.timeInMillis }
+    val nextYearStart = remember(yearStart) { Calendar.getInstance().apply {
+        timeInMillis = yearStart; add(Calendar.YEAR, 1)
+    }.timeInMillis }
+    val monthVisits = visits.count { it.visitedAt >= monthStart && it.visitedAt < nextMonthStart }
+    val yearVisits = visits.count { it.visitedAt >= yearStart && it.visitedAt < nextYearStart }
+    val monthFormatter = remember(isArabic) { SimpleDateFormat("MMM", if (isArabic) Locale("ar") else Locale.US) }
+    val monthlyTrend = remember(visits, isArabic) {
+        (5 downTo 0).map { offset ->
+            val month = Calendar.getInstance().apply {
+                set(Calendar.DAY_OF_MONTH, 1); set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0); add(Calendar.MONTH, -offset)
+            }
+            val start = month.timeInMillis
+            val end = (month.clone() as Calendar).apply { add(Calendar.MONTH, 1) }.timeInMillis
+            monthFormatter.format(month.time) to visits.count { it.visitedAt >= start && it.visitedAt < end }
+        }
+    }
+    val trendMaximum = monthlyTrend.maxOfOrNull { it.second }?.coerceAtLeast(1) ?: 1
+    val outcomeSummary = visits.filter { it.visitedAt >= yearStart && it.visitedAt < nextYearStart }
+        .groupingBy { it.outcome.ifBlank { if (isArabic) "بدون نتيجة" else "No outcome" } }
+        .eachCount().entries.sortedByDescending { it.value }.take(3)
     val upcoming = visits.filter { it.nextFollowUpAt != null && it.nextFollowUpAt >= todayStart }
         .sortedBy { it.nextFollowUpAt }.take(5)
     val recent = visits.take(5)
@@ -113,6 +146,52 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                     if (isArabic) "زيارات اليوم" else "Today's visits")
                 MetricCard(Modifier.weight(1f), Icons.Default.History, visits.size.toString(),
                     if (isArabic) "إجمالي الزيارات" else "Total visits")
+            }
+        }
+        item {
+            SectionHeading(if (isArabic) "تقارير الأداء" else "Performance reports",
+                if (isArabic) "ملخص الشهر والسنة واتجاه الزيارات خلال آخر 6 أشهر" else "Monthly and yearly summary with the last 6 months of activity")
+        }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                MetricCard(Modifier.weight(1f), Icons.Default.CalendarMonth, monthVisits.toString(),
+                    if (isArabic) "زيارات هذا الشهر" else "This month")
+                MetricCard(Modifier.weight(1f), Icons.Default.History, yearVisits.toString(),
+                    if (isArabic) "زيارات هذه السنة" else "This year")
+            }
+        }
+        item {
+            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(if (isArabic) "نشاط الزيارات - آخر 6 أشهر" else "Visit activity - last 6 months",
+                        fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
+                    monthlyTrend.forEach { (label, count) ->
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(label, style = MaterialTheme.typography.bodyMedium)
+                                Text(count.toString(), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                            }
+                            LinearProgressIndicator(
+                                progress = count.toFloat() / trendMaximum.toFloat(),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                    if (outcomeSummary.isNotEmpty()) {
+                        Text(if (isArabic) "أبرز نتائج الزيارات هذا العام" else "Top visit outcomes this year",
+                            fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 4.dp))
+                        outcomeSummary.forEach { entry ->
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(entry.key, modifier = Modifier.weight(1f))
+                                Text(entry.value.toString(), fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    } else {
+                        Text(if (isArabic) "لا توجد زيارات مسجلة هذا العام حتى الآن." else "No visits recorded this year yet.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
             }
         }
         item {

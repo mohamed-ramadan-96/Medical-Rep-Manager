@@ -77,6 +77,9 @@ interface DoctorDao {
     @Query("UPDATE doctors SET centerId = NULL WHERE centerId = :centerId")
     suspend fun detachCenter(centerId: Long)
 
+    @Query("UPDATE doctors SET specialtyId = NULL WHERE specialtyId = :specialtyId")
+    suspend fun detachSpecialty(specialtyId: Long)
+
     @Query("SELECT COUNT(*) FROM doctors")
     fun observeCount(): Flow<Int>
 }

@@ -1,0 +1,76 @@
+name: Hourly Build Monitor
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  issues: write
+
+concurrency:
+  group: hourly-build-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    name: Check Android CI results
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check completed Android builds and notify once
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          BASELINE_CREATED_AT: "2026-11-08T11:32:23Z"
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Checking Android CI runs created after the monitor baseline..."
+          gh api "repos/${REPOSITORY}/actions/workflows/android.yml/runs?branch=main&per_page=50" > "${RUNNER_TEMP}/runs.json"
+
+          jq -c --arg baseline "${BASELINE_CREATED_AT}" '.workflow_runs[] | select(.created_at > $baseline)' "${RUNNER_TEMP}/runs.json" |
+          while IFS= read -r run; do
+            run_id="$(jq -r '.id' <<< "${run}")"
+            status="$(jq -r '.status' <<< "${run}")"
+            conclusion="$(jq -r '.conclusion // "unknown"' <<< "${run}")"
+            run_url="$(jq -r '.html_url' <<< "${run}")"
+            run_title="$(jq -r '.display_title' <<< "${run}")"
+            head_sha="$(jq -r '.head_sha' <<< "${run}")"
+
+            if [[ "${status}" != "completed" ]]; then
+              echo "Run #${run_id} is still ${status}; will check again next hour."
+              continue
+            fi
+
+            issue_title="Build monitor run #${run_id}: ${conclusion}"
+            existing="$(gh api --method GET "search/issues" -f q="repo:${REPOSITORY} in:title \"${issue_title}\"" --jq '.total_count')"
+            if [[ "${existing}" != "0" ]]; then
+              echo "Notification already exists for run #${run_id}; skipping."
+              continue
+            fi
+
+            if [[ "${conclusion}" == "success" ]]; then
+              artifact_note="The Android CI run completed successfully. Download the APK from the run's Artifacts section."
+            else
+              artifact_note="The Android CI run did not succeed (conclusion: ${conclusion}). Open the run and inspect the failed job logs."
+            fi
+
+            body="$(cat <<EOF
+          ## Android build result: ${conclusion}
+
+          - **Workflow:** ${run_title}
+          - **Run ID:** ${run_id}
+          - **Commit:** ${head_sha}
+          - **Result:** ${conclusion}
+          - **Run details:** ${run_url}
+
+          ${artifact_note}
+
+          This issue was created automatically by the hourly build monitor. It will not create another notification for the same run.
+          EOF
+          )"
+
+            gh api --method POST "repos/${REPOSITORY}/issues" -f title="${issue_title}" -f body="${body}"
+            echo "Created one notification issue for run #${run_id}."
+          done

@@ -73,6 +73,25 @@ data class DoctorAttachmentEntity(
 )
 
 @Entity(
+    tableName = "center_attachments",
+    foreignKeys = [ForeignKey(
+        entity = MedicalCenterEntity::class,
+        parentColumns = ["id"],
+        childColumns = ["centerId"],
+        onDelete = ForeignKey.CASCADE
+    )],
+    indices = [Index("centerId")]
+)
+data class CenterAttachmentEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val centerId: Long,
+    val displayName: String,
+    val mimeType: String,
+    val localPath: String,
+    val createdAt: Long = System.currentTimeMillis()
+)
+
+@Entity(
     tableName = "doctor_visits",
     foreignKeys = [ForeignKey(entity = DoctorEntity::class, parentColumns = ["id"], childColumns = ["doctorId"], onDelete = ForeignKey.CASCADE)],
     indices = [Index("doctorId"), Index("visitedAt"), Index("nextFollowUpAt")]
@@ -157,6 +176,21 @@ interface DoctorAttachmentDao {
 }
 
 @Dao
+interface CenterAttachmentDao {
+    @Query("SELECT * FROM center_attachments WHERE centerId = :centerId ORDER BY createdAt DESC")
+    fun observeForCenter(centerId: Long): Flow<List<CenterAttachmentEntity>>
+
+    @Query("SELECT * FROM center_attachments WHERE centerId = :centerId")
+    suspend fun getForCenter(centerId: Long): List<CenterAttachmentEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(attachment: CenterAttachmentEntity): Long
+
+    @Delete
+    suspend fun delete(attachment: CenterAttachmentEntity)
+}
+
+@Dao
 interface DoctorDao {
     @Query("SELECT * FROM doctors ORDER BY name COLLATE NOCASE ASC")
     fun observeAll(): Flow<List<DoctorEntity>>
@@ -228,8 +262,8 @@ interface SpecialtyDao {
 }
 
 @Database(
-    entities = [DoctorEntity::class, MedicalCenterEntity::class, SpecialtyEntity::class, DoctorAttachmentEntity::class, DoctorAvailabilityEntity::class, DoctorVisitEntity::class],
-    version = 7,
+    entities = [DoctorEntity::class, MedicalCenterEntity::class, SpecialtyEntity::class, DoctorAttachmentEntity::class, CenterAttachmentEntity::class, DoctorAvailabilityEntity::class, DoctorVisitEntity::class],
+    version = 8,
     exportSchema = false
 )
 abstract class MedicalRepDatabase : RoomDatabase() {
@@ -237,6 +271,7 @@ abstract class MedicalRepDatabase : RoomDatabase() {
     abstract fun medicalCenterDao(): MedicalCenterDao
     abstract fun specialtyDao(): SpecialtyDao
     abstract fun doctorAttachmentDao(): DoctorAttachmentDao
+    abstract fun centerAttachmentDao(): CenterAttachmentDao
     abstract fun doctorAvailabilityDao(): DoctorAvailabilityDao
     abstract fun doctorVisitDao(): DoctorVisitDao
 
@@ -384,13 +419,30 @@ abstract class MedicalRepDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS center_attachments (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        centerId INTEGER NOT NULL,
+                        displayName TEXT NOT NULL,
+                        mimeType TEXT NOT NULL,
+                        localPath TEXT NOT NULL,
+                        createdAt INTEGER NOT NULL,
+                        FOREIGN KEY(centerId) REFERENCES medical_centers(id) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_center_attachments_centerId ON center_attachments(centerId)")
+            }
+        }
+
         fun getInstance(context: Context): MedicalRepDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
                     MedicalRepDatabase::class.java,
                     "medical_rep_manager.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                     .build().also { INSTANCE = it }
             }
     }

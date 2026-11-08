@@ -50,7 +50,10 @@ import com.medicalrep.manager.data.DoctorEntity
 import com.medicalrep.manager.data.MedicalCenterEntity
 import com.medicalrep.manager.data.MedicalRepDatabase
 import com.medicalrep.manager.data.SpecialtyEntity
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 
 @Composable
 fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.PaddingValues) {
@@ -169,7 +172,13 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             },
             confirmButton = {
                 TextButton(onClick = {
-                    scope.launch { dao.delete(doctor) }
+                    scope.launch {
+                        val attachments = database.doctorAttachmentDao().getForDoctor(doctor.id)
+                        withContext(Dispatchers.IO) {
+                            attachments.forEach { File(it.localPath).delete() }
+                        }
+                        dao.delete(doctor)
+                    }
                     pendingDelete = null
                 }) { Text(if (isArabic) "حذف" else "Delete") }
             },

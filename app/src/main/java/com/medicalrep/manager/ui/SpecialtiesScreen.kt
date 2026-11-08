@@ -57,7 +57,7 @@ fun SpecialtiesScreen(isArabic: Boolean, padding: androidx.compose.foundation.la
         modifier = Modifier.padding(padding),
         floatingActionButton = {
             FloatingActionButton(onClick = { editing = null; showForm = true }) {
-                Icon(Icons.Default.Add, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "إضافة تخصص" else "Add specialty")
+                Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة تخصص" else "Add specialty", modifier = Modifier.size(20.dp))
             }
         }
     ) { inner ->
@@ -104,10 +104,10 @@ fun SpecialtiesScreen(isArabic: Boolean, padding: androidx.compose.foundation.la
                                     fontWeight = FontWeight.Bold
                                 )
                                 IconButton(modifier = Modifier.size(40.dp), onClick = { editing = specialty; showForm = true }) {
-                                    Icon(Icons.Default.Edit, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "تعديل" else "Edit")
+                                    Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit", modifier = Modifier.size(20.dp))
                                 }
                                 IconButton(modifier = Modifier.size(40.dp), onClick = { pendingDelete = specialty }) {
-                                    Icon(Icons.Default.Delete, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "حذف" else "Delete")
+                                    Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete", modifier = Modifier.size(20.dp))
                                 }
                             }
                         }

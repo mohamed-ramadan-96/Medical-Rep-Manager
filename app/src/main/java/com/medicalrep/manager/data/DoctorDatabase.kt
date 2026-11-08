@@ -1,6 +1,7 @@
 package com.medicalrep.manager.data
 
 import android.content.Context
+import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Delete
@@ -121,7 +122,8 @@ data class DoctorAvailabilityEntity(
     val startTime: String,
     val endTime: String,
     val notes: String = "",
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    @ColumnInfo(defaultValue = "''") val slotGroupId: String = ""
 )
 
 @Dao
@@ -227,7 +229,7 @@ interface SpecialtyDao {
 
 @Database(
     entities = [DoctorEntity::class, MedicalCenterEntity::class, SpecialtyEntity::class, DoctorAttachmentEntity::class, DoctorAvailabilityEntity::class, DoctorVisitEntity::class],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class MedicalRepDatabase : RoomDatabase() {
@@ -364,13 +366,31 @@ abstract class MedicalRepDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE doctor_availability ADD COLUMN slotGroupId TEXT NOT NULL DEFAULT ''")
+                // Preserve the grouping used by previous app versions for existing records.
+                db.execSQL("""
+                    UPDATE doctor_availability
+                    SET slotGroupId = 'legacy-' || (
+                        SELECT MIN(other.id)
+                        FROM doctor_availability AS other
+                        WHERE other.doctorId = doctor_availability.doctorId
+                          AND other.startTime = doctor_availability.startTime
+                          AND other.endTime = doctor_availability.endTime
+                          AND other.notes = doctor_availability.notes
+                    )
+                """.trimIndent())
+            }
+        }
+
         fun getInstance(context: Context): MedicalRepDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
                     MedicalRepDatabase::class.java,
                     "medical_rep_manager.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                     .build().also { INSTANCE = it }
             }
     }

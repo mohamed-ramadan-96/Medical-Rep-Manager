@@ -72,6 +72,39 @@ data class DoctorAttachmentEntity(
 )
 
 @Entity(
+    tableName = "doctor_visits",
+    foreignKeys = [ForeignKey(entity = DoctorEntity::class, parentColumns = ["id"], childColumns = ["doctorId"], onDelete = ForeignKey.CASCADE)],
+    indices = [Index("doctorId"), Index("visitedAt"), Index("nextFollowUpAt")]
+)
+data class DoctorVisitEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val doctorId: Long,
+    val visitedAt: Long,
+    val outcome: String = "",
+    val notes: String = "",
+    val nextFollowUpAt: Long? = null,
+    val createdAt: Long = System.currentTimeMillis()
+)
+
+@Dao
+interface DoctorVisitDao {
+    @Query("SELECT * FROM doctor_visits ORDER BY visitedAt DESC")
+    fun observeAll(): Flow<List<DoctorVisitEntity>>
+
+    @Query("SELECT * FROM doctor_visits WHERE doctorId = :doctorId ORDER BY visitedAt DESC")
+    fun observeForDoctor(doctorId: Long): Flow<List<DoctorVisitEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(visit: DoctorVisitEntity): Long
+
+    @Update
+    suspend fun update(visit: DoctorVisitEntity)
+
+    @Delete
+    suspend fun delete(visit: DoctorVisitEntity)
+}
+
+@Entity(
     tableName = "doctor_availability",
     foreignKeys = [ForeignKey(
         entity = DoctorEntity::class,
@@ -193,8 +226,8 @@ interface SpecialtyDao {
 }
 
 @Database(
-    entities = [DoctorEntity::class, MedicalCenterEntity::class, SpecialtyEntity::class, DoctorAttachmentEntity::class, DoctorAvailabilityEntity::class],
-    version = 5,
+    entities = [DoctorEntity::class, MedicalCenterEntity::class, SpecialtyEntity::class, DoctorAttachmentEntity::class, DoctorAvailabilityEntity::class, DoctorVisitEntity::class],
+    version = 6,
     exportSchema = false
 )
 abstract class MedicalRepDatabase : RoomDatabase() {
@@ -203,6 +236,7 @@ abstract class MedicalRepDatabase : RoomDatabase() {
     abstract fun specialtyDao(): SpecialtyDao
     abstract fun doctorAttachmentDao(): DoctorAttachmentDao
     abstract fun doctorAvailabilityDao(): DoctorAvailabilityDao
+    abstract fun doctorVisitDao(): DoctorVisitDao
 
     companion object {
         @Volatile private var INSTANCE: MedicalRepDatabase? = null
@@ -310,13 +344,33 @@ abstract class MedicalRepDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS doctor_visits (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        doctorId INTEGER NOT NULL,
+                        visitedAt INTEGER NOT NULL,
+                        outcome TEXT NOT NULL,
+                        notes TEXT NOT NULL,
+                        nextFollowUpAt INTEGER,
+                        createdAt INTEGER NOT NULL,
+                        FOREIGN KEY(doctorId) REFERENCES doctors(id) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_doctor_visits_doctorId ON doctor_visits(doctorId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_doctor_visits_visitedAt ON doctor_visits(visitedAt)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_doctor_visits_nextFollowUpAt ON doctor_visits(nextFollowUpAt)")
+            }
+        }
+
         fun getInstance(context: Context): MedicalRepDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
                     MedicalRepDatabase::class.java,
                     "medical_rep_manager.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .build().also { INSTANCE = it }
             }
     }

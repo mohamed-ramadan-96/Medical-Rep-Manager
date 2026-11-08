@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import com.medicalrep.manager.data.DoctorEntity
 import com.medicalrep.manager.data.MedicalCenterEntity
 import com.medicalrep.manager.data.MedicalRepDatabase
+import com.medicalrep.manager.data.SpecialtyEntity
 import kotlinx.coroutines.launch
 
 @Composable
@@ -47,6 +48,8 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val database = remember { MedicalRepDatabase.getInstance(context) }
     val dao = database.doctorDao()
     val centerDao = database.medicalCenterDao()
+    val specialtyDao = database.specialtyDao()
+    val specialties by specialtyDao.observeAll().collectAsState(initial = emptyList())
     val centers by centerDao.observeAll().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     var searchText by remember { mutableStateOf("") }
@@ -123,6 +126,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             isArabic = isArabic,
             initial = editingDoctor,
             centers = centers,
+            specialties = specialties,
             onDismiss = { showForm = false },
             onSave = { doctor ->
                 scope.launch {
@@ -210,11 +214,13 @@ private fun DoctorFormDialog(
     isArabic: Boolean,
     initial: DoctorEntity?,
     centers: List<MedicalCenterEntity>,
+    specialties: List<SpecialtyEntity>,
     onDismiss: () -> Unit,
     onSave: (DoctorEntity) -> Unit
 ) {
     var name by remember(initial) { mutableStateOf(initial?.name.orEmpty()) }
-    var specialty by remember(initial) { mutableStateOf(initial?.specialty.orEmpty()) }
+    var selectedSpecialtyId by remember(initial, specialties) { mutableStateOf(initial?.specialtyId ?: specialties.firstOrNull { it.name == initial?.specialty }?.id) }
+    var showSpecialtyPicker by remember { mutableStateOf(false) }
     var phones by remember(initial) { mutableStateOf(initial?.phoneNumbers.orEmpty()) }
     var selectedCenterId by remember(initial, centers) { mutableStateOf(initial?.centerId ?: centers.firstOrNull { it.name == initial?.medicalCenter }?.id) }
     var showCenterPicker by remember { mutableStateOf(false) }
@@ -235,11 +241,12 @@ private fun DoctorFormDialog(
                     )
                 }
                 item {
-                    OutlinedTextField(
-                        value = specialty, onValueChange = { specialty = it },
-                        modifier = Modifier.fillMaxWidth(), singleLine = true,
-                        label = { Text(if (isArabic) "التخصص" else "Specialty") }
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(if (isArabic) "التخصص" else "Specialty", style = MaterialTheme.typography.labelLarge)
+                        TextButton(onClick = { showSpecialtyPicker = true }) {
+                            Text(specialties.firstOrNull { it.id == selectedSpecialtyId }?.name ?: if (isArabic) "بدون تخصص — اختر من القائمة" else "No specialty — choose one")
+                        }
+                    }
                 }
                 item {
                     OutlinedTextField(
@@ -274,7 +281,8 @@ private fun DoctorFormDialog(
                         DoctorEntity(
                             id = initial?.id ?: 0L,
                             name = name.trim(),
-                            specialty = specialty.trim(),
+                            specialty = specialties.firstOrNull { it.id == selectedSpecialtyId }?.name.orEmpty(),
+                            specialtyId = selectedSpecialtyId,
                             phoneNumbers = phones.trim(),
                             medicalCenter = centers.firstOrNull { it.id == selectedCenterId }?.name.orEmpty(),
                             centerId = selectedCenterId,
@@ -290,6 +298,32 @@ private fun DoctorFormDialog(
             TextButton(onClick = onDismiss) { Text(if (isArabic) "إلغاء" else "Cancel") }
         }
     )
+
+    if (showSpecialtyPicker) {
+        AlertDialog(
+            onDismissRequest = { showSpecialtyPicker = false },
+            title = { Text(if (isArabic) "اختر التخصص" else "Choose a specialty") },
+            text = {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    item {
+                        TextButton(onClick = { selectedSpecialtyId = null; showSpecialtyPicker = false }) {
+                            Text(if (isArabic) "بدون تخصص" else "No specialty")
+                        }
+                    }
+                    items(specialties, key = { it.id }) { specialty ->
+                        TextButton(onClick = { selectedSpecialtyId = specialty.id; showSpecialtyPicker = false }) {
+                            Text(specialty.name)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSpecialtyPicker = false }) {
+                    Text(if (isArabic) "إغلاق" else "Close")
+                }
+            }
+        )
+    }
 
     if (showCenterPicker) {
         AlertDialog(

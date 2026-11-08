@@ -78,7 +78,7 @@ fun VisitsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.
         floatingActionButton = {
             if (doctors.isNotEmpty()) {
                 FloatingActionButton(onClick = { editing = null; showForm = true }) {
-                    Icon(Icons.Default.Add, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "إضافة زيارة" else "Add visit")
+                    Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة زيارة" else "Add visit", modifier = Modifier.size(20.dp))
                 }
             }
         }
@@ -162,10 +162,10 @@ fun VisitsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.
                                 }
                                 Column {
                                     IconButton(modifier = Modifier.size(40.dp), onClick = { editing = visit; showForm = true }) {
-                                        Icon(Icons.Default.Edit, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "تعديل" else "Edit")
+                                        Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit", modifier = Modifier.size(20.dp))
                                     }
                                     IconButton(modifier = Modifier.size(40.dp), onClick = { pendingDelete = visit }) {
-                                        Icon(Icons.Default.Delete, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "حذف" else "Delete")
+                                        Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete", modifier = Modifier.size(20.dp))
                                     }
                                 }
                             }

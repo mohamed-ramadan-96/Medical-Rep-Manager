@@ -37,13 +37,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.medicalrep.manager.data.DoctorEntity
+import com.medicalrep.manager.data.MedicalCenterEntity
 import com.medicalrep.manager.data.MedicalRepDatabase
 import kotlinx.coroutines.launch
 
 @Composable
 fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.PaddingValues) {
     val context = LocalContext.current
-    val dao = remember { MedicalRepDatabase.getInstance(context).doctorDao() }
+    val database = remember { MedicalRepDatabase.getInstance(context) }
+    val dao = database.doctorDao()
+    val centerDao = database.medicalCenterDao()
+    val centers by centerDao.observeAll().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     var searchText by remember { mutableStateOf("") }
     val doctors by remember(searchText) {
@@ -100,6 +104,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     items(doctors, key = { it.id }) { doctor ->
                         DoctorCard(
                             doctor = doctor,
+                            centerName = centers.firstOrNull { it.id == doctor.centerId }?.name ?: doctor.medicalCenter,
                             isArabic = isArabic,
                             onEdit = {
                                 editingDoctor = doctor
@@ -117,6 +122,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
         DoctorFormDialog(
             isArabic = isArabic,
             initial = editingDoctor,
+            centers = centers,
             onDismiss = { showForm = false },
             onSave = { doctor ->
                 scope.launch {
@@ -154,6 +160,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
 @Composable
 private fun DoctorCard(
     doctor: DoctorEntity,
+    centerName: String,
     isArabic: Boolean,
     onEdit: () -> Unit,
     onDelete: () -> Unit
@@ -185,9 +192,9 @@ private fun DoctorCard(
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
-            if (doctor.medicalCenter.isNotBlank()) {
+            if (centerName.isNotBlank()) {
                 Text(
-                    (if (isArabic) "المركز: " else "Center: ") + doctor.medicalCenter,
+                    (if (isArabic) "المركز: " else "Center: ") + centerName,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -202,13 +209,15 @@ private fun DoctorCard(
 private fun DoctorFormDialog(
     isArabic: Boolean,
     initial: DoctorEntity?,
+    centers: List<MedicalCenterEntity>,
     onDismiss: () -> Unit,
     onSave: (DoctorEntity) -> Unit
 ) {
     var name by remember(initial) { mutableStateOf(initial?.name.orEmpty()) }
     var specialty by remember(initial) { mutableStateOf(initial?.specialty.orEmpty()) }
     var phones by remember(initial) { mutableStateOf(initial?.phoneNumbers.orEmpty()) }
-    var center by remember(initial) { mutableStateOf(initial?.medicalCenter.orEmpty()) }
+    var selectedCenterId by remember(initial, centers) { mutableStateOf(initial?.centerId ?: centers.firstOrNull { it.name == initial?.medicalCenter }?.id) }
+    var showCenterPicker by remember { mutableStateOf(false) }
     var notes by remember(initial) { mutableStateOf(initial?.notes.orEmpty()) }
     var nameError by remember { mutableStateOf(false) }
 
@@ -240,11 +249,12 @@ private fun DoctorFormDialog(
                     )
                 }
                 item {
-                    OutlinedTextField(
-                        value = center, onValueChange = { center = it },
-                        modifier = Modifier.fillMaxWidth(), singleLine = true,
-                        label = { Text(if (isArabic) "المركز أو العيادة" else "Medical center / clinic") }
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(if (isArabic) "المركز أو العيادة" else "Medical center / clinic", style = MaterialTheme.typography.labelLarge)
+                        TextButton(onClick = { showCenterPicker = true }) {
+                            Text(centers.firstOrNull { it.id == selectedCenterId }?.name ?: if (isArabic) "بدون مركز — اختر من القائمة" else "No center — choose one")
+                        }
+                    }
                 }
                 item {
                     OutlinedTextField(
@@ -266,7 +276,8 @@ private fun DoctorFormDialog(
                             name = name.trim(),
                             specialty = specialty.trim(),
                             phoneNumbers = phones.trim(),
-                            medicalCenter = center.trim(),
+                            medicalCenter = centers.firstOrNull { it.id == selectedCenterId }?.name.orEmpty(),
+                            centerId = selectedCenterId,
                             notes = notes.trim(),
                             photoUri = initial?.photoUri,
                             createdAt = initial?.createdAt ?: System.currentTimeMillis()
@@ -279,4 +290,30 @@ private fun DoctorFormDialog(
             TextButton(onClick = onDismiss) { Text(if (isArabic) "إلغاء" else "Cancel") }
         }
     )
+
+    if (showCenterPicker) {
+        AlertDialog(
+            onDismissRequest = { showCenterPicker = false },
+            title = { Text(if (isArabic) "اختر المركز" else "Choose a center") },
+            text = {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    item {
+                        TextButton(onClick = { selectedCenterId = null; showCenterPicker = false }) {
+                            Text(if (isArabic) "بدون مركز" else "No center")
+                        }
+                    }
+                    items(centers, key = { it.id }) { center ->
+                        TextButton(onClick = { selectedCenterId = center.id; showCenterPicker = false }) {
+                            Text(center.name)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showCenterPicker = false }) {
+                    Text(if (isArabic) "إغلاق" else "Close")
+                }
+            }
+        )
+    }
 }

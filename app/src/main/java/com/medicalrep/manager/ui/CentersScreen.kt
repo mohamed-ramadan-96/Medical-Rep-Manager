@@ -293,7 +293,6 @@ private fun CenterFormDialog(
             TextButton(onClick = onDismiss) { Text(if (isArabic) "إلغاء" else "Cancel") }
         }
     )
-}
 
     if (showMapPicker) {
         CenterMapPickerDialog(
@@ -308,3 +307,4 @@ private fun CenterFormDialog(
             }
         )
     }
+}

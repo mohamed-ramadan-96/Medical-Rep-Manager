@@ -216,6 +216,22 @@ object DriveBackupEngine {
         }
     }
 
+    fun delete(token: String, item: DriveBackupItem) {
+        val connection = URL("$DRIVE/files/${URLEncoder.encode(item.id, "UTF-8")}").openConnection() as HttpURLConnection
+        connection.requestMethod = "DELETE"
+        connection.connectTimeout = 20000
+        connection.readTimeout = 30000
+        connection.setRequestProperty("Authorization", "Bearer $token")
+        try {
+            val code = connection.responseCode
+            check(code in 200..299 || code == HttpURLConnection.HTTP_NO_CONTENT) {
+                "Could not delete backup: ${responseText(connection)}"
+            }
+        } finally {
+            connection.disconnect()
+        }
+    }
+
     fun restore(context: Context, token: String, item: DriveBackupItem) {
         val zipFile = File(context.cacheDir, "restore-${System.currentTimeMillis()}.zip")
         val url = URL("$DRIVE/files/${item.id}?alt=media")

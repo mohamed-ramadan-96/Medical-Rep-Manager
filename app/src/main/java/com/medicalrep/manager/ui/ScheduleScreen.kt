@@ -87,7 +87,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
         floatingActionButton = {
             if (doctors.isNotEmpty()) {
                 FloatingActionButton(onClick = { editingGroup = emptyList(); showForm = true }) {
-                    Icon(Icons.Default.Add, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "إضافة مواعيد متاحة" else "Add availability")
+                    Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة مواعيد متاحة" else "Add availability", modifier = Modifier.size(20.dp))
                 }
             }
         }
@@ -136,8 +136,8 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                                     }
                                     if (slot.notes.isNotBlank()) Text(slot.notes, style = MaterialTheme.typography.bodySmall)
                                 }
-                                IconButton(modifier = Modifier.size(40.dp), onClick = { editingGroup = group; showForm = true }) { Icon(Icons.Default.Edit, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "تعديل" else "Edit") }
-                                IconButton(modifier = Modifier.size(40.dp), onClick = { pendingDelete = group }) { Icon(Icons.Default.Delete, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "حذف" else "Delete") }
+                                IconButton(modifier = Modifier.size(40.dp), onClick = { editingGroup = group; showForm = true }) { Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit", modifier = Modifier.size(20.dp)) }
+                                IconButton(modifier = Modifier.size(40.dp), onClick = { pendingDelete = group }) { Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete", modifier = Modifier.size(20.dp)) }
                             }
                         }
                     }

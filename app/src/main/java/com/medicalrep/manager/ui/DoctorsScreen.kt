@@ -133,7 +133,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     items(doctors, key = { it.id }) { doctor ->
                         DoctorCard(
                             doctor = doctor,
-                            centerName = centers.firstOrNull { it.id == doctor.centerId }?.name ?: doctor.medicalCenter,
+                            centerName = centers.filter { center -> doctorCenterLinks.any { it.doctorId == doctor.id && it.centerId == center.id } }.joinToString("، ") { it.name }.ifBlank { centers.firstOrNull { it.id == doctor.centerId }?.name ?: doctor.medicalCenter },
                             isArabic = isArabic,
                             onEdit = {
                                 editingDoctor = doctor
@@ -323,7 +323,6 @@ private fun DoctorDetailsDialog(
         6 to (if (isArabic) "السبت" else "Saturday"),
         7 to (if (isArabic) "الأحد" else "Sunday")
     )
-    val groupedAvailability = availability.groupBy { it.slotGroupId }.values.toList()
     val upcomingFollowUps = visits.filter { (it.nextFollowUpAt ?: 0L) >= System.currentTimeMillis() }
         .sortedBy { it.nextFollowUpAt }
     val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -367,22 +366,6 @@ private fun DoctorDetailsDialog(
                 }
                 if (doctor.notes.isNotBlank()) item {
                     Text((if (isArabic) "ملاحظات: " else "Notes: ") + doctor.notes)
-                }
-                item {
-                    Text(if (isArabic) "مواعيد تواجد الطبيب" else "Doctor availability", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                }
-                if (groupedAvailability.isEmpty()) {
-                    item { Text(if (isArabic) "لم تُحدد مواعيد تواجد بعد." else "No availability added yet.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                } else {
-                    items(groupedAvailability) { group ->
-                        val first = group.first()
-                        val dayNames = group.map { slot -> days.firstOrNull { it.first == slot.dayOfWeek }?.second.orEmpty() }.joinToString("، ")
-                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text(dayNames, fontWeight = FontWeight.SemiBold)
-                            Text("${first.startTime} – ${first.endTime}")
-                            if (first.notes.isNotBlank()) Text(first.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
                 }
                 item {
                     Text(if (isArabic) "المواعيد المحددة للمتابعة" else "Scheduled follow-ups", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)

@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocalHospital
@@ -33,12 +34,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.medicalrep.manager.data.MedicalCenterEntity
 import com.medicalrep.manager.data.MedicalRepDatabase
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
 
 @Composable
 fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.PaddingValues) {
@@ -51,6 +57,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     var editing by remember { mutableStateOf<MedicalCenterEntity?>(null) }
     var showForm by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<MedicalCenterEntity?>(null) }
+    var attachmentsCenter by remember { mutableStateOf<MedicalCenterEntity?>(null) }
 
     Scaffold(
         modifier = Modifier.padding(padding),
@@ -93,7 +100,8 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(Icons.Default.LocalHospital, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -102,11 +110,14 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                     if (center.phone.isNotBlank()) Text(center.phone, style = MaterialTheme.typography.bodyMedium)
                                     if (center.notes.isNotBlank()) Text(center.notes, style = MaterialTheme.typography.bodySmall)
                                 }
-                                IconButton(onClick = { editing = center; showForm = true }) {
-                                    Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit")
+                                IconButton(modifier = Modifier.size(40.dp), onClick = { attachmentsCenter = center }) {
+                                    Icon(Icons.Default.AttachFile, contentDescription = if (isArabic) "المرفقات" else "Attachments", modifier = Modifier.size(20.dp))
                                 }
-                                IconButton(onClick = { pendingDelete = center }) {
-                                    Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete")
+                                IconButton(modifier = Modifier.size(40.dp), onClick = { editing = center; showForm = true }) {
+                                    Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit", modifier = Modifier.size(20.dp))
+                                }
+                                IconButton(modifier = Modifier.size(40.dp), onClick = { pendingDelete = center }) {
+                                    Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete", modifier = Modifier.size(20.dp))
                                 }
                             }
                         }
@@ -130,6 +141,10 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
         )
     }
 
+    attachmentsCenter?.let { center ->
+        CenterAttachmentsDialog(center = center, isArabic = isArabic, database = database, onDismiss = { attachmentsCenter = null })
+    }
+
     pendingDelete?.let { center ->
         AlertDialog(
             onDismissRequest = { pendingDelete = null },
@@ -142,6 +157,8 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             confirmButton = {
                 TextButton(onClick = {
                     scope.launch {
+                        val attachments = database.centerAttachmentDao().getForCenter(center.id)
+                        withContext(Dispatchers.IO) { attachments.forEach { File(it.localPath).delete() } }
                         doctorDao.detachCenter(center.id)
                         dao.delete(center)
                     }

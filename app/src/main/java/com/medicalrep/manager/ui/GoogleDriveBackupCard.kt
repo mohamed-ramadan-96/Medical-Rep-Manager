@@ -239,7 +239,8 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
                                         withContext(Dispatchers.IO) { DriveBackupEngine.restore(context, token!!, item) }
                                         prefs.edit().putLong(DriveBackupScheduler.KEY_LAST_BACKUP, System.currentTimeMillis()).apply()
                                         showBackups = false
-                                        notify(if (isArabic) "تمت استعادة النسخة. أعد فتح التطبيق للتأكد من تحديث كل البيانات." else "Backup restored. Reopen the app to refresh all data.")
+                                        notify(if (isArabic) "تمت استعادة النسخة، سيتم تحديث التطبيق الآن." else "Backup restored. The app will refresh now.")
+                                        activity.recreate()
                                     } catch (error: Exception) {
                                         showError((if (isArabic) "فشلت الاستعادة: " else "Restore failed: ") + (error.localizedMessage ?: error.javaClass.simpleName))
                                     } finally { busy = false }

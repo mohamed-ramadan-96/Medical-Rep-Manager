@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -47,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.medicalrep.manager.data.DoctorEntity
+import com.medicalrep.manager.data.DoctorVisitEntity
 import com.medicalrep.manager.data.MedicalCenterEntity
 import com.medicalrep.manager.data.MedicalRepDatabase
 import com.medicalrep.manager.data.SpecialtyEntity
@@ -64,6 +66,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val specialtyDao = database.specialtyDao()
     val specialties by specialtyDao.observeAll().collectAsState(initial = emptyList())
     val centers by centerDao.observeAll().collectAsState(initial = emptyList())
+    val visits by database.doctorVisitDao().observeAll().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     var searchText by remember { mutableStateOf("") }
     val doctors by remember(searchText) {
@@ -73,6 +76,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     var showForm by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<DoctorEntity?>(null) }
     var attachmentsDoctor by remember { mutableStateOf<DoctorEntity?>(null) }
+    var reportDoctor by remember { mutableStateOf<DoctorEntity?>(null) }
 
     Scaffold(
         modifier = Modifier.padding(padding),
@@ -128,7 +132,8 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                 showForm = true
                             },
                             onDelete = { pendingDelete = doctor },
-                            onAttachments = { attachmentsDoctor = doctor }
+                            onAttachments = { attachmentsDoctor = doctor },
+                            onReport = { reportDoctor = doctor }
                         )
                     }
                 }
@@ -149,6 +154,15 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 }
                 showForm = false
             }
+        )
+    }
+
+    reportDoctor?.let { doctor ->
+        DoctorPerformanceDialog(
+            doctor = doctor,
+            visits = visits.filter { it.doctorId == doctor.id },
+            isArabic = isArabic,
+            onDismiss = { reportDoctor = null }
         )
     }
 
@@ -198,7 +212,8 @@ private fun DoctorCard(
     isArabic: Boolean,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    onAttachments: () -> Unit
+    onAttachments: () -> Unit,
+    onReport: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -222,6 +237,9 @@ private fun DoctorCard(
                     if (doctor.specialty.isNotBlank()) {
                         Text(doctor.specialty, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium)
                     }
+                }
+                IconButton(onClick = onReport) {
+                    Icon(Icons.Default.Assessment, contentDescription = if (isArabic) "تقرير الأداء" else "Performance report")
                 }
                 IconButton(onClick = onAttachments) {
                     Icon(Icons.Default.AttachFile, contentDescription = if (isArabic) "المرفقات" else "Attachments")

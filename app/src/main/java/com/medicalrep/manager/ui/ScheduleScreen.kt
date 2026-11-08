@@ -45,6 +45,7 @@ import com.medicalrep.manager.data.DoctorAvailabilityEntity
 import com.medicalrep.manager.data.DoctorEntity
 import com.medicalrep.manager.data.MedicalRepDatabase
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 private val weekDays = listOf(
     1 to ("Monday" to "الاثنين"),
@@ -60,7 +61,8 @@ private data class AvailabilityDraft(
     val days: Set<Int> = setOf(1),
     val startTime: String = "09:00",
     val endTime: String = "17:00",
-    val notes: String = ""
+    val notes: String = "",
+    val groupId: String = UUID.randomUUID().toString()
 )
 
 @Composable
@@ -76,7 +78,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
     var showForm by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<List<DoctorAvailabilityEntity>?>(null) }
 
-    val groupedSlots = slots.groupBy { "${it.doctorId}|${it.startTime}|${it.endTime}|${it.notes}" }
+    val groupedSlots = slots.groupBy { it.slotGroupId }
         .values.sortedWith(compareBy({ it.firstOrNull()?.dayOfWeek ?: 0 }, { it.firstOrNull()?.startTime.orEmpty() }))
 
     Scaffold(
@@ -194,7 +196,8 @@ private fun AvailabilityFormDialog(
                 days = initialGroup.map { it.dayOfWeek }.toSet(),
                 startTime = initial!!.startTime,
                 endTime = initial.endTime,
-                notes = initial.notes
+                notes = initial.notes,
+                groupId = initial.slotGroupId
             ))
         )
     }
@@ -301,7 +304,8 @@ private fun AvailabilityFormDialog(
                                     startTime = draft.startTime,
                                     endTime = draft.endTime,
                                     notes = draft.notes.trim(),
-                                    createdAt = old?.createdAt ?: System.currentTimeMillis()
+                                    createdAt = old?.createdAt ?: System.currentTimeMillis(),
+                                    slotGroupId = draft.groupId
                                 )
                             }
                         }

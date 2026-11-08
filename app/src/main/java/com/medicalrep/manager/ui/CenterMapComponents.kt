@@ -3,6 +3,8 @@ package com.medicalrep.manager.ui
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -54,7 +56,7 @@ fun CenterMapPreview(
                     object {
                         @JavascriptInterface
                         fun picked(lat: Double, lon: Double) {
-                            onLocationPicked?.invoke(lat, lon)
+                            Handler(Looper.getMainLooper()).post { onLocationPicked?.invoke(lat, lon) }
                         }
                     },
                     "AndroidMap"
@@ -76,6 +78,7 @@ fun CenterMapPreview(
                       if(marker){map.removeLayer(marker);}
                       marker=L.marker([lat,lon]).addTo(map);
                     }
+                    window.setCenter=function(lat,lon){map.setView([lat,lon],16);place(lat,lon);};
                     $initialMarker
                     map.on('contextmenu',function(e){
                       place(e.latlng.lat,e.latlng.lng);
@@ -84,6 +87,11 @@ fun CenterMapPreview(
                     </script></body></html>
                 """.trimIndent()
                 loadDataWithBaseURL("https://local.map/", html, "text/html", "UTF-8", null)
+            }
+        },
+        update = { webView ->
+            if (latitude != null && longitude != null) {
+                webView.evaluateJavascript("if(window.setCenter){setCenter($latitude,$longitude);}", null)
             }
         }
     )

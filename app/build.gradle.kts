@@ -86,6 +86,9 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.9.5")
     implementation("io.coil-kt:coil-compose:2.7.0")
 
+    implementation("com.google.android.gms:play-services-auth:22.0.0")
+    implementation("androidx.work:work-runtime-ktx:2.10.1")
+
     // Local-first database
     implementation("androidx.room:room-runtime:2.8.3")
     implementation("androidx.room:room-ktx:2.8.3")

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -77,7 +78,7 @@ fun VisitsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.
         floatingActionButton = {
             if (doctors.isNotEmpty()) {
                 FloatingActionButton(onClick = { editing = null; showForm = true }) {
-                    Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة زيارة" else "Add visit")
+                    Icon(Icons.Default.Add, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "إضافة زيارة" else "Add visit")
                 }
             }
         }
@@ -137,7 +138,7 @@ fun VisitsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.
                                 modifier = Modifier.fillMaxWidth().padding(14.dp),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                     Text(
                                         doctor?.name ?: if (isArabic) "طبيب غير موجود" else "Unknown doctor",
@@ -151,7 +152,7 @@ fun VisitsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.
                                     if (visit.notes.isNotBlank()) Text(visit.notes, style = MaterialTheme.typography.bodyMedium)
                                     visit.nextFollowUpAt?.let {
                                         Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                                            Icon(Icons.Default.EventRepeat, contentDescription = null)
+                                            Icon(Icons.Default.EventRepeat, contentDescription = null, modifier = Modifier.size(20.dp))
                                             Text(
                                                 (if (isArabic) "المتابعة: " else "Follow-up: ") + visitDateText(it),
                                                 style = MaterialTheme.typography.bodySmall
@@ -160,11 +161,11 @@ fun VisitsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.
                                     }
                                 }
                                 Column {
-                                    IconButton(onClick = { editing = visit; showForm = true }) {
-                                        Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit")
+                                    IconButton(modifier = Modifier.size(40.dp), onClick = { editing = visit; showForm = true }) {
+                                        Icon(Icons.Default.Edit, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "تعديل" else "Edit")
                                     }
-                                    IconButton(onClick = { pendingDelete = visit }) {
-                                        Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete")
+                                    IconButton(modifier = Modifier.size(40.dp), onClick = { pendingDelete = visit }) {
+                                        Icon(Icons.Default.Delete, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "حذف" else "Delete")
                                     }
                                 }
                             }

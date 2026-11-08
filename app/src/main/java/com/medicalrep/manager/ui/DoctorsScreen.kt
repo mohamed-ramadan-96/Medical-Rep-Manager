@@ -3,6 +3,7 @@ package com.medicalrep.manager.ui
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -46,6 +47,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.medicalrep.manager.data.DoctorAvailabilityEntity
+import com.medicalrep.manager.data.DoctorVisitEntity
 import com.medicalrep.manager.data.DoctorEntity
 import com.medicalrep.manager.data.MedicalCenterEntity
 import com.medicalrep.manager.data.MedicalRepDatabase
@@ -54,6 +57,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.PaddingValues) {
@@ -62,6 +68,8 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val dao = database.doctorDao()
     val centerDao = database.medicalCenterDao()
     val specialtyDao = database.specialtyDao()
+    val availability by database.doctorAvailabilityDao().observeAll().collectAsState(initial = emptyList())
+    val visits by database.doctorVisitDao().observeAll().collectAsState(initial = emptyList())
     val specialties by specialtyDao.observeAll().collectAsState(initial = emptyList())
     val centers by centerDao.observeAll().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
@@ -73,6 +81,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     var showForm by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<DoctorEntity?>(null) }
     var attachmentsDoctor by remember { mutableStateOf<DoctorEntity?>(null) }
+    var detailsDoctor by remember { mutableStateOf<DoctorEntity?>(null) }
 
     Scaffold(
         modifier = Modifier.padding(padding),
@@ -128,7 +137,8 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                 showForm = true
                             },
                             onDelete = { pendingDelete = doctor },
-                            onAttachments = { attachmentsDoctor = doctor }
+                            onAttachments = { attachmentsDoctor = doctor },
+                            onOpen = { detailsDoctor = doctor }
                         )
                     }
                 }
@@ -149,6 +159,17 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 }
                 showForm = false
             }
+        )
+    }
+
+    detailsDoctor?.let { doctor ->
+        DoctorDetailsDialog(
+            doctor = doctor,
+            center = centers.firstOrNull { it.id == doctor.centerId },
+            availability = availability.filter { it.doctorId == doctor.id },
+            visits = visits.filter { it.doctorId == doctor.id },
+            isArabic = isArabic,
+            onDismiss = { detailsDoctor = null }
         )
     }
 

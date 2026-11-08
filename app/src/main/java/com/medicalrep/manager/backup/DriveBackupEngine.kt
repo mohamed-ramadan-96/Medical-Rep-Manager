@@ -34,30 +34,76 @@ object DriveBackupEngine {
 
     fun createLocalBackup(context: Context): File {
         val database = MedicalRepDatabase.getInstance(context)
-        database.openHelper.writableDatabase.query("PRAGMA wal_checkpoint(FULL)").use { }
         val dbFile = context.getDatabasePath("medical_rep_manager.db")
-        check(dbFile.exists()) { "Database file not found" }
-        val output = File(context.cacheDir, "medical-rep-backup-${System.currentTimeMillis()}.zip")
-        val manifest = JSONObject().put("version", 1)
-        val photos = JSONArray()
-        val attachments = JSONArray()
-        ZipOutputStream(FileOutputStream(output)).use { zip ->
-            zip.putNextEntry(ZipEntry("db/medical_rep_manager.db"))
-            FileInputStream(dbFile).use { it.copyTo(zip) }
-            zip.closeEntry()
+        val snapshot = File(context.cacheDir, "medical-rep-db-snapshot-${UUID.randomUUID()}.db")
+        val photoRows = mutableListOf<Pair<Long, String>>()
 
-            listOf("doctor_attachments", "center_attachments").forEach { folder ->
-                val directory = File(context.filesDir, folder)
-                if (directory.exists()) addDirectory(zip, directory, "files/$folder", attachments)
+        // Read photo references and checkpoint WAL while Room is still open.
+        database.openHelper.readableDatabase.query(
+            "SELECT id, photoUri FROM doctors WHERE photoUri IS NOT NULL AND photoUri != ''"
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                val rawUri = cursor.getString(1) ?: continue
+                photoRows += cursor.getLong(0) to rawUri
+            }
+        }
+        database.openHelper.writableDatabase.query("PRAGMA wal_checkpoint(FULL)").use { cursor ->
+            check(cursor.moveToFirst() && cursor.getInt(0) == 0) {
+                "Could not finish database WAL checkpoint"
+            }
+        }
+
+        // A standalone copy of the main DB is only safe after Room has closed and
+        // SQLite has merged its WAL. Reopen Room immediately after taking the copy.
+        MedicalRepDatabase.closeInstance()
+        try {
+            check(dbFile.isFile && dbFile.length() > 0) { "Database file not found" }
+            FileInputStream(dbFile).use { input ->
+                FileOutputStream(snapshot).use { output -> input.copyTo(output) }
+            }
+        } finally {
+            MedicalRepDatabase.getInstance(context)
+        }
+
+        try {
+            val checkDb = SQLiteDatabase.openDatabase(snapshot.path, null, SQLiteDatabase.OPEN_READONLY)
+            try {
+                val requiredTables = listOf(
+                    "doctors", "medical_centers", "specialties", "doctor_attachments",
+                    "center_attachments", "doctor_availability", "doctor_visits", "doctor_center_links"
+                )
+                requiredTables.forEach { table ->
+                    checkDb.rawQuery(
+                        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
+                        arrayOf(table)
+                    ).use { cursor ->
+                        check(cursor.moveToFirst()) { "Database snapshot is missing table: $table" }
+                    }
+                }
+                checkDb.rawQuery("PRAGMA integrity_check", null).use { cursor ->
+                    check(cursor.moveToFirst() && cursor.getString(0) == "ok") {
+                        "Database snapshot integrity check failed"
+                    }
+                }
+            } finally {
+                checkDb.close()
             }
 
-            val cursor = database.openHelper.readableDatabase.query(
-                "SELECT id, photoUri FROM doctors WHERE photoUri IS NOT NULL AND photoUri != ''"
-            )
-            cursor.use {
-                while (it.moveToNext()) {
-                    val doctorId = it.getLong(0)
-                    val rawUri = it.getString(1) ?: continue
+            val output = File(context.cacheDir, "medical-rep-backup-${System.currentTimeMillis()}.zip")
+            val manifest = JSONObject().put("version", 1)
+            val photos = JSONArray()
+            val attachments = JSONArray()
+            ZipOutputStream(FileOutputStream(output)).use { zip ->
+                zip.putNextEntry(ZipEntry("db/medical_rep_manager.db"))
+                FileInputStream(snapshot).use { it.copyTo(zip) }
+                zip.closeEntry()
+
+                listOf("doctor_attachments", "center_attachments").forEach { folder ->
+                    val directory = File(context.filesDir, folder)
+                    if (directory.exists()) addDirectory(zip, directory, "files/$folder", attachments)
+                }
+
+                photoRows.forEach { (doctorId, rawUri) ->
                     try {
                         val uri = Uri.parse(rawUri)
                         val extension = (uri.lastPathSegment?.substringAfterLast('.', "jpg") ?: "jpg")
@@ -73,13 +119,15 @@ object DriveBackupEngine {
                         }
                     } catch (_: Exception) { }
                 }
+                manifest.put("photos", photos).put("attachments", attachments)
+                zip.putNextEntry(ZipEntry("backup-manifest.json"))
+                zip.write(manifest.toString().toByteArray(Charsets.UTF_8))
+                zip.closeEntry()
             }
-            manifest.put("photos", photos).put("attachments", attachments)
-            zip.putNextEntry(ZipEntry("backup-manifest.json"))
-            zip.write(manifest.toString().toByteArray(Charsets.UTF_8))
-            zip.closeEntry()
+            return output
+        } finally {
+            snapshot.delete()
         }
-        return output
     }
 
     private fun addDirectory(zip: ZipOutputStream, root: File, prefix: String, mappings: JSONArray) {

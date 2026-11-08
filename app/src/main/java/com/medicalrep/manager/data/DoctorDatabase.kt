@@ -12,7 +12,19 @@ import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.Update
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
+
+@Entity(tableName = "medical_centers")
+data class MedicalCenterEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val address: String = "",
+    val phone: String = "",
+    val notes: String = "",
+    val createdAt: Long = System.currentTimeMillis()
+)
 
 @Entity(tableName = "doctors")
 data class DoctorEntity(
@@ -20,10 +32,12 @@ data class DoctorEntity(
     val name: String,
     val specialty: String = "",
     val phoneNumbers: String = "",
+    // Kept for compatibility with records created by app version 0.1.0.
     val medicalCenter: String = "",
     val notes: String = "",
     val photoUri: String? = null,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val centerId: Long? = null
 )
 
 @Dao
@@ -50,16 +64,75 @@ interface DoctorDao {
     @Delete
     suspend fun delete(doctor: DoctorEntity)
 
+    @Query("UPDATE doctors SET centerId = NULL WHERE centerId = :centerId")
+    suspend fun detachCenter(centerId: Long)
+
     @Query("SELECT COUNT(*) FROM doctors")
     fun observeCount(): Flow<Int>
 }
 
-@Database(entities = [DoctorEntity::class], version = 1, exportSchema = false)
+@Dao
+interface MedicalCenterDao {
+    @Query("SELECT * FROM medical_centers ORDER BY name COLLATE NOCASE ASC")
+    fun observeAll(): Flow<List<MedicalCenterEntity>>
+
+    @Query("SELECT COUNT(*) FROM doctors WHERE centerId = :centerId")
+    suspend fun doctorCount(centerId: Long): Int
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(center: MedicalCenterEntity): Long
+
+    @Update
+    suspend fun update(center: MedicalCenterEntity)
+
+    @Delete
+    suspend fun delete(center: MedicalCenterEntity)
+}
+
+@Database(
+    entities = [DoctorEntity::class, MedicalCenterEntity::class],
+    version = 2,
+    exportSchema = false
+)
 abstract class MedicalRepDatabase : RoomDatabase() {
     abstract fun doctorDao(): DoctorDao
+    abstract fun medicalCenterDao(): MedicalCenterDao
 
     companion object {
         @Volatile private var INSTANCE: MedicalRepDatabase? = null
+
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS medical_centers (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        name TEXT NOT NULL,
+                        address TEXT NOT NULL DEFAULT '',
+                        phone TEXT NOT NULL DEFAULT '',
+                        notes TEXT NOT NULL DEFAULT '',
+                        createdAt INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                db.execSQL("ALTER TABLE doctors ADD COLUMN centerId INTEGER")
+                // Preserve existing free-text center names by converting each unique value.
+                db.execSQL("""
+                    INSERT INTO medical_centers (name, address, phone, notes, createdAt)
+                    SELECT DISTINCT TRIM(medicalCenter), '', '', '', CAST(strftime('%s','now') AS INTEGER) * 1000
+                    FROM doctors
+                    WHERE TRIM(medicalCenter) != ''
+                """.trimIndent())
+                db.execSQL("""
+                    UPDATE doctors
+                    SET centerId = (
+                        SELECT medical_centers.id FROM medical_centers
+                        WHERE medical_centers.name = TRIM(doctors.medicalCenter)
+                        LIMIT 1
+                    )
+                    WHERE TRIM(medicalCenter) != ''
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_doctors_centerId ON doctors(centerId)")
+            }
+        }
 
         fun getInstance(context: Context): MedicalRepDatabase =
             INSTANCE ?: synchronized(this) {
@@ -67,7 +140,8 @@ abstract class MedicalRepDatabase : RoomDatabase() {
                     context.applicationContext,
                     MedicalRepDatabase::class.java,
                     "medical_rep_manager.db"
-                ).build().also { INSTANCE = it }
+                ).addMigrations(MIGRATION_1_2)
+                    .build().also { INSTANCE = it }
             }
     }
 }

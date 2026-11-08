@@ -25,6 +25,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.medicalrep.manager.data.DoctorAvailabilityEntity
+import com.medicalrep.manager.data.DoctorCenterLinkEntity
 import com.medicalrep.manager.data.DoctorVisitEntity
 import com.medicalrep.manager.data.DoctorEntity
 import com.medicalrep.manager.data.MedicalCenterEntity
@@ -69,6 +71,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val centerDao = database.medicalCenterDao()
     val specialtyDao = database.specialtyDao()
     val availability by database.doctorAvailabilityDao().observeAll().collectAsState(initial = emptyList())
+    val doctorCenterLinks by database.doctorCenterLinkDao().observeAll().collectAsState(initial = emptyList())
     val visits by database.doctorVisitDao().observeAll().collectAsState(initial = emptyList())
     val specialties by specialtyDao.observeAll().collectAsState(initial = emptyList())
     val centers by centerDao.observeAll().collectAsState(initial = emptyList())
@@ -152,10 +155,13 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             initial = editingDoctor,
             centers = centers,
             specialties = specialties,
+            initialCenterIds = editingDoctor?.let { doctor -> doctorCenterLinks.filter { it.doctorId == doctor.id }.map { it.centerId }.toSet() }.orEmpty(),
             onDismiss = { showForm = false },
-            onSave = { doctor ->
+            onSave = { doctor, selectedCenterIds ->
                 scope.launch {
-                    if (doctor.id == 0L) dao.insert(doctor) else dao.update(doctor)
+                    val doctorId = if (doctor.id == 0L) dao.insert(doctor) else { dao.update(doctor); doctor.id }
+                    database.doctorCenterLinkDao().deleteForDoctor(doctorId)
+                    if (selectedCenterIds.isNotEmpty()) database.doctorCenterLinkDao().insertAll(selectedCenterIds.map { DoctorCenterLinkEntity(doctorId, it) })
                 }
                 showForm = false
             }
@@ -165,7 +171,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     detailsDoctor?.let { doctor ->
         DoctorDetailsDialog(
             doctor = doctor,
-            center = centers.firstOrNull { it.id == doctor.centerId },
+            centers = centers.filter { center -> doctorCenterLinks.any { it.doctorId == doctor.id && it.centerId == center.id } || (doctorCenterLinks.none { it.doctorId == doctor.id } && center.id == doctor.centerId) },
             availability = availability.filter { it.doctorId == doctor.id },
             visits = visits.filter { it.doctorId == doctor.id },
             isArabic = isArabic,
@@ -302,7 +308,7 @@ private fun DoctorCard(
 @Composable
 private fun DoctorDetailsDialog(
     doctor: DoctorEntity,
-    center: MedicalCenterEntity?,
+    centers: List<MedicalCenterEntity>,
     availability: List<DoctorAvailabilityEntity>,
     visits: List<DoctorVisitEntity>,
     isArabic: Boolean,
@@ -333,14 +339,31 @@ private fun DoctorDetailsDialog(
                 if (doctor.phoneNumbers.isNotBlank()) item {
                     Text((if (isArabic) "الهاتف: " else "Phone: ") + doctor.phoneNumbers.replace("\n", " • "))
                 }
-                if (!center?.name.isNullOrBlank()) item {
-                    Text((if (isArabic) "المركز/العيادة: " else "Center / clinic: ") + center?.name.orEmpty(), fontWeight = FontWeight.SemiBold)
+                item {
+                    Text(if (isArabic) "المراكز ومواعيد التواجد" else "Centers and availability", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 }
-                if (!center?.address.isNullOrBlank()) item {
-                    Text((if (isArabic) "العنوان: " else "Address: ") + center?.address.orEmpty())
-                }
-                if (!center?.phone.isNullOrBlank()) item {
-                    Text((if (isArabic) "هاتف المركز: " else "Center phone: ") + center?.phone.orEmpty())
+                if (centers.isEmpty()) {
+                    item { Text(if (isArabic) "لم يتم ربط الطبيب بأي مركز." else "No centers linked to this doctor.") }
+                } else {
+                    items(centers, key = { it.id }) { center ->
+                        val centerSlots = availability.filter { it.centerId == center.id || (it.centerId == null && center.id == doctor.centerId) }
+                        val centerGroups = centerSlots.groupBy { it.slotGroupId }.values.toList()
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(center.name, fontWeight = FontWeight.SemiBold)
+                            if (center.address.isNotBlank()) Text((if (isArabic) "العنوان: " else "Address: ") + center.address)
+                            if (center.phone.isNotBlank()) Text((if (isArabic) "الهاتف: " else "Phone: ") + center.phone)
+                            if (centerGroups.isEmpty()) {
+                                Text(if (isArabic) "لم تُحدد مواعيد لهذا المركز." else "No hours set for this center.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            } else {
+                                centerGroups.forEach { group ->
+                                    val first = group.first()
+                                    val dayNames = group.map { slot -> days.firstOrNull { it.first == slot.dayOfWeek }?.second.orEmpty() }.joinToString("، ")
+                                    Text(dayNames + " • " + first.startTime + " – " + first.endTime)
+                                    if (first.notes.isNotBlank()) Text(first.notes, style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        }
+                    }
                 }
                 if (doctor.notes.isNotBlank()) item {
                     Text((if (isArabic) "ملاحظات: " else "Notes: ") + doctor.notes)
@@ -392,15 +415,16 @@ private fun DoctorFormDialog(
     initial: DoctorEntity?,
     centers: List<MedicalCenterEntity>,
     specialties: List<SpecialtyEntity>,
+    initialCenterIds: Set<Long>,
     onDismiss: () -> Unit,
-    onSave: (DoctorEntity) -> Unit
+    onSave: (DoctorEntity, Set<Long>) -> Unit
 ) {
     val context = LocalContext.current
     var name by remember(initial) { mutableStateOf(initial?.name.orEmpty()) }
     var selectedSpecialtyId by remember(initial, specialties) { mutableStateOf(initial?.specialtyId ?: specialties.firstOrNull { it.name == initial?.specialty }?.id) }
     var showSpecialtyPicker by remember { mutableStateOf(false) }
     var phones by remember(initial) { mutableStateOf(initial?.phoneNumbers.orEmpty()) }
-    var selectedCenterId by remember(initial, centers) { mutableStateOf(initial?.centerId ?: centers.firstOrNull { it.name == initial?.medicalCenter }?.id) }
+    var selectedCenterIds by remember(initial, initialCenterIds, centers) { mutableStateOf(initialCenterIds.ifEmpty { setOfNotNull(initial?.centerId ?: centers.firstOrNull { it.name == initial?.medicalCenter }?.id) }) }
     var showCenterPicker by remember { mutableStateOf(false) }
     var notes by remember(initial) { mutableStateOf(initial?.notes.orEmpty()) }
     var photoUri by remember(initial) { mutableStateOf(initial?.photoUri) }
@@ -482,7 +506,7 @@ private fun DoctorFormDialog(
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(if (isArabic) "المركز أو العيادة" else "Medical center / clinic", style = MaterialTheme.typography.labelLarge)
                         TextButton(onClick = { showCenterPicker = true }) {
-                            Text(centers.firstOrNull { it.id == selectedCenterId }?.name ?: if (isArabic) "بدون مركز — اختر من القائمة" else "No center — choose one")
+                            Text(if (selectedCenterIds.isEmpty()) { if (isArabic) "اختر المراكز" else "Choose centers" } else centers.filter { it.id in selectedCenterIds }.joinToString("، ") { it.name })
                         }
                     }
                 }
@@ -507,12 +531,13 @@ private fun DoctorFormDialog(
                             specialty = specialties.firstOrNull { it.id == selectedSpecialtyId }?.name.orEmpty(),
                             specialtyId = selectedSpecialtyId,
                             phoneNumbers = phones.trim(),
-                            medicalCenter = centers.firstOrNull { it.id == selectedCenterId }?.name.orEmpty(),
-                            centerId = selectedCenterId,
+                            medicalCenter = centers.firstOrNull { it.id == selectedCenterIds.firstOrNull() }?.name.orEmpty(),
+                            centerId = selectedCenterIds.firstOrNull(),
                             notes = notes.trim(),
                             photoUri = photoUri,
                             createdAt = initial?.createdAt ?: System.currentTimeMillis()
-                        )
+                        ),
+                        selectedCenterIds
                     )
                 }
             }) { Text(if (isArabic) "حفظ" else "Save") }
@@ -551,16 +576,17 @@ private fun DoctorFormDialog(
     if (showCenterPicker) {
         AlertDialog(
             onDismissRequest = { showCenterPicker = false },
-            title = { Text(if (isArabic) "اختر المركز" else "Choose a center") },
+            title = { Text(if (isArabic) "اختر مراكز عمل الطبيب" else "Select doctor's centers") },
             text = {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     item {
-                        TextButton(onClick = { selectedCenterId = null; showCenterPicker = false }) {
-                            Text(if (isArabic) "بدون مركز" else "No center")
+                        TextButton(onClick = { selectedCenterIds = emptySet() }) {
+                            Text(if (isArabic) "مسح الاختيار" else "Clear selection")
                         }
                     }
                     items(centers, key = { it.id }) { center ->
-                        TextButton(onClick = { selectedCenterId = center.id; showCenterPicker = false }) {
+                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            Checkbox(checked = center.id in selectedCenterIds, onCheckedChange = { checked -> selectedCenterIds = if (checked) selectedCenterIds + center.id else selectedCenterIds - center.id })
                             Text(center.name)
                         }
                     }

@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.PeopleAlt
+import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -57,6 +58,7 @@ private val tabs = listOf(
     Tab("Home", "الرئيسية", Icons.Filled.Home),
     Tab("Doctors", "الأطباء", Icons.Filled.PeopleAlt),
     Tab("Centers", "المراكز", Icons.Filled.LocalHospital),
+    Tab("Specialties", "التخصصات", Icons.Filled.MedicalServices),
     Tab("Schedule", "الجدول", Icons.Filled.CalendarMonth)
 )
 
@@ -113,6 +115,7 @@ fun MedicalRepApp() {
                 0 -> DashboardScreen(isArabic, innerPadding)
                 1 -> DoctorsScreen(isArabic = isArabic, padding = innerPadding)
                 2 -> CentersScreen(isArabic = isArabic, padding = innerPadding)
+                3 -> SpecialtiesScreen(isArabic = isArabic, padding = innerPadding)
                 else -> PlaceholderScreen(
                     title = if (isArabic) "جدول الزيارات" else "Visit Schedule",
                     description = if (isArabic) "حدد أكثر من يوم وفترة متاحة لكل طبيب." else "Set multiple available days and time slots for every doctor.",

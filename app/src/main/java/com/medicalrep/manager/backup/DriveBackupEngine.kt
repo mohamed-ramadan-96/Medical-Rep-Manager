@@ -204,7 +204,7 @@ object DriveBackupEngine {
             ZipInputStream(FileInputStream(archive)).use { zip ->
                 while (true) {
                     val entry = zip.nextEntry ?: break
-                    val normalized = entry.name.replace('\\\\', '/')
+                    val normalized = entry.name.replace('\\', '/')
                     check(normalized.isNotBlank() && !normalized.startsWith("/") &&
                         normalized.split('/').none { it == ".." || it.isBlank() }) { "Invalid backup archive path" }
                     check(seenEntries.add(normalized)) { "Backup archive contains duplicate entries" }

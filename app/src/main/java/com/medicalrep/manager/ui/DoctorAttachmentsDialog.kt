@@ -81,7 +81,7 @@ fun DoctorAttachmentsDialog(
                         val fileName = UUID.randomUUID().toString() + (safeExtension?.let { ".$it" } ?: "")
                         val destination = File(directory, fileName)
                         val input = resolver.openInputStream(uri) ?: error("Unable to read selected file")
-                        input.use { source -> destination.outputStream().use(source::copyTo) }
+                        input.use { source -> destination.outputStream().use { output -> source.copyTo(output) } }
                         dao.insert(
                             DoctorAttachmentEntity(
                                 doctorId = doctor.id,

@@ -17,7 +17,7 @@
 - [x] Structured medical specialties with create, edit, delete, and doctor assignment
 - [x] Migration of existing free-text specialties into the structured catalog
 - [x] Doctor profile photos with Android Photo Picker and persistent local URI access
-- [ ] Document attachments (PDF and other files)
+- [x] Doctor document attachments (PDF and other files) copied into private app storage, listed, opened, and deleted
 - [ ] Database migrations and data validation tests
 
 ## Phase 3 — Daily workflow

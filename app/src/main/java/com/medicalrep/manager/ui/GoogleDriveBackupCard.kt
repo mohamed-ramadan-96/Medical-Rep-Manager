@@ -60,10 +60,12 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
     var token by remember { mutableStateOf<String?>(null) }
     var pendingAction by remember { mutableStateOf<((String) -> Unit)?>(null) }
     var showBackups by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     var backups by remember { mutableStateOf<List<DriveBackupItem>>(emptyList()) }
     val scope = rememberCoroutineScope()
 
     fun notify(message: String) = Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+    fun showError(message: String) { errorMessage = message }
     fun onAuthorized(result: AuthorizationResult) {
         val accessToken = result.accessToken
         if (!accessToken.isNullOrBlank()) token = accessToken
@@ -77,7 +79,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
                 onAuthorized(authorization)
                 authorization.accessToken?.let { access -> pendingAction?.also { action -> pendingAction = null; action(access) } }
             } catch (error: Exception) {
-                notify((if (isArabic) "تعذر ربط Google Drive: " else "Google Drive authorization failed: ") + (error.localizedMessage ?: ""))
+                showError((if (isArabic) "تعذر ربط Google Drive: " else "Google Drive authorization failed: ") + (error.localizedMessage ?: error.javaClass.simpleName))
             }
         }
     }
@@ -94,18 +96,18 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
                         pendingAction = after
                         authorizationLauncher.launch(IntentSenderRequest.Builder(pending.intentSender).build())
                     } else {
-                        notify(if (isArabic) "تعذر بدء طلب إذن Google Drive." else "Could not start Google Drive authorization.")
+                        showError(if (isArabic) "تعذر بدء طلب إذن Google Drive." else "Could not start Google Drive authorization.")
                     }
                 } else {
                     val access = result.accessToken
                     if (!access.isNullOrBlank()) {
                         token = access
                         after(access)
-                    } else notify(if (isArabic) "لم يتم الحصول على تصريح Google Drive." else "Google Drive did not return an access token.")
+                    } else showError(if (isArabic) "لم يتم الحصول على تصريح Google Drive." else "Google Drive did not return an access token.")
                 }
             }
             .addOnFailureListener { error ->
-                notify((if (isArabic) "فشل الاتصال: " else "Connection failed: ") + (error.localizedMessage ?: ""))
+                showError((if (isArabic) "فشل الاتصال: " else "Connection failed: ") + (error.localizedMessage ?: error.javaClass.simpleName))
             }
     }
 
@@ -120,7 +122,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
                 prefs.edit().putLong(DriveBackupScheduler.KEY_LAST_BACKUP, System.currentTimeMillis()).remove(DriveBackupScheduler.KEY_LAST_ERROR).apply()
                 notify(if (isArabic) "تم حفظ النسخة الاحتياطية على Google Drive." else "Backup saved to Google Drive.")
             } catch (error: Exception) {
-                notify((if (isArabic) "فشل النسخ الاحتياطي: " else "Backup failed: ") + (error.localizedMessage ?: ""))
+                showError((if (isArabic) "فشل النسخ الاحتياطي: " else "Backup failed: ") + (error.localizedMessage ?: error.javaClass.simpleName))
             } finally { busy = false }
         }
     }
@@ -132,7 +134,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
                 backups = withContext(Dispatchers.IO) { DriveBackupEngine.list(access) }
                 showBackups = true
             } catch (error: Exception) {
-                notify((if (isArabic) "تعذر تحميل النسخ: " else "Could not load backups: ") + (error.localizedMessage ?: ""))
+                showError((if (isArabic) "تعذر تحميل النسخ: " else "Could not load backups: ") + (error.localizedMessage ?: error.javaClass.simpleName))
             } finally { busy = false }
         }
     }
@@ -202,6 +204,25 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
         }
     }
 
+    errorMessage?.let { message ->
+        AlertDialog(
+            onDismissRequest = { errorMessage = null },
+            title = { Text(if (isArabic) "تفاصيل الخطأ" else "Error details") },
+            text = { Text(message) },
+            confirmButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = {
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                        clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Medical Rep Manager error", message))
+                        errorMessage = null
+                        notify(if (isArabic) "تم نسخ تفاصيل الخطأ." else "Error details copied.")
+                    }) { Text(if (isArabic) "نسخ الخطأ" else "Copy error") }
+                    TextButton(onClick = { errorMessage = null }) { Text(if (isArabic) "إغلاق" else "Close") }
+                }
+            }
+        )
+    }
+
     if (showBackups) {
         AlertDialog(
             onDismissRequest = { showBackups = false },
@@ -220,7 +241,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
                                         showBackups = false
                                         notify(if (isArabic) "تمت استعادة النسخة. أعد فتح التطبيق للتأكد من تحديث كل البيانات." else "Backup restored. Reopen the app to refresh all data.")
                                     } catch (error: Exception) {
-                                        notify((if (isArabic) "فشلت الاستعادة: " else "Restore failed: ") + (error.localizedMessage ?: ""))
+                                        showError((if (isArabic) "فشلت الاستعادة: " else "Restore failed: ") + (error.localizedMessage ?: error.javaClass.simpleName))
                                     } finally { busy = false }
                                 }
                             },

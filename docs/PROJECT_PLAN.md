@@ -14,6 +14,8 @@
 - [x] Doctor search by name, specialty, phone, and center
 - [x] Structured medical centers with address, phone, and notes
 - [x] Doctor-to-center relationship with legacy center-name migration
+- [x] Structured medical specialties with create, edit, delete, and doctor assignment
+- [x] Migration of existing free-text specialties into the structured catalog
 - [ ] Doctor photos and document attachments
 - [ ] Database migrations and data validation tests
 

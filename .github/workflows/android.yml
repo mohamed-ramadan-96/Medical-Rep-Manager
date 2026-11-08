@@ -41,6 +41,19 @@ jobs:
             echo "Stable signing secret is not configured yet; using the default debug key."
           fi
 
+      - name: Verify stable signing key
+        env:
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          test -s "$ANDROID_KEYSTORE_PATH" || { echo "::error::Signing keystore is missing."; exit 1; }
+          test -n "$ANDROID_STORE_PASSWORD" || { echo "::error::ANDROID_KEYSTORE_PASSWORD is missing."; exit 1; }
+          test -n "$ANDROID_KEY_ALIAS" || { echo "::error::ANDROID_KEY_ALIAS is missing."; exit 1; }
+          test -n "$ANDROID_KEY_PASSWORD" || { echo "::error::ANDROID_KEY_PASSWORD is missing."; exit 1; }
+          keytool -list -v -keystore "$ANDROID_KEYSTORE_PATH" -alias "$ANDROID_KEY_ALIAS" -storepass "$ANDROID_STORE_PASSWORD" | grep -i "SHA1:"
+          echo "Stable signing key verification passed."
+
       - name: Build debug APK
         env:
           ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}

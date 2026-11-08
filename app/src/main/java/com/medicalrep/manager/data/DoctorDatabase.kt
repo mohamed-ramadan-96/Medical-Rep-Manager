@@ -5,6 +5,7 @@ import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Delete
 import androidx.room.Entity
+import androidx.room.ForeignKey
 import androidx.room.Insert
 import androidx.room.Index
 import androidx.room.OnConflictStrategy
@@ -49,6 +50,38 @@ data class DoctorEntity(
     val centerId: Long? = null,
     val specialtyId: Long? = null
 )
+
+
+@Entity(
+    tableName = "doctor_attachments",
+    foreignKeys = [ForeignKey(
+        entity = DoctorEntity::class,
+        parentColumns = ["id"],
+        childColumns = ["doctorId"],
+        onDelete = ForeignKey.CASCADE
+    )],
+    indices = [Index("doctorId")]
+)
+data class DoctorAttachmentEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val doctorId: Long,
+    val displayName: String,
+    val mimeType: String,
+    val localPath: String,
+    val createdAt: Long = System.currentTimeMillis()
+)
+
+@Dao
+interface DoctorAttachmentDao {
+    @Query("SELECT * FROM doctor_attachments WHERE doctorId = :doctorId ORDER BY createdAt DESC")
+    fun observeForDoctor(doctorId: Long): Flow<List<DoctorAttachmentEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(attachment: DoctorAttachmentEntity): Long
+
+    @Delete
+    suspend fun delete(attachment: DoctorAttachmentEntity)
+}
 
 @Dao
 interface DoctorDao {
@@ -122,14 +155,15 @@ interface SpecialtyDao {
 }
 
 @Database(
-    entities = [DoctorEntity::class, MedicalCenterEntity::class, SpecialtyEntity::class],
-    version = 3,
+    entities = [DoctorEntity::class, MedicalCenterEntity::class, SpecialtyEntity::class, DoctorAttachmentEntity::class],
+    version = 4,
     exportSchema = false
 )
 abstract class MedicalRepDatabase : RoomDatabase() {
     abstract fun doctorDao(): DoctorDao
     abstract fun medicalCenterDao(): MedicalCenterDao
     abstract fun specialtyDao(): SpecialtyDao
+    abstract fun doctorAttachmentDao(): DoctorAttachmentDao
 
     companion object {
         @Volatile private var INSTANCE: MedicalRepDatabase? = null
@@ -197,13 +231,32 @@ abstract class MedicalRepDatabase : RoomDatabase() {
             }
         }
 
+
+
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS doctor_attachments (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        doctorId INTEGER NOT NULL,
+                        displayName TEXT NOT NULL,
+                        mimeType TEXT NOT NULL,
+                        localPath TEXT NOT NULL,
+                        createdAt INTEGER NOT NULL,
+                        FOREIGN KEY(doctorId) REFERENCES doctors(id) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_doctor_attachments_doctorId ON doctor_attachments(doctorId)")
+            }
+        }
+
         fun getInstance(context: Context): MedicalRepDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
                     MedicalRepDatabase::class.java,
                     "medical_rep_manager.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build().also { INSTANCE = it }
             }
     }

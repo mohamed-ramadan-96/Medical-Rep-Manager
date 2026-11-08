@@ -44,6 +44,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.medicalrep.manager.data.DoctorAvailabilityEntity
 import com.medicalrep.manager.data.DoctorEntity
+import com.medicalrep.manager.data.MedicalCenterEntity
+import com.medicalrep.manager.data.DoctorCenterLinkEntity
 import com.medicalrep.manager.data.MedicalRepDatabase
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -74,6 +76,8 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
     val doctorDao = database.doctorDao()
     val slots by availabilityDao.observeAll().collectAsState(initial = emptyList())
     val doctors by doctorDao.observeAll().collectAsState(initial = emptyList())
+    val centers by database.medicalCenterDao().observeAll().collectAsState(initial = emptyList())
+    val doctorCenterLinks by database.doctorCenterLinkDao().observeAll().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     var editingGroup by remember { mutableStateOf<List<DoctorAvailabilityEntity>>(emptyList()) }
     var showForm by remember { mutableStateOf(false) }
@@ -115,6 +119,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                     items(groupedSlots, key = { group -> group.first().id }) { group ->
                         val slot = group.first()
                         val doctor = doctors.firstOrNull { it.id == slot.doctorId }
+                        val centerName = centers.firstOrNull { it.id == slot.centerId }?.name
                         val dayNames = group.mapNotNull { item -> weekDays.firstOrNull { it.first == item.dayOfWeek }?.second?.let { if (isArabic) it.second else it.first } }.joinToString("، ")
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -129,6 +134,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                                 Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text(doctor?.name ?: if (isArabic) "طبيب غير موجود" else "Unknown doctor", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                    if (!centerName.isNullOrBlank()) Text(centerName, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium)
                                     Text(dayNames, color = MaterialTheme.colorScheme.primary)
                                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                                         Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(20.dp))
@@ -151,6 +157,8 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
             isArabic = isArabic,
             initialGroup = editingGroup,
             doctors = doctors,
+            centers = centers,
+            doctorCenterLinks = doctorCenterLinks,
             onDismiss = { showForm = false },
             onSave = { newSlots ->
                 scope.launch {
@@ -185,6 +193,8 @@ private fun AvailabilityFormDialog(
     isArabic: Boolean,
     initialGroup: List<DoctorAvailabilityEntity>,
     doctors: List<DoctorEntity>,
+    centers: List<MedicalCenterEntity>,
+    doctorCenterLinks: List<DoctorCenterLinkEntity>,
     onDismiss: () -> Unit,
     onSave: (List<DoctorAvailabilityEntity>) -> Unit
 ) {
@@ -203,6 +213,10 @@ private fun AvailabilityFormDialog(
         )
     }
     var doctorMenu by remember { mutableStateOf(false) }
+    var centerMenu by remember { mutableStateOf(false) }
+    var selectedCenterId by remember(initialGroup, doctors, doctorCenterLinks) {
+        mutableStateOf(initial?.centerId ?: doctorCenterLinks.firstOrNull { it.doctorId == selectedDoctorId }?.centerId ?: doctors.firstOrNull { it.id == selectedDoctorId }?.centerId)
+    }
     var error by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
@@ -217,6 +231,16 @@ private fun AvailabilityFormDialog(
                 DropdownMenu(expanded = doctorMenu, onDismissRequest = { doctorMenu = false }) {
                     doctors.forEach { doctor ->
                         DropdownMenuItem(text = { Text(doctor.name) }, onClick = { selectedDoctorId = doctor.id; doctorMenu = false })
+                    }
+                }
+                val linkedCenters = centers.filter { center -> doctorCenterLinks.any { it.doctorId == selectedDoctorId && it.centerId == center.id } || (doctorCenterLinks.none { it.doctorId == selectedDoctorId } && doctors.firstOrNull { it.id == selectedDoctorId }?.centerId == center.id) }
+                Text(if (isArabic) "المركز" else "Center", style = MaterialTheme.typography.labelLarge)
+                TextButton(onClick = { centerMenu = true }, enabled = linkedCenters.isNotEmpty()) {
+                    Text(linkedCenters.firstOrNull { it.id == selectedCenterId }?.name ?: if (isArabic) "اختر المركز" else "Choose center")
+                }
+                DropdownMenu(expanded = centerMenu, onDismissRequest = { centerMenu = false }) {
+                    linkedCenters.forEach { center ->
+                        DropdownMenuItem(text = { Text(center.name) }, onClick = { selectedCenterId = center.id; centerMenu = false })
                     }
                 }
                 Text(
@@ -289,6 +313,7 @@ private fun AvailabilityFormDialog(
                 val validTime = Regex("(?:[01]\\d|2[0-3]):[0-5]\\d")
                 when {
                     selectedDoctorId == null -> error = if (isArabic) "اختر الطبيب." else "Choose a doctor."
+                    linkedCenters.isNotEmpty() && selectedCenterId == null -> error = if (isArabic) "اختر المركز." else "Choose a center."
                     drafts.isEmpty() -> error = if (isArabic) "أضف فترة واحدة على الأقل." else "Add at least one time slot."
                     drafts.any { it.days.isEmpty() } -> error = if (isArabic) "اختار يومًا واحدًا على الأقل لكل فترة." else "Select at least one day for every time slot."
                     drafts.any { !validTime.matches(it.startTime) || !validTime.matches(it.endTime) } -> error = if (isArabic) "اكتب كل الأوقات بصيغة HH:MM." else "Enter every time in HH:MM format."
@@ -306,7 +331,8 @@ private fun AvailabilityFormDialog(
                                     endTime = draft.endTime,
                                     notes = draft.notes.trim(),
                                     createdAt = old?.createdAt ?: System.currentTimeMillis(),
-                                    slotGroupId = draft.groupId
+                                    slotGroupId = draft.groupId,
+                                    centerId = selectedCenterId
                                 )
                             }
                         }

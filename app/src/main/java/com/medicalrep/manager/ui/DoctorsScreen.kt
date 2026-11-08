@@ -90,7 +90,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 editingDoctor = null
                 showForm = true
             }) {
-                Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة طبيب" else "Add doctor")
+                Icon(Icons.Default.Add, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "إضافة طبيب" else "Add doctor")
             }
         }
     ) { inner ->
@@ -228,9 +228,9 @@ private fun DoctorCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 if (doctor.photoUri.isNullOrBlank()) {
-                    Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(52.dp))
+                    Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(52.dp, modifier = Modifier.size(20.dp)))
                 } else {
                     AsyncImage(
                         model = doctor.photoUri,
@@ -245,14 +245,14 @@ private fun DoctorCard(
                         Text(doctor.specialty, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium)
                     }
                 }
-                IconButton(onClick = onAttachments) {
-                    Icon(Icons.Default.AttachFile, contentDescription = if (isArabic) "المرفقات" else "Attachments")
+                IconButton(modifier = Modifier.size(40.dp), onClick = onAttachments) {
+                    Icon(Icons.Default.AttachFile, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "المرفقات" else "Attachments")
                 }
-                IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit")
+                IconButton(modifier = Modifier.size(40.dp), onClick = onEdit) {
+                    Icon(Icons.Default.Edit, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "تعديل" else "Edit")
                 }
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete")
+                IconButton(modifier = Modifier.size(40.dp), onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = if (isArabic, modifier = Modifier.size(20.dp)) "حذف" else "Delete")
                 }
             }
             if (doctor.phoneNumbers.isNotBlank()) {
@@ -407,7 +407,7 @@ private fun DoctorFormDialog(
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         if (photoUri.isNullOrBlank()) {
-                            Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(72.dp), tint = MaterialTheme.colorScheme.primary)
+                            Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(72.dp, modifier = Modifier.size(20.dp)), tint = MaterialTheme.colorScheme.primary)
                         } else {
                             AsyncImage(
                                 model = photoUri,

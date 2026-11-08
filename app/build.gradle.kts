@@ -20,7 +20,33 @@ android {
         vectorDrawables { useSupportLibrary = true }
     }
 
+    val stableKeystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+    val stableStorePassword = System.getenv("ANDROID_STORE_PASSWORD")
+    val stableKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
+    val stableKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+
+    signingConfigs {
+        if (
+            !stableKeystorePath.isNullOrBlank() &&
+            !stableStorePassword.isNullOrBlank() &&
+            !stableKeyAlias.isNullOrBlank() &&
+            !stableKeyPassword.isNullOrBlank()
+        ) {
+            create("stable") {
+                storeFile = file(stableKeystorePath)
+                storePassword = stableStorePassword
+                keyAlias = stableKeyAlias
+                keyPassword = stableKeyPassword
+            }
+        }
+    }
+
     buildTypes {
+        debug {
+            if (signingConfigs.findByName("stable") != null) {
+                signingConfig = signingConfigs.getByName("stable")
+            }
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(

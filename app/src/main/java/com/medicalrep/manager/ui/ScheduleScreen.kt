@@ -70,11 +70,10 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
     Scaffold(
         modifier = Modifier.padding(padding),
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { editing = null; showForm = true },
-                enabled = doctors.isNotEmpty()
-            ) {
-                Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة موعد متاح" else "Add availability")
+            if (doctors.isNotEmpty()) {
+                FloatingActionButton(onClick = { editing = null; showForm = true }) {
+                    Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة موعد متاح" else "Add availability")
+                }
             }
         }
     ) { inner ->

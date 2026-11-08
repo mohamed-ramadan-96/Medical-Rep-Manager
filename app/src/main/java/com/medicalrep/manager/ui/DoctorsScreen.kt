@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
@@ -68,6 +69,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     var editingDoctor by remember { mutableStateOf<DoctorEntity?>(null) }
     var showForm by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<DoctorEntity?>(null) }
+    var attachmentsDoctor by remember { mutableStateOf<DoctorEntity?>(null) }
 
     Scaffold(
         modifier = Modifier.padding(padding),
@@ -122,7 +124,8 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                 editingDoctor = doctor
                                 showForm = true
                             },
-                            onDelete = { pendingDelete = doctor }
+                            onDelete = { pendingDelete = doctor },
+                            onAttachments = { attachmentsDoctor = doctor }
                         )
                     }
                 }
@@ -143,6 +146,15 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 }
                 showForm = false
             }
+        )
+    }
+
+    attachmentsDoctor?.let { doctor ->
+        DoctorAttachmentsDialog(
+            doctor = doctor,
+            isArabic = isArabic,
+            database = database,
+            onDismiss = { attachmentsDoctor = null }
         )
     }
 
@@ -176,7 +188,8 @@ private fun DoctorCard(
     centerName: String,
     isArabic: Boolean,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onAttachments: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -200,6 +213,9 @@ private fun DoctorCard(
                     if (doctor.specialty.isNotBlank()) {
                         Text(doctor.specialty, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium)
                     }
+                }
+                IconButton(onClick = onAttachments) {
+                    Icon(Icons.Default.AttachFile, contentDescription = if (isArabic) "المرفقات" else "Attachments")
                 }
                 IconButton(onClick = onEdit) {
                     Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit")

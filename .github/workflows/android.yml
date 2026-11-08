@@ -51,7 +51,17 @@ jobs:
           test -n "$ANDROID_STORE_PASSWORD" || { echo "::error::ANDROID_KEYSTORE_PASSWORD is missing."; exit 1; }
           test -n "$ANDROID_KEY_ALIAS" || { echo "::error::ANDROID_KEY_ALIAS is missing."; exit 1; }
           test -n "$ANDROID_KEY_PASSWORD" || { echo "::error::ANDROID_KEY_PASSWORD is missing."; exit 1; }
-          keytool -list -v -keystore "$ANDROID_KEYSTORE_PATH" -alias "$ANDROID_KEY_ALIAS" -storepass "$ANDROID_STORE_PASSWORD" | grep -i "SHA1:"
+          KEYTOOL_OUTPUT="$RUNNER_TEMP/keystore-info.txt"
+          if ! keytool -list -v -keystore "$ANDROID_KEYSTORE_PATH" -alias "$ANDROID_KEY_ALIAS" -storepass "$ANDROID_STORE_PASSWORD" > "$KEYTOOL_OUTPUT" 2>&1; then
+            echo "::error::Could not read the signing keystore. Check ANDROID_KEYSTORE_PASSWORD and ANDROID_KEY_ALIAS."
+            cat "$KEYTOOL_OUTPUT"
+            exit 1
+          fi
+          if ! grep -Ei "SHA1:|SHA-1:" "$KEYTOOL_OUTPUT"; then
+            echo "::error::Keystore opened, but SHA-1 fingerprint was not found. Keytool output:"
+            cat "$KEYTOOL_OUTPUT"
+            exit 1
+          fi
           echo "Stable signing key verification passed."
 
       - name: Build debug APK

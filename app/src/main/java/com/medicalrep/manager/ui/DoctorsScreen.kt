@@ -314,6 +314,7 @@ private fun DoctorDetailsDialog(
     isArabic: Boolean,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
     val days = listOf(
         1 to (if (isArabic) "الاثنين" else "Monday"),
         2 to (if (isArabic) "الثلاثاء" else "Tuesday"),
@@ -351,6 +352,18 @@ private fun DoctorDetailsDialog(
                             Text(center.name, fontWeight = FontWeight.SemiBold)
                             if (center.address.isNotBlank()) Text((if (isArabic) "العنوان: " else "Address: ") + center.address)
                             if (center.phone.isNotBlank()) Text((if (isArabic) "الهاتف: " else "Phone: ") + center.phone)
+                            if (center.latitude != null && center.longitude != null) {
+                                CenterMapPreview(
+                                    latitude = center.latitude,
+                                    longitude = center.longitude,
+                                    modifier = Modifier.fillMaxWidth().height(120.dp)
+                                )
+                                TextButton(onClick = {
+                                    openCenterDirections(context, center.latitude, center.longitude)
+                                }) {
+                                    Text(if (isArabic) "الاتجاهات إلى هذا المركز" else "Directions to this center")
+                                }
+                            }
                             if (centerGroups.isEmpty()) {
                                 Text(if (isArabic) "لم تُحدد مواعيد لهذا المركز." else "No hours set for this center.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                             } else {

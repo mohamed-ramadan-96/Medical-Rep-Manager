@@ -50,6 +50,10 @@ import java.util.Locale
 @Composable
 fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
     val context = LocalContext.current
+    val database = remember { MedicalRepDatabase.getInstance(context) }
+    val doctors by database.doctorDao().observeAll().collectAsState(initial = emptyList())
+    val centers by database.medicalCenterDao().observeAll().collectAsState(initial = emptyList())
+    val visits by database.doctorVisitDao().observeAll().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -63,10 +67,6 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
             }
         }
     }
-    val database = remember { MedicalRepDatabase.getInstance(context) }
-    val doctors by database.doctorDao().observeAll().collectAsState(initial = emptyList())
-    val centers by database.medicalCenterDao().observeAll().collectAsState(initial = emptyList())
-    val visits by database.doctorVisitDao().observeAll().collectAsState(initial = emptyList())
     val todayStart = remember { Calendar.getInstance().apply {
         set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
         set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)

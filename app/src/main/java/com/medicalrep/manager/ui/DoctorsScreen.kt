@@ -275,6 +275,93 @@ private fun DoctorCard(
 }
 
 @Composable
+private fun DoctorDetailsDialog(
+    doctor: DoctorEntity,
+    center: MedicalCenterEntity?,
+    availability: List<DoctorAvailabilityEntity>,
+    visits: List<DoctorVisitEntity>,
+    isArabic: Boolean,
+    onDismiss: () -> Unit
+) {
+    val days = listOf(
+        1 to (if (isArabic) "الاثنين" else "Monday"),
+        2 to (if (isArabic) "الثلاثاء" else "Tuesday"),
+        3 to (if (isArabic) "الأربعاء" else "Wednesday"),
+        4 to (if (isArabic) "الخميس" else "Thursday"),
+        5 to (if (isArabic) "الجمعة" else "Friday"),
+        6 to (if (isArabic) "السبت" else "Saturday"),
+        7 to (if (isArabic) "الأحد" else "Sunday")
+    )
+    val groupedAvailability = availability.groupBy { "${it.startTime}|${it.endTime}|${it.notes}" }.values.toList()
+    val upcomingFollowUps = visits.filter { (it.nextFollowUpAt ?: 0L) >= System.currentTimeMillis() }
+        .sortedBy { it.nextFollowUpAt }
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(doctor.name, fontWeight = FontWeight.Bold) },
+        text = {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                if (doctor.specialty.isNotBlank()) item {
+                    Text((if (isArabic) "التخصص: " else "Specialty: ") + doctor.specialty)
+                }
+                if (doctor.phoneNumbers.isNotBlank()) item {
+                    Text((if (isArabic) "الهاتف: " else "Phone: ") + doctor.phoneNumbers.replace("\n", " • "))
+                }
+                if (!center?.name.isNullOrBlank()) item {
+                    Text((if (isArabic) "المركز/العيادة: " else "Center / clinic: ") + center?.name.orEmpty(), fontWeight = FontWeight.SemiBold)
+                }
+                if (!center?.address.isNullOrBlank()) item {
+                    Text((if (isArabic) "العنوان: " else "Address: ") + center?.address.orEmpty())
+                }
+                if (!center?.phone.isNullOrBlank()) item {
+                    Text((if (isArabic) "هاتف المركز: " else "Center phone: ") + center?.phone.orEmpty())
+                }
+                if (doctor.notes.isNotBlank()) item {
+                    Text((if (isArabic) "ملاحظات: " else "Notes: ") + doctor.notes)
+                }
+                item {
+                    Text(if (isArabic) "مواعيد تواجد الطبيب" else "Doctor availability", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                }
+                if (groupedAvailability.isEmpty()) {
+                    item { Text(if (isArabic) "لم تُحدد مواعيد تواجد بعد." else "No availability added yet.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                } else {
+                    items(groupedAvailability) { group ->
+                        val first = group.first()
+                        val dayNames = group.map { slot -> days.firstOrNull { it.first == slot.dayOfWeek }?.second.orEmpty() }.joinToString("، ")
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(dayNames, fontWeight = FontWeight.SemiBold)
+                            Text("${first.startTime} – ${first.endTime}")
+                            if (first.notes.isNotBlank()) Text(first.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                item {
+                    Text(if (isArabic) "المواعيد المحددة للمتابعة" else "Scheduled follow-ups", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                }
+                if (upcomingFollowUps.isEmpty()) {
+                    item { Text(if (isArabic) "لا توجد متابعة قادمة مسجلة." else "No upcoming follow-up recorded.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                } else {
+                    items(upcomingFollowUps) { visit ->
+                        val followUp = visit.nextFollowUpAt
+                        if (followUp != null) {
+                            Text(
+                                (if (isArabic) "موعد المتابعة: " else "Follow-up: ") +
+                                    dateFormat.format(Date(followUp)) +
+                                    (if (visit.notes.isNotBlank()) " • ${visit.notes}" else "")
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(if (isArabic) "إغلاق" else "Close") }
+        }
+    )
+}
+
+@Composable
 private fun DoctorFormDialog(
     isArabic: Boolean,
     initial: DoctorEntity?,

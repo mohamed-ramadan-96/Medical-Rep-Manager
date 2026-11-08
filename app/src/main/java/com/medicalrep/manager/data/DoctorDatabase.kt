@@ -519,7 +519,7 @@ abstract class MedicalRepDatabase : RoomDatabase() {
             }
         }
 
-        fun getInstance(context: Context): MedicalRepDatabase =
+        fun closeInstance() {\n            synchronized(this) {\n                INSTANCE?.close()\n                INSTANCE = null\n            }\n        }\n\n        fun getInstance(context: Context): MedicalRepDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,

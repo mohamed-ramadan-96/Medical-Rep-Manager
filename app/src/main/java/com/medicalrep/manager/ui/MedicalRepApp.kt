@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.Language
@@ -59,7 +60,8 @@ private val tabs = listOf(
     Tab("Doctors", "الأطباء", Icons.Filled.PeopleAlt),
     Tab("Centers", "المراكز", Icons.Filled.LocalHospital),
     Tab("Specialties", "التخصصات", Icons.Filled.MedicalServices),
-    Tab("Schedule", "الجدول", Icons.Filled.CalendarMonth)
+    Tab("Schedule", "الجدول", Icons.Filled.CalendarMonth),
+    Tab("Visits", "الزيارات", Icons.Filled.History)
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -116,7 +118,8 @@ fun MedicalRepApp() {
                 1 -> DoctorsScreen(isArabic = isArabic, padding = innerPadding)
                 2 -> CentersScreen(isArabic = isArabic, padding = innerPadding)
                 3 -> SpecialtiesScreen(isArabic = isArabic, padding = innerPadding)
-                else -> ScheduleScreen(isArabic = isArabic, padding = innerPadding)
+                4 -> ScheduleScreen(isArabic = isArabic, padding = innerPadding)
+                else -> VisitsScreen(isArabic = isArabic, padding = innerPadding)
             }
         }
     }

@@ -6,6 +6,7 @@ import androidx.room.Database
 import androidx.room.Delete
 import androidx.room.Entity
 import androidx.room.Insert
+import androidx.room.Index
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
@@ -34,7 +35,7 @@ data class SpecialtyEntity(
     val createdAt: Long = System.currentTimeMillis()
 )
 
-@Entity(tableName = "doctors")
+@Entity(tableName = "doctors", indices = [Index("centerId"), Index("specialtyId")])
 data class DoctorEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,

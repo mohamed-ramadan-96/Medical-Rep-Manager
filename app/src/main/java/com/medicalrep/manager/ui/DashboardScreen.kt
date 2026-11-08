@@ -133,6 +133,9 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
             }
         }
         item {
+            GoogleDriveBackupCard(isArabic = isArabic)
+        }
+        item {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 MetricCard(Modifier.weight(1f), Icons.Default.PeopleAlt, doctors.size.toString(),
                     if (isArabic) "الأطباء" else "Doctors")

@@ -109,6 +109,18 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                     if (center.address.isNotBlank()) Text(center.address, style = MaterialTheme.typography.bodyMedium)
                                     if (center.phone.isNotBlank()) Text(center.phone, style = MaterialTheme.typography.bodyMedium)
                                     if (center.notes.isNotBlank()) Text(center.notes, style = MaterialTheme.typography.bodySmall)
+                                    if (center.latitude != null && center.longitude != null) {
+                                        CenterMapPreview(
+                                            latitude = center.latitude,
+                                            longitude = center.longitude,
+                                            modifier = Modifier.fillMaxWidth().height(112.dp)
+                                        )
+                                        TextButton(onClick = {
+                                            openCenterDirections(context, center.latitude, center.longitude)
+                                        }) {
+                                            Text(if (isArabic) "الاتجاهات إلى المركز" else "Directions to center")
+                                        }
+                                    }
                                 }
                                 IconButton(modifier = Modifier.size(40.dp), onClick = { attachmentsCenter = center }) {
                                     Icon(Icons.Default.AttachFile, contentDescription = if (isArabic) "المرفقات" else "Attachments", modifier = Modifier.size(20.dp))
@@ -185,6 +197,9 @@ private fun CenterFormDialog(
     var address by remember(initial) { mutableStateOf(initial?.address.orEmpty()) }
     var phone by remember(initial) { mutableStateOf(initial?.phone.orEmpty()) }
     var notes by remember(initial) { mutableStateOf(initial?.notes.orEmpty()) }
+    var latitude by remember(initial) { mutableStateOf(initial?.latitude) }
+    var longitude by remember(initial) { mutableStateOf(initial?.longitude) }
+    var showMapPicker by remember { mutableStateOf(false) }
     var nameError by remember { mutableStateOf(false) }
 
     AlertDialog(
@@ -221,6 +236,40 @@ private fun CenterFormDialog(
                         label = { Text(if (isArabic) "ملاحظات" else "Notes") }
                     )
                 }
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(if (isArabic) "موقع المركز على الخريطة" else "Center map location", style = MaterialTheme.typography.labelLarge)
+                        if (latitude != null && longitude != null) {
+                            CenterMapPreview(
+                                latitude = latitude,
+                                longitude = longitude,
+                                modifier = Modifier.fillMaxWidth().height(150.dp)
+                            )
+                            Text(
+                                String.format(java.util.Locale.US, "%.6f, %.6f", latitude, longitude),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            Text(
+                                if (isArabic) "لم يتم تحديد موقع لهذا المركز بعد." else "No map location has been set for this center.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(onClick = { showMapPicker = true }) {
+                                Text(if (latitude == null) { if (isArabic) "تحديد الموقع" else "Choose location" } else { if (isArabic) "تعديل الموقع" else "Change location" })
+                            }
+                            if (latitude != null || longitude != null) {
+                                TextButton(onClick = { latitude = null; longitude = null }) {
+                                    Text(if (isArabic) "مسح الموقع" else "Clear location")
+                                }
+                            }
+                        }
+                    }
+                }
+
             }
         },
         confirmButton = {
@@ -232,7 +281,9 @@ private fun CenterFormDialog(
                         address = address.trim(),
                         phone = phone.trim(),
                         notes = notes.trim(),
-                        createdAt = initial?.createdAt ?: System.currentTimeMillis()
+                        createdAt = initial?.createdAt ?: System.currentTimeMillis(),
+                        latitude = latitude,
+                        longitude = longitude
                     )
                 )
             }) { Text(if (isArabic) "حفظ" else "Save") }
@@ -242,3 +293,17 @@ private fun CenterFormDialog(
         }
     )
 }
+
+    if (showMapPicker) {
+        CenterMapPickerDialog(
+            isArabic = isArabic,
+            initialLatitude = latitude,
+            initialLongitude = longitude,
+            onDismiss = { showMapPicker = false },
+            onConfirm = { lat, lon ->
+                latitude = lat
+                longitude = lon
+                showMapPicker = false
+            }
+        )
+    }

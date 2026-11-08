@@ -180,63 +180,236 @@ object DriveBackupEngine {
     }
 
     private fun restoreArchive(context: Context, archive: File) {
-        val staging = File(context.cacheDir, "restore-stage-${System.currentTimeMillis()}").apply { mkdirs() }
+        val staging = File(context.cacheDir, "restore-stage-${UUID.randomUUID()}").apply { mkdirs() }
+        val rollback = File(context.cacheDir, "restore-rollback-${UUID.randomUUID()}").apply { mkdirs() }
+        val dbName = "medical_rep_manager.db"
+        val attachmentFolders = listOf("doctor_attachments", "center_attachments")
+        val dbTarget = context.getDatabasePath(dbName)
+        val dbPrepared = File(dbTarget.parentFile, "$dbName.restore-new")
+        val dbOld = File(rollback, dbName)
+        val oldDbSidecars = listOf("-wal", "-shm").map { File(dbTarget.path + it) }
+        val newAttachmentDirs = attachmentFolders.associateWith { File(context.filesDir, "$it.restore-new") }
+        val oldAttachmentDirs = attachmentFolders.associateWith { File(rollback, it) }
+        var oldDbMoved = false
+        val movedSidecars = mutableListOf<Pair<File, File>>()
+        val movedAttachmentDirs = mutableListOf<String>()
+        var newDbInstalled = false
+        val installedAttachmentDirs = mutableListOf<String>()
+
         try {
+            // Extract into private staging and reject traversal, duplicate paths, and oversized archives.
+            var extractedBytes = 0L
+            val seenEntries = HashSet<String>()
             ZipInputStream(FileInputStream(archive)).use { zip ->
                 while (true) {
                     val entry = zip.nextEntry ?: break
-                    val target = File(staging, entry.name)
-                    check(target.canonicalPath.startsWith(staging.canonicalPath + File.separator)) { "Invalid backup archive" }
-                    if (entry.isDirectory) target.mkdirs() else {
+                    val normalized = entry.name.replace('\\\\', '/')
+                    check(normalized.isNotBlank() && !normalized.startsWith("/") &&
+                        normalized.split('/').none { it == ".." || it.isBlank() }) { "Invalid backup archive path" }
+                    check(seenEntries.add(normalized)) { "Backup archive contains duplicate entries" }
+                    val target = File(staging, normalized)
+                    check(target.canonicalPath.startsWith(staging.canonicalPath + File.separator)) { "Invalid backup archive path" }
+                    if (entry.isDirectory) {
+                        target.mkdirs()
+                    } else {
                         target.parentFile?.mkdirs()
-                        FileOutputStream(target).use { zip.copyTo(it) }
+                        FileOutputStream(target).use { output ->
+                            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                            while (true) {
+                                val count = zip.read(buffer)
+                                if (count < 0) break
+                                extractedBytes += count
+                                check(extractedBytes <= 2L * 1024L * 1024L * 1024L) { "Backup archive is too large" }
+                                output.write(buffer, 0, count)
+                            }
+                        }
                     }
                     zip.closeEntry()
                 }
             }
-            val dbSource = File(staging, "db/medical_rep_manager.db")
+
+            val dbSource = File(staging, "db/$dbName")
             val manifestFile = File(staging, "backup-manifest.json")
-            check(dbSource.isFile && manifestFile.isFile) { "Backup archive is incomplete" }
+            check(dbSource.isFile && dbSource.length() > 0 && manifestFile.isFile) { "Backup archive is incomplete" }
             val manifest = JSONObject(manifestFile.readText())
             check(manifest.optInt("version") == 1) { "Unsupported backup version" }
+            val photos = manifest.optJSONArray("photos") ?: JSONArray()
+            val attachments = manifest.optJSONArray("attachments") ?: JSONArray()
 
-            MedicalRepDatabase.closeInstance()
-            val dbTarget = context.getDatabasePath("medical_rep_manager.db")
-            dbTarget.parentFile?.mkdirs()
-            listOf(dbTarget, File(dbTarget.path + "-wal"), File(dbTarget.path + "-shm")).forEach { it.delete() }
-            dbSource.copyTo(dbTarget, overwrite = true)
-
-            listOf("doctor_attachments", "center_attachments").forEach { folder ->
+            // Prepare all restored files without touching the currently installed data.
+            attachmentFolders.forEach { folder ->
                 val source = File(staging, "files/$folder")
-                val target = File(context.filesDir, folder)
-                target.deleteRecursively()
-                if (source.exists()) source.copyRecursively(target, overwrite = true)
+                val prepared = newAttachmentDirs.getValue(folder)
+                prepared.deleteRecursively()
+                if (source.exists()) {
+                    check(source.isDirectory) { "Invalid $folder backup directory" }
+                    source.copyRecursively(prepared, overwrite = true)
+                } else prepared.mkdirs()
             }
 
-            val writable = SQLiteDatabase.openDatabase(dbTarget.path, null, SQLiteDatabase.OPEN_READWRITE)
+            // Prepare and validate the replacement database in a separate file.
+            dbPrepared.delete()
+            dbSource.copyTo(dbPrepared, overwrite = true)
+            val writable = SQLiteDatabase.openDatabase(dbPrepared.path, null, SQLiteDatabase.OPEN_READWRITE)
             try {
-                val photos = manifest.optJSONArray("photos") ?: JSONArray()
+                fun hasTable(name: String): Boolean {
+                    writable.rawQuery("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", arrayOf(name)).use { return it.moveToFirst() }
+                }
+                check(hasTable("doctors") && hasTable("doctor_attachments") && hasTable("center_attachments")) {
+                    "Backup database is missing required tables"
+                }
+                writable.rawQuery("PRAGMA integrity_check", null).use { cursor ->
+                    check(cursor.moveToFirst() && cursor.getString(0) == "ok") { "Backup database integrity check failed" }
+                }
+                writable.rawQuery("PRAGMA foreign_key_check", null).use { cursor ->
+                    check(!cursor.moveToFirst()) { "Backup database contains invalid relationships" }
+                }
+
+                // Never leave references to photos from the device that created the backup.
+                writable.execSQL("UPDATE doctors SET photoUri = NULL")
+                val restoredPhotoIds = HashSet<Long>()
                 for (i in 0 until photos.length()) {
                     val photo = photos.getJSONObject(i)
-                    val source = File(staging, photo.getString("entry"))
-                    if (source.isFile) {
-                        val target = File(File(context.filesDir, "doctor_photos"), source.name).apply { parentFile?.mkdirs() }
-                        source.copyTo(target, overwrite = true)
-                        writable.execSQL("UPDATE doctors SET photoUri = ? WHERE id = ?",
-                            arrayOf(Uri.fromFile(target).toString(), photo.getLong("doctorId")))
-                    }
+                    val entry = photo.getString("entry")
+                    check(entry.startsWith("photos/") && !entry.contains("..")) { "Invalid photo entry in manifest" }
+                    val source = File(staging, entry)
+                    check(source.isFile && source.length() > 0) { "A doctor photo is missing from the backup" }
+                    val doctorId = photo.getLong("doctorId")
+                    val target = File(File(context.filesDir, "doctor_photos.restore-new"), source.name)
+                    target.parentFile?.mkdirs()
+                    source.copyTo(target, overwrite = true)
+                    writable.execSQL("UPDATE doctors SET photoUri = ? WHERE id = ?",
+                        arrayOf(Uri.fromFile(File(File(context.filesDir, "doctor_photos"), source.name)).toString(), doctorId))
+                    restoredPhotoIds.add(doctorId)
                 }
-                val attachments = manifest.optJSONArray("attachments") ?: JSONArray()
+
+                // Restore attachment paths in the database and verify every referenced file exists.
+                val mappedOldPaths = HashSet<String>()
                 for (i in 0 until attachments.length()) {
                     val mapping = attachments.getJSONObject(i)
-                    val target = File(context.filesDir, mapping.getString("entry").removePrefix("files/"))
-                    writable.execSQL("UPDATE doctor_attachments SET localPath = ? WHERE localPath = ?",
-                        arrayOf(target.absolutePath, mapping.getString("oldPath")))
-                    writable.execSQL("UPDATE center_attachments SET localPath = ? WHERE localPath = ?",
-                        arrayOf(target.absolutePath, mapping.getString("oldPath")))
+                    val oldPath = mapping.getString("oldPath")
+                    val entry = mapping.getString("entry")
+                    check(entry.startsWith("files/") && !entry.contains("..")) { "Invalid attachment entry in manifest" }
+                    val relative = entry.removePrefix("files/")
+                    check(relative.startsWith("doctor_attachments/") || relative.startsWith("center_attachments/")) {
+                        "Invalid attachment folder in backup"
+                    }
+                    val source = File(staging, entry)
+                    check(source.isFile && source.length() > 0) { "An attachment is missing from the backup" }
+                    val folder = relative.substringBefore('/')
+                    val target = File(context.filesDir, relative)
+                    check(target.canonicalPath.startsWith(File(context.filesDir, folder).canonicalPath + File.separator)) {
+                        "Invalid attachment destination"
+                    }
+                    val table = if (folder == "doctor_attachments") "doctor_attachments" else "center_attachments"
+                    writable.execSQL("UPDATE $table SET localPath = ? WHERE localPath = ?", arrayOf(target.absolutePath, oldPath))
+                    mappedOldPaths.add(oldPath)
                 }
-            } finally { writable.close() }
-        } finally { staging.deleteRecursively() }
+
+                // Validate every database attachment reference against the prepared payload.
+                for (table in attachmentFolders) {
+                    writable.rawQuery("SELECT localPath FROM $table", null).use { cursor ->
+                        while (cursor.moveToNext()) {
+                            val path = cursor.getString(0)
+                            val relative = path.substringAfterLast("/$table/", "")
+                            check(relative.isNotBlank()) { "Backup contains an invalid $table path" }
+                            val stagedFile = File(newAttachmentDirs.getValue(table), relative)
+                            check(stagedFile.isFile) { "Backup is missing an attachment referenced by the database" }
+                        }
+                    }
+                }
+            } finally {
+                writable.close()
+            }
+
+            // Close Room only after all archive and database validation has passed.
+            MedicalRepDatabase.closeInstance()
+            dbTarget.parentFile?.mkdirs()
+            dbOld.delete()
+            if (dbTarget.exists()) {
+                check(dbTarget.renameTo(dbOld)) { "Could not preserve the current database before restore" }
+                oldDbMoved = true
+            }
+            oldDbSidecars.forEach { sidecar ->
+                if (sidecar.exists()) {
+                    val saved = File(rollback, sidecar.name)
+                    check(sidecar.renameTo(saved)) { "Could not preserve database journal before restore" }
+                    movedSidecars.add(sidecar to saved)
+                }
+            }
+            attachmentFolders.forEach { folder ->
+                val current = File(context.filesDir, folder)
+                val saved = oldAttachmentDirs.getValue(folder)
+                saved.parentFile?.mkdirs()
+                if (current.exists()) {
+                    check(current.renameTo(saved)) { "Could not preserve existing $folder before restore" }
+                    movedAttachmentDirs.add(folder)
+                }
+            }
+            val photosCurrent = File(context.filesDir, "doctor_photos")
+            val photosPrepared = File(context.filesDir, "doctor_photos.restore-new")
+            val photosOld = File(rollback, "doctor_photos")
+            if (photosCurrent.exists()) {
+                check(photosCurrent.renameTo(photosOld)) { "Could not preserve existing doctor photos before restore" }
+            }
+            if (photosPrepared.exists()) {
+                check(photosPrepared.renameTo(photosCurrent)) { "Could not install restored doctor photos" }
+                installedAttachmentDirs.add("doctor_photos")
+            }
+
+            check(dbPrepared.renameTo(dbTarget)) { "Could not install restored database" }
+            newDbInstalled = true
+            attachmentFolders.forEach { folder ->
+                val prepared = newAttachmentDirs.getValue(folder)
+                val current = File(context.filesDir, folder)
+                check(prepared.renameTo(current)) { "Could not install restored $folder" }
+                installedAttachmentDirs.add(folder)
+            }
+
+            // Re-open the installed file directly and run final integrity checks before commit.
+            val installed = SQLiteDatabase.openDatabase(dbTarget.path, null, SQLiteDatabase.OPEN_READONLY)
+            try {
+                installed.rawQuery("PRAGMA integrity_check", null).use { cursor ->
+                    check(cursor.moveToFirst() && cursor.getString(0) == "ok") { "Restored database failed final integrity check" }
+                }
+                installed.rawQuery("PRAGMA foreign_key_check", null).use { cursor ->
+                    check(!cursor.moveToFirst()) { "Restored database failed relationship validation" }
+                }
+            } finally { installed.close() }
+        } catch (error: Exception) {
+            // Roll back every installed component and restore the previous database/files.
+            try {
+                MedicalRepDatabase.closeInstance()
+                installedAttachmentDirs.asReversed().forEach { File(context.filesDir, it).deleteRecursively() }
+                if (newDbInstalled) dbTarget.delete()
+                movedAttachmentDirs.asReversed().forEach { folder ->
+                    val saved = oldAttachmentDirs.getValue(folder)
+                    val current = File(context.filesDir, folder)
+                    if (saved.exists()) {
+                        current.deleteRecursively()
+                        check(saved.renameTo(current)) { "Rollback failed for $folder" }
+                    }
+                }
+                val oldPhotos = File(rollback, "doctor_photos")
+                if (oldPhotos.exists()) {
+                    File(context.filesDir, "doctor_photos").deleteRecursively()
+                    check(oldPhotos.renameTo(File(context.filesDir, "doctor_photos"))) { "Rollback failed for doctor photos" }
+                }
+                movedSidecars.asReversed().forEach { (original, saved) ->
+                    if (saved.exists()) check(saved.renameTo(original)) { "Rollback failed for database journal" }
+                }
+                if (oldDbMoved && dbOld.exists()) check(dbOld.renameTo(dbTarget)) { "Rollback failed for database" }
+            } catch (rollbackError: Exception) {
+                throw java.io.IOException("Restore failed and rollback was incomplete: ${rollbackError.localizedMessage}", error)
+            }
+            throw error
+        } finally {
+            dbPrepared.delete()
+            newAttachmentDirs.values.forEach { it.deleteRecursively() }
+            File(context.filesDir, "doctor_photos.restore-new").deleteRecursively()
+            staging.deleteRecursively()
+            rollback.deleteRecursively()
+        }
     }
 
     private fun findFolder(token: String): String? {

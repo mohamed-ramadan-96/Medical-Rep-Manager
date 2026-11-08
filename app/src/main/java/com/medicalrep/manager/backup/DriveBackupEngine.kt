@@ -204,16 +204,39 @@ object DriveBackupEngine {
     fun list(token: String): List<DriveBackupItem> {
         val folder = findFolder(token) ?: return emptyList()
         val q = URLEncoder.encode("'$folder' in parents and trashed = false", "UTF-8")
-        val url = URL("$DRIVE/files?q=$q&orderBy=modifiedTime%20desc&pageSize=100&fields=files(id,name,modifiedTime)")
-        val connection = url.openConnection() as HttpURLConnection
-        connection.setRequestProperty("Authorization", "Bearer $token")
-        check(connection.responseCode in 200..299) { "Could not list Drive backups: ${responseText(connection)}" }
-        val files = JSONObject(connection.inputStream.bufferedReader().use { it.readText() }).optJSONArray("files") ?: JSONArray()
-        connection.disconnect()
-        return (0 until files.length()).map { index ->
-            val item = files.getJSONObject(index)
-            DriveBackupItem(item.getString("id"), item.optString("name"), item.optString("modifiedTime"))
+        val result = mutableListOf<DriveBackupItem>()
+        var pageToken: String? = null
+        do {
+            val page = pageToken?.let { "&pageToken=${URLEncoder.encode(it, "UTF-8")}" } ?: ""
+            val url = URL("$DRIVE/files?q=$q&orderBy=modifiedTime%20desc&pageSize=100&fields=nextPageToken,files(id,name,modifiedTime)$page")
+            val connection = url.openConnection() as HttpURLConnection
+            connection.connectTimeout = 20000
+            connection.readTimeout = 30000
+            connection.setRequestProperty("Authorization", "Bearer $token")
+            try {
+                check(connection.responseCode in 200..299) { "Could not list Drive backups: ${responseText(connection)}" }
+                val response = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
+                val files = response.optJSONArray("files") ?: JSONArray()
+                for (index in 0 until files.length()) {
+                    val item = files.getJSONObject(index)
+                    result += DriveBackupItem(item.getString("id"), item.optString("name"), item.optString("modifiedTime"))
+                }
+                pageToken = response.optString("nextPageToken").takeIf { it.isNotBlank() && it != "null" }
+            } finally {
+                connection.disconnect()
+            }
+        } while (pageToken != null)
+        return result
+    }
+
+    fun deleteAll(token: String): Int {
+        val items = list(token)
+        var deleted = 0
+        items.forEach { item ->
+            delete(token, item)
+            deleted++
         }
+        return deleted
     }
 
     fun delete(token: String, item: DriveBackupItem) {

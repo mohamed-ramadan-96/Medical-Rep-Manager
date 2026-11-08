@@ -116,11 +116,7 @@ fun MedicalRepApp() {
                 1 -> DoctorsScreen(isArabic = isArabic, padding = innerPadding)
                 2 -> CentersScreen(isArabic = isArabic, padding = innerPadding)
                 3 -> SpecialtiesScreen(isArabic = isArabic, padding = innerPadding)
-                else -> PlaceholderScreen(
-                    title = if (isArabic) "جدول الزيارات" else "Visit Schedule",
-                    description = if (isArabic) "حدد أكثر من يوم وفترة متاحة لكل طبيب." else "Set multiple available days and time slots for every doctor.",
-                    padding = innerPadding
-                )
+                else -> ScheduleScreen(isArabic = isArabic, padding = innerPadding)
             }
         }
     }

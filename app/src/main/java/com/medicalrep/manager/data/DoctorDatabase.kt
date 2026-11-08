@@ -26,6 +26,14 @@ data class MedicalCenterEntity(
     val createdAt: Long = System.currentTimeMillis()
 )
 
+
+@Entity(tableName = "specialties")
+data class SpecialtyEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val createdAt: Long = System.currentTimeMillis()
+)
+
 @Entity(tableName = "doctors")
 data class DoctorEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -37,7 +45,8 @@ data class DoctorEntity(
     val notes: String = "",
     val photoUri: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
-    val centerId: Long? = null
+    val centerId: Long? = null,
+    val specialtyId: Long? = null
 )
 
 @Dao
@@ -89,14 +98,34 @@ interface MedicalCenterDao {
     suspend fun delete(center: MedicalCenterEntity)
 }
 
+
+@Dao
+interface SpecialtyDao {
+    @Query("SELECT * FROM specialties ORDER BY name COLLATE NOCASE ASC")
+    fun observeAll(): Flow<List<SpecialtyEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(specialty: SpecialtyEntity): Long
+
+    @Update
+    suspend fun update(specialty: SpecialtyEntity)
+
+    @Delete
+    suspend fun delete(specialty: SpecialtyEntity)
+
+    @Query("UPDATE doctors SET specialtyId = NULL WHERE specialtyId = :specialtyId")
+    suspend fun detachDoctors(specialtyId: Long)
+}
+
 @Database(
-    entities = [DoctorEntity::class, MedicalCenterEntity::class],
-    version = 2,
+    entities = [DoctorEntity::class, MedicalCenterEntity::class, SpecialtyEntity::class],
+    version = 3,
     exportSchema = false
 )
 abstract class MedicalRepDatabase : RoomDatabase() {
     abstract fun doctorDao(): DoctorDao
     abstract fun medicalCenterDao(): MedicalCenterDao
+    abstract fun specialtyDao(): SpecialtyDao
 
     companion object {
         @Volatile private var INSTANCE: MedicalRepDatabase? = null
@@ -134,13 +163,43 @@ abstract class MedicalRepDatabase : RoomDatabase() {
             }
         }
 
+
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS specialties (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        name TEXT NOT NULL,
+                        createdAt INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                db.execSQL("ALTER TABLE doctors ADD COLUMN specialtyId INTEGER")
+                db.execSQL("""
+                    INSERT INTO specialties (name, createdAt)
+                    SELECT DISTINCT TRIM(specialty), CAST(strftime('%s','now') AS INTEGER) * 1000
+                    FROM doctors
+                    WHERE TRIM(specialty) != ''
+                """.trimIndent())
+                db.execSQL("""
+                    UPDATE doctors
+                    SET specialtyId = (
+                        SELECT specialties.id FROM specialties
+                        WHERE specialties.name = TRIM(doctors.specialty)
+                        LIMIT 1
+                    )
+                    WHERE TRIM(specialty) != ''
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_doctors_specialtyId ON doctors(specialtyId)")
+            }
+        }
+
         fun getInstance(context: Context): MedicalRepDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
                     MedicalRepDatabase::class.java,
                     "medical_rep_manager.db"
-                ).addMigrations(MIGRATION_1_2)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build().also { INSTANCE = it }
             }
     }

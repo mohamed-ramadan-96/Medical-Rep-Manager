@@ -1,13 +1,18 @@
 package com.medicalrep.manager.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -15,6 +20,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -33,9 +39,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.medicalrep.manager.data.DoctorEntity
 import com.medicalrep.manager.data.MedicalCenterEntity
 import com.medicalrep.manager.data.MedicalRepDatabase
@@ -176,7 +185,16 @@ private fun DoctorCard(
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(modifier = Modifier.fillMaxWidth()) {
-                Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                if (doctor.photoUri.isNullOrBlank()) {
+                    Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(52.dp))
+                } else {
+                    AsyncImage(
+                        model = doctor.photoUri,
+                        contentDescription = if (isArabic) "صورة الطبيب" else "Doctor photo",
+                        modifier = Modifier.size(56.dp).clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                }
                 Column(modifier = Modifier.weight(1f).padding(horizontal = 10.dp)) {
                     Text(doctor.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     if (doctor.specialty.isNotBlank()) {
@@ -225,13 +243,58 @@ private fun DoctorFormDialog(
     var selectedCenterId by remember(initial, centers) { mutableStateOf(initial?.centerId ?: centers.firstOrNull { it.name == initial?.medicalCenter }?.id) }
     var showCenterPicker by remember { mutableStateOf(false) }
     var notes by remember(initial) { mutableStateOf(initial?.notes.orEmpty()) }
+    var photoUri by remember(initial) { mutableStateOf(initial?.photoUri) }
     var nameError by remember { mutableStateOf(false) }
+
+    val photoPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: SecurityException) {
+                // Some picker providers grant temporary access only; keep the returned URI.
+            } catch (_: IllegalArgumentException) {
+                // Provider does not support persistable grants.
+            }
+            photoUri = uri.toString()
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (initial == null) { if (isArabic) "إضافة طبيب" else "Add doctor" } else { if (isArabic) "تعديل بيانات الطبيب" else "Edit doctor" }) },
         text = {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        if (photoUri.isNullOrBlank()) {
+                            Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(72.dp), tint = MaterialTheme.colorScheme.primary)
+                        } else {
+                            AsyncImage(
+                                model = photoUri,
+                                contentDescription = if (isArabic) "صورة الطبيب" else "Doctor photo",
+                                modifier = Modifier.size(88.dp).clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(onClick = {
+                                photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            }) {
+                                Text(if (isArabic) "اختيار صورة" else "Choose photo")
+                            }
+                            if (!photoUri.isNullOrBlank()) {
+                                TextButton(onClick = { photoUri = null }) {
+                                    Text(if (isArabic) "إزالة الصورة" else "Remove photo")
+                                }
+                            }
+                        }
+                    }
+                }
                 item {
                     OutlinedTextField(
                         value = name, onValueChange = { name = it; nameError = false },
@@ -287,7 +350,7 @@ private fun DoctorFormDialog(
                             medicalCenter = centers.firstOrNull { it.id == selectedCenterId }?.name.orEmpty(),
                             centerId = selectedCenterId,
                             notes = notes.trim(),
-                            photoUri = initial?.photoUri,
+                            photoUri = photoUri,
                             createdAt = initial?.createdAt ?: System.currentTimeMillis()
                         )
                     )

@@ -266,6 +266,11 @@ object DriveBackupEngine {
         try { restoreArchive(context, zipFile) } finally { zipFile.delete() }
     }
 
+    fun restoreFromLocalFile(context: Context, archive: File) {
+        require(archive.isFile && archive.length() > 0) { "Selected backup file is empty" }
+        restoreArchive(context, archive)
+    }
+
     private fun restoreArchive(context: Context, archive: File) {
         val staging = File(context.cacheDir, "restore-stage-${UUID.randomUUID()}").apply { mkdirs() }
         val rollback = File(context.cacheDir, "restore-rollback-${UUID.randomUUID()}").apply { mkdirs() }

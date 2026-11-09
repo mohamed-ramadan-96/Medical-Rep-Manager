@@ -121,11 +121,14 @@ fun CenterMapPickerDialog(
     LaunchedEffect(resolving, sharedLink) {
         if (resolving && sharedLink.isNotBlank()) {
             val resolved = resolveSharedMapLink(sharedLink)
+            val pageMapUrl = resolved?.page?.let(::extractGoogleMapsUrls)
+                ?.firstNotNullOfOrNull { parseMapCoordinates(it, allowViewport = false) }
             val parsed = parseMapCoordinates(sharedLink, allowViewport = false)
                 ?: resolved?.let {
                     parseMapCoordinates(it.url, allowViewport = false)
                         ?: parseMapCoordinates(it.page, allowViewport = false)
                 }
+                ?: pageMapUrl
                 ?: geocodeSharedMapPlace(sharedLink, resolved?.url, resolved?.page)
                 ?: parseMapCoordinates(sharedLink)
                 ?: resolved?.let { parseMapCoordinates(it.url) }
@@ -235,11 +238,28 @@ private fun parseMapCoordinates(raw: String, allowViewport: Boolean = true): Pai
     return null
 }
 
+private fun extractGoogleMapsUrls(page: String): List<String> {
+    val pattern = Regex(
+        "https?:(?:\\\\/\\\\/|//)(?:www\\.)?(?:google\\.[^/\\s\"'<>]+/maps[^\\s\"'<>]*|maps\\.google\\.[^/\\s\"'<>]+/[^\\s\"'<>]*)",
+        RegexOption.IGNORE_CASE
+    )
+    return pattern.findAll(page)
+        .map { it.value.replace("\\\\/", "/").replace("&amp;", "&").trimEnd(',', ';', ')') }
+        .distinct()
+        .toList()
+}
+
 private fun extractGoogleMapsPlaceName(raw: String, resolvedUrl: String?, page: String?): String? {
-    val urlText = Regex("https?://[^\\s<>]+", RegexOption.IGNORE_CASE)
+    val rawUrl = Regex("https?://[^\\\\s<>]+", RegexOption.IGNORE_CASE)
         .find(raw)?.value?.trimEnd('.', ')', ']', ',')
-    val uri = runCatching { Uri.parse(resolvedUrl ?: urlText.orEmpty()) }.getOrNull()
-    if (uri != null) {
+    val candidateUrls = buildList {
+        if (!resolvedUrl.isNullOrBlank()) add(resolvedUrl)
+        if (!rawUrl.isNullOrBlank()) add(rawUrl)
+        if (!page.isNullOrBlank()) addAll(extractGoogleMapsUrls(page))
+    }
+
+    for (candidateUrl in candidateUrls.distinct()) {
+        val uri = runCatching { Uri.parse(candidateUrl) }.getOrNull() ?: continue
         val segments = uri.pathSegments
         val placeIndex = segments.indexOfFirst { it.equals("place", ignoreCase = true) }
         if (placeIndex >= 0 && segments.size > placeIndex + 1) {
@@ -249,22 +269,25 @@ private fun extractGoogleMapsPlaceName(raw: String, resolvedUrl: String?, page: 
         for (key in listOf("query", "q", "destination", "daddr")) {
             val candidate = uri.getQueryParameter(key)?.trim().orEmpty()
             if (candidate.isNotBlank() && !candidate.startsWith("place_id:", true) &&
-                !Regex("^-?\\d+(?:\\.\\d+)?\\s*,").containsMatchIn(candidate)
+                !Regex("^-?\\\\d+(?:\\\\.\\\\d+)?\\\\s*,").containsMatchIn(candidate)
             ) return candidate
         }
     }
 
     val htmlTitle = page?.let { html ->
-        Regex("<title[^>]*>(.*?)</title>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
+        val metaTitle = Regex(
+            "<meta[^>]+(?:property|name)=[\"'](?:og:title|twitter:title)[\"'][^>]+content=[\"']([^\"']+)[\"']",
+            RegexOption.IGNORE_CASE
+        ).find(html)?.groupValues?.get(1)
+        metaTitle ?: Regex("<title[^>]*>(.*?)</title>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
             .find(html)?.groupValues?.get(1)
     }?.let { title ->
-        title.replace("&amp;", "&").replace("&#39;", "'")
+        title.replace("&amp;", "&").replace("&#39;", "'").replace("&quot;", "\"")
             .substringBefore(" - Google Maps").trim()
     }
     if (!htmlTitle.isNullOrBlank() && !htmlTitle.equals("Google Maps", true)) return htmlTitle
 
-    // Some share sheets include the selected place's display name before the URL.
-    val prefix = if (urlText != null) raw.substringBefore(urlText).trim() else raw.trim()
+    val prefix = if (rawUrl != null) raw.substringBefore(rawUrl).trim() else raw.trim()
     return prefix.takeIf { it.isNotBlank() && it.length in 2..160 && !it.contains("http", true) }
 }
 

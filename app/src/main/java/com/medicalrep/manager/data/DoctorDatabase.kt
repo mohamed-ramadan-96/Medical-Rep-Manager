@@ -255,11 +255,17 @@ interface DoctorDao {
     @Delete
     suspend fun delete(doctor: DoctorEntity)
 
-    @Query("UPDATE doctors SET centerId = NULL WHERE centerId = :centerId")
+    @Query("UPDATE doctors SET centerId = NULL, medicalCenter = '' WHERE centerId = :centerId")
     suspend fun detachCenter(centerId: Long)
 
-    @Query("UPDATE doctors SET specialtyId = NULL WHERE specialtyId = :specialtyId")
+    @Query("UPDATE doctors SET medicalCenter = :name WHERE centerId = :centerId")
+    suspend fun renameLegacyCenter(centerId: Long, name: String)
+
+    @Query("UPDATE doctors SET specialtyId = NULL, specialty = '' WHERE specialtyId = :specialtyId")
     suspend fun detachSpecialty(specialtyId: Long)
+
+    @Query("UPDATE doctors SET specialty = :name WHERE specialtyId = :specialtyId")
+    suspend fun renameLegacySpecialty(specialtyId: Long, name: String)
 
     @Query("SELECT COUNT(*) FROM doctors")
     fun observeCount(): Flow<Int>
@@ -301,7 +307,7 @@ interface SpecialtyDao {
     @Delete
     suspend fun delete(specialty: SpecialtyEntity)
 
-    @Query("UPDATE doctors SET specialtyId = NULL WHERE specialtyId = :specialtyId")
+    @Query("UPDATE doctors SET specialtyId = NULL, specialty = '' WHERE specialtyId = :specialtyId")
     suspend fun detachDoctors(specialtyId: Long)
 }
 

@@ -291,6 +291,10 @@ private fun CenterFormDialog(
                             )
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            CurrentLocationButton(isArabic = isArabic) { lat, lon ->
+                                latitude = lat
+                                longitude = lon
+                            }
                             OutlinedButton(onClick = { showMapPicker = true }) {
                                 Text(if (latitude == null) { if (isArabic) "تحديد الموقع" else "Choose location" } else { if (isArabic) "تعديل الموقع" else "Change location" })
                             }

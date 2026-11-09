@@ -43,18 +43,19 @@ jobs:
               continue
             fi
 
-            issue_title="Build monitor run #${run_id}: ${conclusion}"
+            if [[ "${conclusion}" == "success" ]]; then
+              echo "Run #${run_id} succeeded; no issue is needed."
+              continue
+            fi
+
+            issue_title="Android CI failure #${run_id}"
             existing="$(gh api --method GET "search/issues" -f q="repo:${REPOSITORY} in:title \"${issue_title}\"" --jq '.total_count')"
             if [[ "${existing}" != "0" ]]; then
               echo "Notification already exists for run #${run_id}; skipping."
               continue
             fi
 
-            if [[ "${conclusion}" == "success" ]]; then
-              artifact_note="The Android CI run completed successfully. Download the APK from the run's Artifacts section."
-            else
-              artifact_note="The Android CI run did not succeed (conclusion: ${conclusion}). Open the run and inspect the failed job logs."
-            fi
+            artifact_note="The Android CI run did not succeed (conclusion: ${conclusion}). Open the run and inspect the failed job logs."
 
             body="$(cat <<EOF
           ## Android build result: ${conclusion}
@@ -71,7 +72,6 @@ jobs:
           EOF
           )"
 
-            owner="${REPOSITORY%%/*}"
-            gh api --method POST "repos/${REPOSITORY}/issues" -f title="${issue_title}" -f body="${body}" -f assignees="${owner}"
+            gh api --method POST "repos/${REPOSITORY}/issues" -f title="${issue_title}" -f body="${body}"
             echo "Created one notification issue for run #${run_id}."
           done

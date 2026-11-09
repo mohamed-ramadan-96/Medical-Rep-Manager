@@ -652,12 +652,12 @@ private fun DoctorFormDialog(
                     )
                 }
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(if (isArabic) "التخصص" else "Specialty", style = MaterialTheme.typography.labelLarge)
-                        TextButton(onClick = { showSpecialtyPicker = true }) {
-                            Text(specialties.firstOrNull { it.id == selectedSpecialtyId }?.name ?: if (isArabic) "بدون تخصص — اختر من القائمة" else "No specialty — choose one")
-                        }
-                    }
+                    OutlinedSelectionField(
+                        label = if (isArabic) "التخصص" else "Specialty",
+                        value = specialties.firstOrNull { it.id == selectedSpecialtyId }?.name
+                            ?: if (isArabic) "بدون تخصص — اختر من القائمة" else "No specialty — choose one",
+                        onClick = { showSpecialtyPicker = true }
+                    )
                 }
                 item {
                     OutlinedTextField(
@@ -667,12 +667,15 @@ private fun DoctorFormDialog(
                     )
                 }
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(if (isArabic) "المركز أو العيادة" else "Medical center / clinic", style = MaterialTheme.typography.labelLarge)
-                        TextButton(onClick = { showCenterPicker = true }) {
-                            Text(if (selectedCenterIds.isEmpty()) { if (isArabic) "اختر المراكز" else "Choose centers" } else centers.filter { it.id in selectedCenterIds }.joinToString("، ") { it.name })
-                        }
-                    }
+                    OutlinedSelectionField(
+                        label = if (isArabic) "المركز أو العيادة" else "Medical center / clinic",
+                        value = if (selectedCenterIds.isEmpty()) {
+                            if (isArabic) "اختر المراكز" else "Choose centers"
+                        } else {
+                            centers.filter { it.id in selectedCenterIds }.joinToString("، ") { it.name }
+                        },
+                        onClick = { showCenterPicker = true }
+                    )
                 }
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {

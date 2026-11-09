@@ -123,6 +123,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
                 }
                 prefs.edit().putLong(DriveBackupScheduler.KEY_LAST_BACKUP, System.currentTimeMillis()).remove(DriveBackupScheduler.KEY_LAST_ERROR).apply()
                 notify(if (isArabic) "تم حفظ النسخة الاحتياطية على Google Drive." else "Backup saved to Google Drive.")
+                activity.recreate()
             } catch (error: Exception) {
                 showError((if (isArabic) "فشل النسخ الاحتياطي: " else "Backup failed: ") + (error.localizedMessage ?: error.javaClass.simpleName))
             } finally { busy = false }
@@ -187,6 +188,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
                 }
             }
             val lastBackup = prefs.getLong(DriveBackupScheduler.KEY_LAST_BACKUP, 0L)
+            val lastError = prefs.getString(DriveBackupScheduler.KEY_LAST_ERROR, null)
             Text(
                 if (lastBackup == 0L) {
                     if (isArabic) "لم يتم إنشاء نسخة احتياطية بعد." else "No backup has been completed yet."
@@ -197,6 +199,13 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (!lastError.isNullOrBlank()) {
+                Text(
+                    (if (isArabic) "آخر خطأ في النسخ التلقائي: " else "Last automatic backup error: ") + lastError,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 Button(onClick = {
                     if (token != null) runBackup(token!!)
@@ -364,6 +373,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
                                                     activity.recreate()
                                                 } catch (error: Exception) {
                                                     showError((if (isArabic) "فشلت الاستعادة: " else "Restore failed: ") + (error.localizedMessage ?: error.javaClass.simpleName))
+                                                    activity.recreate()
                                                 } finally { busy = false }
                                             }
                                         },

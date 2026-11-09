@@ -66,6 +66,18 @@ fun openCenterDirections(context: Context, latitude: Double, longitude: Double) 
     context.startActivity(Intent(Intent.ACTION_VIEW, uri))
 }
 
+fun openSavedMapLocation(context: Context, latitude: Double?, longitude: Double?, mapUrl: String?) {
+    if (latitude != null && longitude != null) {
+        openCenterDirections(context, latitude, longitude)
+    } else if (!mapUrl.isNullOrBlank()) {
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(mapUrl)))
+    }
+}
+
+private fun extractSharedMapUrl(raw: String): String? =
+    Regex("https?://[^\\s<>]+", RegexOption.IGNORE_CASE)
+        .find(raw)?.value?.trimEnd('.', ')', ']', ',')
+
 @Composable
 fun CenterMapPreview(
     latitude: Double?,
@@ -98,12 +110,14 @@ fun CenterMapPickerDialog(
     isArabic: Boolean,
     initialLatitude: Double?,
     initialLongitude: Double?,
+    initialMapUrl: String? = null,
     onDismiss: () -> Unit,
-    onConfirm: (Double, Double) -> Unit
+    onConfirm: (Double?, Double?, String?) -> Unit
 ) {
     val context = LocalContext.current
     var latitude by remember(initialLatitude, initialLongitude) { mutableStateOf(initialLatitude) }
     var longitude by remember(initialLatitude, initialLongitude) { mutableStateOf(initialLongitude) }
+    var mapUrl by remember(initialMapUrl) { mutableStateOf(initialMapUrl) }
     var sharedLink by remember { mutableStateOf("") }
     var linkError by remember { mutableStateOf(false) }
     var resolving by remember { mutableStateOf(false) }
@@ -113,6 +127,7 @@ fun CenterMapPickerDialog(
         val incoming = MapShareState.sharedText
         if (!incoming.isNullOrBlank()) {
             sharedLink = incoming.trim()
+            mapUrl = extractSharedMapUrl(incoming)
             linkError = false
             MapShareState.sharedText = null
             resolving = true
@@ -151,6 +166,7 @@ fun CenterMapPickerDialog(
                 append("\\nName lookup: ").append(if (geocoded != null) "found coordinates" else if (directCoordinates == null) "no coordinates returned" else "not needed")
                 resolved?.error?.let { append("\\nConnection error: ").append(it) }
             }
+            mapUrl = extractSharedMapUrl(sharedLink) ?: sharedLink.trim().takeIf { it.startsWith("http", true) }
             if (parsed != null) {
                 latitude = parsed.first
                 longitude = parsed.second
@@ -181,6 +197,7 @@ fun CenterMapPickerDialog(
                     value = sharedLink,
                     onValueChange = {
                         sharedLink = it
+                        mapUrl = extractSharedMapUrl(it)
                         linkError = false
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -211,6 +228,8 @@ fun CenterMapPickerDialog(
                 }
                 if (latitude != null && longitude != null) {
                     Text(String.format(Locale.US, "Latitude: %.6f   Longitude: %.6f", latitude, longitude))
+                } else if (!mapUrl.isNullOrBlank()) {
+                    Text(if (isArabic) "تم الاحتفاظ برابط المكان. سيُفتح مباشرة في Google Maps." else "The place link is saved and will open directly in Google Maps.")
                 } else {
                     Text(if (isArabic) "لم يتم استلام موقع بعد." else "No location received yet.")
                 }
@@ -218,8 +237,8 @@ fun CenterMapPickerDialog(
         },
         confirmButton = {
             TextButton(
-                enabled = latitude != null && longitude != null,
-                onClick = { latitude?.let { lat -> longitude?.let { lon -> onConfirm(lat, lon) } } }
+                enabled = (latitude != null && longitude != null) || !mapUrl.isNullOrBlank(),
+                onClick = { onConfirm(latitude, longitude, mapUrl) }
             ) { Text(if (isArabic) "حفظ الموقع" else "Save location") }
         },
         dismissButton = {

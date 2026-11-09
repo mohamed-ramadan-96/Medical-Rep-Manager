@@ -142,7 +142,7 @@ fun CenterMapPickerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (isArabic) "تحديد موقع المركز" else "Set center location") },
+        title = { Text(if (isArabic) "تحديد الموقع" else "Set location") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(

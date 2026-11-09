@@ -28,6 +28,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.room.withTransaction
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -152,7 +153,14 @@ fun SpecialtiesScreen(isArabic: Boolean, padding: androidx.compose.foundation.la
                                 name = name.trim(),
                                 createdAt = editing?.createdAt ?: System.currentTimeMillis()
                             )
-                            if (item.id == 0L) dao.insert(item) else dao.update(item)
+                            if (item.id == 0L) {
+                                dao.insert(item)
+                            } else {
+                                database.withTransaction {
+                                    dao.update(item)
+                                    doctorDao.renameLegacySpecialty(item.id, item.name)
+                                }
+                            }
                         }
                         showForm = false
                     }
@@ -178,8 +186,10 @@ fun SpecialtiesScreen(isArabic: Boolean, padding: androidx.compose.foundation.la
             confirmButton = {
                 TextButton(onClick = {
                     scope.launch {
-                        doctorDao.detachSpecialty(specialty.id)
-                        dao.delete(specialty)
+                        database.withTransaction {
+                            doctorDao.detachSpecialty(specialty.id)
+                            dao.delete(specialty)
+                        }
                     }
                     pendingDelete = null
                 }) { Text(if (isArabic) "حذف" else "Delete") }

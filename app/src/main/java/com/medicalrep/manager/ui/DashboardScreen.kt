@@ -2,14 +2,30 @@ package com.medicalrep.manager.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material.icons.filled.FileDownload
-import androidx.compose.material3.Button
-import androidx.compose.runtime.rememberCoroutineScope
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.widget.Toast
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.medicalrep.manager.backup.DriveBackupEngine
 import com.medicalrep.manager.data.ExcelExporter
+import com.medicalrep.manager.data.ExcelImporter
+import com.medicalrep.manager.data.DoctorEntity
+import java.io.File
+import java.io.FileInputStream
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -56,15 +72,90 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
     val centers by database.medicalCenterDao().observeAll().collectAsState(initial = emptyList())
     val visits by database.doctorVisitDao().observeAll().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
-    val exportLauncher = rememberLauncherForActivityResult(
+    var exportMenuExpanded by remember { mutableStateOf(false) }
+    var importMenuExpanded by remember { mutableStateOf(false) }
+
+    val excelExportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     ) { uri ->
         if (uri != null) scope.launch {
             try {
-                withContext(Dispatchers.IO) { ExcelExporter.export(context, uri, doctors, centers, visits, isArabic) }
-                Toast.makeText(context, if (isArabic) "تم تصدير ملف Excel بنجاح" else "Excel workbook exported successfully", Toast.LENGTH_LONG).show()
+                withContext(Dispatchers.IO) { ExcelExporter.export(context, uri, doctors, isArabic) }
+                Toast.makeText(context, if (isArabic) "تم تصدير أسماء وأرقام الأطباء بنجاح" else "Doctor names and phone numbers exported", Toast.LENGTH_LONG).show()
             } catch (error: Exception) {
-                Toast.makeText(context, (if (isArabic) "فشل التصدير: " else "Export failed: ") + (error.localizedMessage ?: ""), Toast.LENGTH_LONG).show()
+                Toast.makeText(context, (if (isArabic) "فشل تصدير Excel: " else "Excel export failed: ") + (error.localizedMessage ?: ""), Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+    val fullBackupExportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/zip")
+    ) { uri ->
+        if (uri != null) scope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    val backup = DriveBackupEngine.createLocalBackup(context)
+                    try {
+                        context.contentResolver.openOutputStream(uri)?.use { output ->
+                            FileInputStream(backup).use { input -> input.copyTo(output) }
+                        } ?: error("Unable to open selected destination")
+                    } finally { backup.delete() }
+                }
+                Toast.makeText(context, if (isArabic) "تم تصدير النسخة الكاملة بنجاح" else "Full app backup exported", Toast.LENGTH_LONG).show()
+            } catch (error: Exception) {
+                Toast.makeText(context, (if (isArabic) "فشل تصدير النسخة: " else "Backup export failed: ") + (error.localizedMessage ?: ""), Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+    val fullBackupImportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) scope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    val archive = File(context.cacheDir, "local-restore-${System.currentTimeMillis()}.zip")
+                    try {
+                        context.contentResolver.openInputStream(uri)?.use { input ->
+                            archive.outputStream().use { output -> input.copyTo(output) }
+                        } ?: error("Unable to read selected backup")
+                        DriveBackupEngine.restoreFromLocalFile(context, archive)
+                    } finally { archive.delete() }
+                }
+                Toast.makeText(context, if (isArabic) "تمت استعادة النسخة الكاملة." else "Full backup restored.", Toast.LENGTH_LONG).show()
+                findDashboardActivity(context)?.recreate()
+            } catch (error: Exception) {
+                Toast.makeText(context, (if (isArabic) "فشلت استعادة النسخة: " else "Restore failed: ") + (error.localizedMessage ?: ""), Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+    val excelImportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) scope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    val imported = ExcelImporter.readDoctors(context.contentResolver, uri)
+                    val dao = database.doctorDao()
+                    val existing = dao.getAllForImport()
+                    val knownPhones = existing.flatMap { splitPhones(it.phoneNumbers) }.mapNotNull(::normalizePhone).toMutableSet()
+                    var added = 0
+                    var skipped = 0
+                    imported.forEach { row ->
+                        val rowPhones = splitPhones(row.phone).mapNotNull(::normalizePhone).toSet()
+                        if (rowPhones.isEmpty() || rowPhones.any { it in knownPhones }) {
+                            skipped++
+                        } else {
+                            dao.insert(DoctorEntity(name = row.name, phoneNumbers = row.phone))
+                            knownPhones.addAll(rowPhones)
+                            added++
+                        }
+                    }
+                    added to skipped
+                }
+                Toast.makeText(context, if (isArabic)
+                    "تمت إضافة ${result.first} طبيب جديد، وتخطي ${result.second} مكرر."
+                    else "Added ${result.first} new doctors; skipped ${result.second} duplicates.", Toast.LENGTH_LONG).show()
+            } catch (error: Exception) {
+                Toast.makeText(context, (if (isArabic) "فشل استيراد Excel: " else "Excel import failed: ") + (error.localizedMessage ?: ""), Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -127,9 +218,47 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
             }
         }
         item {
-            Button(onClick = { exportLauncher.launch("MedicalRepManager_Export.xlsx") }, modifier = Modifier.fillMaxWidth()) {
-                Icon(Icons.Default.FileDownload, contentDescription = null)
-                Text(if (isArabic) "تصدير بيانات Excel (الأطباء والزيارات والمراكز)" else "Export Excel (Doctors, Visits & Centers)", modifier = Modifier.padding(start = 8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                Box(modifier = Modifier.weight(1f)) {
+                    Button(onClick = { exportMenuExpanded = true }, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Default.FileDownload, contentDescription = null)
+                        Text(if (isArabic) "تصدير" else "Export", modifier = Modifier.padding(start = 4.dp))
+                        Icon(Icons.Default.KeyboardArrowUp, contentDescription = null)
+                    }
+                    DropdownMenu(expanded = exportMenuExpanded, onDismissRequest = { exportMenuExpanded = false }) {
+                        DropdownMenuItem(
+                            text = { Text(if (isArabic) "Excel — أسماء وأرقام الأطباء" else "Excel — doctor names & phones") },
+                            onClick = { exportMenuExpanded = false; excelExportLauncher.launch("Doctors.xlsx") }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(if (isArabic) "نسخة كاملة من التطبيق" else "Full app backup") },
+                            onClick = { exportMenuExpanded = false; fullBackupExportLauncher.launch("MedicalRepManager_FullBackup.zip") }
+                        )
+                    }
+                }
+                Box(modifier = Modifier.weight(1f)) {
+                    Button(onClick = { importMenuExpanded = true }, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Default.FileUpload, contentDescription = null)
+                        Text(if (isArabic) "استيراد" else "Import", modifier = Modifier.padding(start = 4.dp))
+                        Icon(Icons.Default.KeyboardArrowUp, contentDescription = null)
+                    }
+                    DropdownMenu(expanded = importMenuExpanded, onDismissRequest = { importMenuExpanded = false }) {
+                        DropdownMenuItem(
+                            text = { Text(if (isArabic) "استعادة نسخة التطبيق الكاملة" else "Restore full app backup") },
+                            onClick = {
+                                importMenuExpanded = false
+                                fullBackupImportLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(if (isArabic) "استيراد قائمة الأطباء من Excel" else "Import doctors from Excel") },
+                            onClick = {
+                                importMenuExpanded = false
+                                excelImportLauncher.launch(arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/octet-stream", "*/*"))
+                            }
+                        )
+                    }
+                }
             }
         }
         item {
@@ -278,4 +407,25 @@ private fun EmptyDashboardCard(message: String) {
     Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
         Text(message, Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
+}
+
+
+private fun splitPhones(value: String): List<String> =
+    value.split(Regex("[,;\\n\\r•|/]")).map { it.trim() }.filter { it.isNotBlank() }
+
+private fun normalizePhone(value: String): String? {
+    val normalizedDigits = value.map { char ->
+        when (char) {
+            in '٠'..'٩' -> ('0'.code + char.code - '٠'.code).toChar()
+            in '۰'..'۹' -> ('0'.code + char.code - '۰'.code).toChar()
+            else -> char
+        }
+    }.filter { it.isDigit() }
+    return normalizedDigits.takeIf { it.isNotBlank() }
+}
+
+private tailrec fun findDashboardActivity(context: Context): Activity? = when (context) {
+    is Activity -> context
+    is ContextWrapper -> findDashboardActivity(context.baseContext)
+    else -> null
 }

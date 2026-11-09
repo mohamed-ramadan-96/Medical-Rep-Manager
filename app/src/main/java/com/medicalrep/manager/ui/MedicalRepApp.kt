@@ -50,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
@@ -75,7 +76,13 @@ private val tabs = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MedicalRepApp() {
-    var language by remember { mutableStateOf(AppLanguage.Arabic) }
+    val context = LocalContext.current
+    val preferences = remember(context) {
+        context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
+    }
+    var language by rememberSaveable {
+        mutableStateOf(if (preferences.getBoolean("arabic_language", true)) AppLanguage.Arabic else AppLanguage.English)
+    }
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val isArabic = language == AppLanguage.Arabic
 
@@ -102,6 +109,7 @@ fun MedicalRepApp() {
                     actions = {
                         IconButton(onClick = {
                             language = if (isArabic) AppLanguage.English else AppLanguage.Arabic
+                            preferences.edit().putBoolean("arabic_language", language == AppLanguage.Arabic).apply()
                         }) {
                             Icon(Icons.Filled.Language, contentDescription = "Change language")
                         }

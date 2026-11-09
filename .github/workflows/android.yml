@@ -3,7 +3,7 @@ run-name: ${{ github.event.head_commit.message || github.workflow }}
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "Final" ]
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
@@ -34,13 +34,14 @@ jobs:
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
-            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/medical-rep-manager.jks"
-            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/medical-rep-manager.jks" >> "$GITHUB_ENV"
-            echo "Stable Android signing key restored."
-          else
-            echo "Stable signing secret is not configured yet; using the default debug key."
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 is not configured; release signing is required."
+            exit 1
           fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/medical-rep-manager.jks"
+          test -s "$RUNNER_TEMP/medical-rep-manager.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/medical-rep-manager.jks" >> "$GITHUB_ENV"
+          echo "Stable Android signing key restored."
 
       - name: Verify stable signing key
         env:

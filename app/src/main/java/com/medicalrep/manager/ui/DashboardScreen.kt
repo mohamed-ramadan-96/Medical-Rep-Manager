@@ -156,7 +156,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                             Toast.makeText(context, (if (isArabic) "فشل استيراد Excel: " else "Excel import failed: ") + (error.localizedMessage ?: ""), Toast.LENGTH_LONG).show()
                         }
                     }
-                }) { Text(if (isArabic) "متابعة الاستيراد" else "Continue import") }
+                }) { Text(if (isArabic) "تأكيد" else "Confirm") }
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(onClick = { pendingExcelImportUri = null }) {
@@ -178,7 +178,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                 androidx.compose.material3.TextButton(onClick = {
                     showExcelExportConfirmation = false
                     excelExportLauncher.launch("Doctors.xlsx")
-                }) { Text(if (isArabic) "متابعة التصدير" else "Continue export") }
+                }) { Text(if (isArabic) "تأكيد" else "Confirm") }
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(onClick = { showExcelExportConfirmation = false }) {
@@ -294,7 +294,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                     }
                     DropdownMenu(expanded = exportMenuExpanded, onDismissRequest = { exportMenuExpanded = false }) {
                         DropdownMenuItem(
-                            text = { Text(if (isArabic) "Excel — أسماء وأرقام الأطباء" else "Excel — doctor names & phones") },
+                            text = { Text(if (isArabic) "تصدير القائمة كملف Excel" else "Export list as Excel file") },
                             onClick = { exportMenuExpanded = false; showExcelExportConfirmation = true }
                         )
                         DropdownMenuItem(
@@ -310,7 +310,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                     }
                     DropdownMenu(expanded = importMenuExpanded, onDismissRequest = { importMenuExpanded = false }) {
                         DropdownMenuItem(
-                            text = { Text(if (isArabic) "استيراد قائمة الأطباء من Excel" else "Import doctors from Excel") },
+                            text = { Text(if (isArabic) "استيراد القائمة من ملف Excel" else "Import list from Excel file") },
                             onClick = {
                                 importMenuExpanded = false
                                 excelImportLauncher.launch(arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/octet-stream", "*/*"))

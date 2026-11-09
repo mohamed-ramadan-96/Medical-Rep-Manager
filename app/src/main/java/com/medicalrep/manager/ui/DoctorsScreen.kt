@@ -372,6 +372,11 @@ private fun DoctorDetailsDialog(
                                     }
                                 )
                             }
+                            CurrentLocationButton(isArabic = isArabic) { lat, lon ->
+                                doctorLatitude = lat
+                                doctorLongitude = lon
+                                onUpdateDoctorLocation(doctor.copy(latitude = lat, longitude = lon))
+                            }
                             if (doctorLatitude != null && doctorLongitude != null) {
                                 IconButton(
                                     modifier = Modifier.size(40.dp),
@@ -670,6 +675,10 @@ private fun DoctorFormDialog(
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(if (isArabic) "موقع الطبيب" else "Doctor location", style = MaterialTheme.typography.labelLarge)
                         Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            CurrentLocationButton(isArabic = isArabic) { lat, lon ->
+                                latitude = lat
+                                longitude = lon
+                            }
                             TextButton(onClick = { showDoctorMapPicker = true }) {
                                 Text(
                                     if (latitude != null && longitude != null) {

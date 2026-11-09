@@ -117,7 +117,9 @@ object DriveBackupEngine {
                             zip.closeEntry()
                             photos.put(JSONObject().put("doctorId", doctorId).put("entry", entryName))
                         }
-                    } catch (_: Exception) { }
+                    } catch (error: Exception) {
+                        throw java.io.IOException("Could not include the photo for doctor #$doctorId in the backup. Backup cancelled to prevent silent photo loss.", error)
+                    }
                 }
                 manifest.put("photos", photos).put("attachments", attachments)
                 zip.putNextEntry(ZipEntry("backup-manifest.json"))
@@ -272,6 +274,7 @@ object DriveBackupEngine {
     }
 
     private fun restoreArchive(context: Context, archive: File) {
+        require(archive.length() <= 2L * 1024L * 1024L * 1024L) { "Backup archive is too large" }
         val staging = File(context.cacheDir, "restore-stage-${UUID.randomUUID()}").apply { mkdirs() }
         val rollback = File(context.cacheDir, "restore-rollback-${UUID.randomUUID()}").apply { mkdirs() }
         val dbName = "medical_rep_manager.db"
@@ -287,15 +290,19 @@ object DriveBackupEngine {
         val movedAttachmentDirs = mutableListOf<String>()
         var newDbInstalled = false
         var preserveRollback = false
+        var roomClosed = false
         val installedAttachmentDirs = mutableListOf<String>()
 
         try {
             // Extract into private staging and reject traversal, duplicate paths, and oversized archives.
             var extractedBytes = 0L
+            var entryCount = 0
             val seenEntries = HashSet<String>()
             ZipInputStream(FileInputStream(archive)).use { zip ->
                 while (true) {
                     val entry = zip.nextEntry ?: break
+                    entryCount++
+                    check(entryCount <= 10000) { "Backup archive contains too many entries" }
                     val normalized = entry.name.replace('\\', '/')
                     check(normalized.isNotBlank() && !normalized.startsWith("/") &&
                         normalized.split('/').none { it == ".." || it.isBlank() }) { "Invalid backup archive path" }
@@ -326,8 +333,9 @@ object DriveBackupEngine {
             check(dbSource.isFile && dbSource.length() > 0 && manifestFile.isFile) { "Backup archive is incomplete" }
             val manifest = JSONObject(manifestFile.readText())
             check(manifest.optInt("version") == 1) { "Unsupported backup version" }
-            val photos = manifest.optJSONArray("photos") ?: JSONArray()
-            val attachments = manifest.optJSONArray("attachments") ?: JSONArray()
+            check(manifest.has("photos") && manifest.has("attachments")) { "Backup manifest is incomplete" }
+            val photos = manifest.getJSONArray("photos")
+            val attachments = manifest.getJSONArray("attachments")
 
             // Prepare all restored files without touching the currently installed data.
             attachmentFolders.forEach { folder ->
@@ -348,8 +356,17 @@ object DriveBackupEngine {
                 fun hasTable(name: String): Boolean {
                     writable.rawQuery("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", arrayOf(name)).use { return it.moveToFirst() }
                 }
-                check(hasTable("doctors") && hasTable("doctor_attachments") && hasTable("center_attachments")) {
-                    "Backup database is missing required tables"
+                val requiredTables = listOf(
+                    "doctors", "medical_centers", "specialties", "doctor_attachments",
+                    "center_attachments", "doctor_availability", "doctor_visits", "doctor_center_links"
+                )
+                requiredTables.forEach { table ->
+                    check(hasTable(table)) { "Backup database is missing required table: $table" }
+                }
+                writable.rawQuery("PRAGMA user_version", null).use { cursor ->
+                    check(cursor.moveToFirst() && cursor.getInt(0) == 12) {
+                        "Unsupported database schema version; expected version 12"
+                    }
                 }
                 writable.rawQuery("PRAGMA integrity_check", null).use { cursor ->
                     check(cursor.moveToFirst() && cursor.getString(0) == "ok") { "Backup database integrity check failed" }
@@ -371,9 +388,15 @@ object DriveBackupEngine {
                     val target = File(File(context.filesDir, "doctor_photos.restore-new"), source.name)
                     target.parentFile?.mkdirs()
                     source.copyTo(target, overwrite = true)
+                    val restoredUri = Uri.fromFile(File(File(context.filesDir, "doctor_photos"), source.name)).toString()
                     writable.execSQL("UPDATE doctors SET photoUri = ? WHERE id = ?",
-                        arrayOf(Uri.fromFile(File(File(context.filesDir, "doctor_photos"), source.name)).toString(), doctorId))
-                    restoredPhotoIds.add(doctorId)
+                        arrayOf(restoredUri, doctorId))
+                    writable.rawQuery("SELECT photoUri FROM doctors WHERE id = ?", arrayOf(doctorId.toString())).use { cursor ->
+                        check(cursor.moveToFirst() && cursor.getString(0) == restoredUri) {
+                            "Backup photo refers to a doctor that does not exist"
+                        }
+                    }
+                    check(restoredPhotoIds.add(doctorId)) { "Backup manifest contains duplicate doctor photos" }
                 }
 
                 // Restore attachment paths in the database and verify every referenced file exists.
@@ -417,6 +440,7 @@ object DriveBackupEngine {
 
             // Close Room only after all archive and database validation has passed.
             MedicalRepDatabase.closeInstance()
+            roomClosed = true
             dbTarget.parentFile?.mkdirs()
             dbOld.delete()
             if (dbTarget.exists()) {
@@ -472,7 +496,7 @@ object DriveBackupEngine {
         } catch (error: Exception) {
             // Roll back every installed component and restore the previous database/files.
             try {
-                MedicalRepDatabase.closeInstance()
+                if (roomClosed) MedicalRepDatabase.closeInstance()
                 installedAttachmentDirs.asReversed().forEach { File(context.filesDir, it).deleteRecursively() }
                 if (newDbInstalled) dbTarget.delete()
                 movedAttachmentDirs.asReversed().forEach { folder ->
@@ -503,6 +527,7 @@ object DriveBackupEngine {
             File(context.filesDir, "doctor_photos.restore-new").deleteRecursively()
             staging.deleteRecursively()
             if (!preserveRollback) rollback.deleteRecursively()
+            if (roomClosed) runCatching { MedicalRepDatabase.getInstance(context) }
         }
     }
 

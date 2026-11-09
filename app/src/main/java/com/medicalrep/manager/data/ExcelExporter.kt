@@ -54,7 +54,7 @@ object ExcelExporter {
 
     private fun xml(value: String): String = value.replace("&", "&amp;").replace("<", "&lt;")
         .replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&apos;")
-        .filter { it == '\\t' || it == '\\n' || it == '\\r' || it.code >= 0x20 }
+        .filter { it == '\t' || it == '\n' || it == '\r' || it.code >= 0x20 }
 
     private fun columnName(number: Int): String {
         var n = number

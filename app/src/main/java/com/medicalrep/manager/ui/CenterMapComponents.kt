@@ -107,6 +107,7 @@ fun CenterMapPickerDialog(
     var sharedLink by remember { mutableStateOf("") }
     var linkError by remember { mutableStateOf(false) }
     var resolving by remember { mutableStateOf(false) }
+    var debugInfo by remember { mutableStateOf("") }
 
     LaunchedEffect(MapShareState.sharedText) {
         val incoming = MapShareState.sharedText
@@ -121,17 +122,35 @@ fun CenterMapPickerDialog(
     LaunchedEffect(resolving, sharedLink) {
         if (resolving && sharedLink.isNotBlank()) {
             val resolved = resolveSharedMapLink(sharedLink)
-            val pageMapUrl = resolved?.page?.let(::extractGoogleMapsUrls)
-                ?.firstNotNullOfOrNull { parseMapCoordinates(it, allowViewport = false) }
-            val parsed = parseMapCoordinates(sharedLink, allowViewport = false)
+            val pageMapUrls = resolved?.page?.let(::extractGoogleMapsUrls).orEmpty()
+            val pageMapUrl = pageMapUrls.firstNotNullOfOrNull {
+                parseMapCoordinates(it, allowViewport = false)
+            }
+            val directCoordinates = parseMapCoordinates(sharedLink, allowViewport = false)
                 ?: resolved?.let {
                     parseMapCoordinates(it.url, allowViewport = false)
                         ?: parseMapCoordinates(it.page, allowViewport = false)
                 }
                 ?: pageMapUrl
-                ?: geocodeSharedMapPlace(sharedLink, resolved?.url, resolved?.page)
+            val placeName = extractGoogleMapsPlaceName(sharedLink, resolved?.url, resolved?.page)
+            val geocoded = if (directCoordinates == null) {
+                geocodeSharedMapPlace(sharedLink, resolved?.url, resolved?.page)
+            } else null
+            val parsed = directCoordinates
+                ?: geocoded
                 ?: parseMapCoordinates(sharedLink)
                 ?: resolved?.let { parseMapCoordinates(it.url) }
+
+            debugInfo = buildString {
+                append("Redirect status: ").append(resolved?.statusCode?.toString() ?: "unavailable")
+                append("\\nFinal URL: ").append(resolved?.url ?: "not resolved")
+                append("\\nPage size: ").append(resolved?.page?.length ?: 0)
+                append("\\nMaps URLs found in page: ").append(pageMapUrls.size)
+                append("\\nPlace name: ").append(placeName ?: "not extracted")
+                append("\\nCoordinates in link/page: ").append(if (directCoordinates != null) "yes" else "no")
+                append("\\nName lookup: ").append(if (geocoded != null) "found coordinates" else if (directCoordinates == null) "no coordinates returned" else "not needed")
+                resolved?.error?.let { append("\\nConnection error: ").append(it) }
+            }
             if (parsed != null) {
                 latitude = parsed.first
                 longitude = parsed.second
@@ -185,9 +204,10 @@ fun CenterMapPickerDialog(
                 }
                 if (linkError) {
                     Text(
-                        if (isArabic) "تعذر تحديد المكان من الرابط أو اسمه. جرّب مشاركة المكان من بطاقة Google Maps مرة أخرى، أو استخدم الضغط المطوّل لوضع Pin."
-                        else "Could not locate this place from its link or name. Try sharing it again from the Google Maps place card, or long-press to drop a pin."
+                        if (isArabic) "تعذر تحديد المكان. تفاصيل التشخيص:"
+                        else "Could not locate this place. Diagnostics:"
                     )
+                    Text(debugInfo, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
                 }
                 if (latitude != null && longitude != null) {
                     Text(String.format(Locale.US, "Latitude: %.6f   Longitude: %.6f", latitude, longitude))
@@ -321,18 +341,21 @@ private suspend fun geocodeSharedMapPlace(
     }
 }
 
-private data class ResolvedMapLink(val url: String, val page: String)
+private data class ResolvedMapLink(
+    val url: String,
+    val page: String,
+    val statusCode: Int? = null,
+    val error: String? = null
+)
 
 private suspend fun resolveSharedMapLink(raw: String): ResolvedMapLink? = withContext(Dispatchers.IO) {
+    var currentUrl = Regex("https?://[^\\s<>]+", RegexOption.IGNORE_CASE)
+        .find(raw)?.value?.trimEnd('.', ')', ']', ',')
+        ?: return@withContext null
+    var page = ""
+    var lastStatusCode: Int? = null
     try {
-        var currentUrl = Regex("https?://[^\\s<>]+", RegexOption.IGNORE_CASE)
-            .find(raw)?.value?.trimEnd('.', ')', ']', ',')
-            ?: return@withContext null
-
-        // Resolve maps.app.goo.gl / goo.gl short links explicitly. Some Google
-        // redirects cross hosts, so follow Location headers ourselves instead
-        // of relying on HttpURLConnection's automatic redirect handling.
-        var page = ""
+        // Resolve Google short links one redirect at a time and retain diagnostics.
         repeat(12) {
             var connection: HttpURLConnection? = null
             try {
@@ -353,6 +376,7 @@ private suspend fun resolveSharedMapLink(raw: String): ResolvedMapLink? = withCo
                 connection.connect()
 
                 val status = connection.responseCode
+                lastStatusCode = status
                 val location = connection.getHeaderField("Location")
                 if (status in 300..399 && !location.isNullOrBlank()) {
                     currentUrl = URL(URL(currentUrl), location).toString()
@@ -376,13 +400,18 @@ private suspend fun resolveSharedMapLink(raw: String): ResolvedMapLink? = withCo
                     }
                     output.toString()
                 }.orEmpty()
-                return@withContext ResolvedMapLink(currentUrl, page)
+                return@withContext ResolvedMapLink(currentUrl, page, lastStatusCode)
             } finally {
                 connection?.disconnect()
             }
         }
-        ResolvedMapLink(currentUrl, page)
-    } catch (_: Exception) {
-        null
+        ResolvedMapLink(currentUrl, page, lastStatusCode)
+    } catch (error: Exception) {
+        ResolvedMapLink(
+            currentUrl,
+            page,
+            lastStatusCode,
+            "${error.javaClass.simpleName}: ${error.message ?: "no message"}"
+        )
     }
 }

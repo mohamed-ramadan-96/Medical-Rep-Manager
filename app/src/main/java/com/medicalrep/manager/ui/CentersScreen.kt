@@ -106,7 +106,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     items(centers, key = { it.id }) { center ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(18.dp),
+                            shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                         ) {
                             Row(

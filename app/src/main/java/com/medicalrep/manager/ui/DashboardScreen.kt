@@ -443,7 +443,7 @@ private fun normalizePhone(value: String): String? {
             else -> char
         }
     }.filter { it.isDigit() }
-    return normalizedDigits.takeIf { it.isNotBlank() }
+    return normalizedDigits.joinToString("").takeIf { it.isNotBlank() }
 }
 
 private tailrec fun findDashboardActivity(context: Context): Activity? = when (context) {

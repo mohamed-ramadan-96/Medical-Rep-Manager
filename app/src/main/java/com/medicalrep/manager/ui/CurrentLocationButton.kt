@@ -6,13 +6,11 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.using
 import androidx.compose.animation.core.tween
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -118,8 +116,7 @@ internal fun AnimatedLocationActions(
         targetState = visible,
         transitionSpec = {
             (fadeIn(tween(180)) + slideInVertically(tween(220)) { height -> height / 6 }) togetherWith
-                (fadeOut(tween(120)) + slideOutVertically(tween(160)) { height -> -height / 10 }) using
-                SizeTransform(clip = false)
+                (fadeOut(tween(120)) + slideOutVertically(tween(160)) { height -> -height / 10 })
         },
         label = "location_actions_transition"
     ) { showActions ->

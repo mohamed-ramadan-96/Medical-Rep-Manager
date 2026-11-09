@@ -298,7 +298,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                     }
                     DropdownMenu(expanded = exportMenuExpanded, onDismissRequest = { exportMenuExpanded = false }) {
                         DropdownMenuItem(
-                            text = { Text(if (isArabic) "تصدير القائمة كملف Excel" else "Export list as Excel file") },
+                            text = { Text(if (isArabic) "تصدير القائمة كملف \u2066Excel\u2069" else "Export list as Excel file") },
                             onClick = { exportMenuExpanded = false; showExcelExportConfirmation = true }
                         )
                         DropdownMenuItem(
@@ -314,7 +314,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                     }
                     DropdownMenu(expanded = importMenuExpanded, onDismissRequest = { importMenuExpanded = false }) {
                         DropdownMenuItem(
-                            text = { Text(if (isArabic) "استيراد القائمة من ملف Excel" else "Import list from Excel file") },
+                            text = { Text(if (isArabic) "استيراد القائمة من ملف \u2066Excel\u2069" else "Import list from Excel file") },
                             onClick = {
                                 importMenuExpanded = false
                                 showExcelImportConfirmation = true

@@ -112,9 +112,16 @@ fun CenterMapPickerDialog(
         val incoming = MapShareState.sharedText
         if (!incoming.isNullOrBlank()) {
             sharedLink = incoming.trim()
+            linkError = false
+            MapShareState.sharedText = null
             resolving = true
-            val parsed = parseMapCoordinates(incoming)
-                ?: resolveSharedMapLink(incoming)?.let { resolved ->
+        }
+    }
+
+    LaunchedEffect(resolving, sharedLink) {
+        if (resolving && sharedLink.isNotBlank()) {
+            val parsed = parseMapCoordinates(sharedLink)
+                ?: resolveSharedMapLink(sharedLink)?.let { resolved ->
                     parseMapCoordinates(resolved.url) ?: parseMapCoordinates(resolved.page)
                 }
             if (parsed != null) {
@@ -125,7 +132,6 @@ fun CenterMapPickerDialog(
                 linkError = true
             }
             resolving = false
-            MapShareState.sharedText = null
         }
     }
 

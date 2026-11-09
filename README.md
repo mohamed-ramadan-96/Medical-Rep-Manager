@@ -1,32 +1,46 @@
 # Medical Rep Manager
 
-An offline-first Android application for medical representatives to manage doctors, clinics, medical centers, schedules, visit history, notes, and attachments.
+An offline-first Android application for medical representatives to manage doctors, medical centers, specialties, availability schedules, visit history, follow-ups, locations, photos, and attachments.
 
-## Project status
+## Current capabilities
 
-**Foundation / Phase 1** — Android project scaffold and bilingual Material 3 interface.
+- Arabic and English interface with RTL support and persisted language preference.
+- Doctor profiles with multiple phone numbers, specialties, multiple medical-center links, notes, photos, map locations, and attachments.
+- Medical centers and specialties management.
+- Weekly availability slots linked to doctors and centers.
+- Visit history, outcomes, notes, and follow-up dates.
+- Dashboard statistics, recent activity, and upcoming follow-ups.
+- Excel import/export for doctor names and phone numbers.
+- Full local ZIP backup and optional Google Drive backup/restore, including database, doctor photos, and attachments.
+- Scheduled Google Drive backups through WorkManager.
 
 ## Technology
 
-- Kotlin
-- Jetpack Compose + Material 3
-- AndroidX Navigation Compose
-- Room (planned for the local database phase)
-- Google Drive API (planned for optional backup and restore)
+- Kotlin 2.2.20, Jetpack Compose, Material 3
+- Room 2.8.3 (database schema version 12)
+- WorkManager, Google Identity authorization and Google Drive API
+- Android location services and OpenStreetMap geocoding fallback
+- Coil for image loading
 
-## Languages
+## Android requirements
 
-Arabic and English, with an in-app language switch and correct RTL layout for Arabic.
+- Minimum SDK: 26; Target / Compile SDK: 36
+- JDK 17; Gradle 8.13
+- Gradle wrapper is not currently committed; CI provisions Gradle.
 
-## Build
+## Build and CI
 
-The GitHub Actions workflow builds a debug APK. Download it from the workflow run's **Artifacts** section.
+GitHub Actions builds a signed release APK for pushes to `main` and `Final`, pull requests targeting `main`, and manual workflow dispatches. The APK is uploaded as the `medical-rep-manager-release` artifact.
 
-The project uses Gradle's command-line build in CI; no Gradle wrapper binary is committed in this initial scaffold.
+Release signing requires repository secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`.
 
-## Privacy
+## Backup and privacy
 
-Doctor and clinic data is intended to remain local to the device unless the user explicitly configures backup. Never commit personal or medical contact data, credentials, OAuth secrets, or backup files to this repository.
+Android system Auto Backup is disabled so doctor and clinic records are not silently copied outside the app's explicit backup flow. Google Drive backup is optional and requires user authorization. Backups contain the local database, doctor photos, and attachments; protect access to the Google account and downloaded backup files.
+
+Never commit personal or medical contact data, credentials, OAuth secrets, keystores, or backup files to this repository.
+
+See [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md) for implemented work and remaining validation tasks.
 
 ## License
 

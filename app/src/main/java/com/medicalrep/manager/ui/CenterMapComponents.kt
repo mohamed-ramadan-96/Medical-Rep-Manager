@@ -301,36 +301,65 @@ private suspend fun geocodeSharedMapPlace(
 private data class ResolvedMapLink(val url: String, val page: String)
 
 private suspend fun resolveSharedMapLink(raw: String): ResolvedMapLink? = withContext(Dispatchers.IO) {
-    var connection: HttpURLConnection? = null
     try {
-        val match = Regex("https?://[^\\s<>]+", RegexOption.IGNORE_CASE).find(raw)?.value
+        var currentUrl = Regex("https?://[^\\\\s<>]+", RegexOption.IGNORE_CASE)
+            .find(raw)?.value?.trimEnd('.', ')', ']', ',')
             ?: return@withContext null
-        connection = URL(match.trimEnd('.', ')', ']', ',')).openConnection() as HttpURLConnection
-        connection.instanceFollowRedirects = true
-        connection.connectTimeout = 15000
-        connection.readTimeout = 15000
-        connection.requestMethod = "GET"
-        connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/120.0 Mobile Safari/537.36")
-        connection.setRequestProperty("Accept", "text/html,application/xhtml+xml,*/*")
-        connection.connect()
-        val resolvedUrl = connection.url.toString()
-        val stream = if (connection.responseCode in 200..399) connection.inputStream else connection.errorStream
-        val page = stream?.bufferedReader()?.use { reader ->
-            val output = StringBuilder()
-            val buffer = CharArray(8192)
-            var total = 0
-            while (total < 2_000_000) {
-                val count = reader.read(buffer, 0, minOf(buffer.size, 2_000_000 - total))
-                if (count <= 0) break
-                output.append(buffer, 0, count)
-                total += count
+
+        // Resolve maps.app.goo.gl / goo.gl short links explicitly. Some Google
+        // redirects cross hosts, so follow Location headers ourselves instead
+        // of relying on HttpURLConnection's automatic redirect handling.
+        var page = ""
+        repeat(12) {
+            var connection: HttpURLConnection? = null
+            try {
+                connection = URL(currentUrl).openConnection() as HttpURLConnection
+                connection.instanceFollowRedirects = false
+                connection.connectTimeout = 15000
+                connection.readTimeout = 15000
+                connection.requestMethod = "GET"
+                connection.setRequestProperty(
+                    "User-Agent",
+                    "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36"
+                )
+                connection.setRequestProperty(
+                    "Accept",
+                    "text/html,application/xhtml+xml,application/json,*/*"
+                )
+                connection.setRequestProperty("Accept-Language", "ar,en-US;q=0.9,en;q=0.8")
+                connection.connect()
+
+                val status = connection.responseCode
+                val location = connection.getHeaderField("Location")
+                if (status in 300..399 && !location.isNullOrBlank()) {
+                    currentUrl = URL(URL(currentUrl), location).toString()
+                    return@repeat
+                }
+
+                val stream = if (status in 200..399) {
+                    connection.inputStream
+                } else {
+                    connection.errorStream
+                }
+                page = stream?.bufferedReader()?.use { reader ->
+                    val output = StringBuilder()
+                    val buffer = CharArray(8192)
+                    var total = 0
+                    while (total < 2_000_000) {
+                        val count = reader.read(buffer, 0, minOf(buffer.size, 2_000_000 - total))
+                        if (count <= 0) break
+                        output.append(buffer, 0, count)
+                        total += count
+                    }
+                    output.toString()
+                }.orEmpty()
+                return@withContext ResolvedMapLink(currentUrl, page)
+            } finally {
+                connection?.disconnect()
             }
-            output.toString()
-        }.orEmpty()
-        ResolvedMapLink(resolvedUrl, page)
+        }
+        ResolvedMapLink(currentUrl, page)
     } catch (_: Exception) {
         null
-    } finally {
-        connection?.disconnect()
     }
 }

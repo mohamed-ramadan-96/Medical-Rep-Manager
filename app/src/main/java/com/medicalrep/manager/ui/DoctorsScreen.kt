@@ -176,7 +176,10 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             availability = availability.filter { it.doctorId == doctor.id },
             visits = visits.filter { it.doctorId == doctor.id },
             isArabic = isArabic,
-            onDismiss = { detailsDoctor = null }
+            onDismiss = { detailsDoctor = null },
+            onUpdateCenterLocation = { center, latitude, longitude ->
+                scope.launch { centerDao.update(center.copy(latitude = latitude, longitude = longitude)) }
+            }
         )
     }
 
@@ -313,9 +316,11 @@ private fun DoctorDetailsDialog(
     availability: List<DoctorAvailabilityEntity>,
     visits: List<DoctorVisitEntity>,
     isArabic: Boolean,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onUpdateCenterLocation: (MedicalCenterEntity, Double, Double) -> Unit
 ) {
     val context = LocalContext.current
+    var mapPickerCenter by remember { mutableStateOf<MedicalCenterEntity?>(null) }
     val days = listOf(
         1 to (if (isArabic) "الاثنين" else "Monday"),
         2 to (if (isArabic) "الثلاثاء" else "Tuesday"),
@@ -365,6 +370,15 @@ private fun DoctorDetailsDialog(
                                     Text(if (isArabic) "الاتجاهات إلى هذا المركز" else "Directions to this center")
                                 }
                             }
+                            TextButton(onClick = { mapPickerCenter = center }) {
+                                Text(
+                                    if (center.latitude != null && center.longitude != null) {
+                                        if (isArabic) "تعديل موقع هذا المركز" else "Change this center's location"
+                                    } else {
+                                        if (isArabic) "تحديد موقع هذا المركز على الخريطة" else "Set this center's map location"
+                                    }
+                                )
+                            }
                             if (centerGroups.isEmpty()) {
                                 Text(if (isArabic) "لم تُحدد مواعيد لهذا المركز." else "No hours set for this center.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                             } else {
@@ -404,6 +418,19 @@ private fun DoctorDetailsDialog(
             TextButton(onClick = onDismiss) { Text(if (isArabic) "إغلاق" else "Close") }
         }
     )
+
+    mapPickerCenter?.let { center ->
+        CenterMapPickerDialog(
+            isArabic = isArabic,
+            initialLatitude = center.latitude,
+            initialLongitude = center.longitude,
+            onDismiss = { mapPickerCenter = null },
+            onConfirm = { latitude, longitude ->
+                onUpdateCenterLocation(center, latitude, longitude)
+                mapPickerCenter = null
+            }
+        )
+    }
 }
 
 @Composable

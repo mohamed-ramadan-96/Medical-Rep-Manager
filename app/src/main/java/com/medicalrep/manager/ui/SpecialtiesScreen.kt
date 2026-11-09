@@ -98,7 +98,7 @@ fun SpecialtiesScreen(isArabic: Boolean, padding: androidx.compose.foundation.la
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.MedicalServices, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                                Icon(Icons.Default.MedicalServices, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                                 Text(
                                     specialty.name,
                                     modifier = Modifier.weight(1f),

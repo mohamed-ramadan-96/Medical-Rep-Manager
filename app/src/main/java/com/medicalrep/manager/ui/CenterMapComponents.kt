@@ -90,7 +90,7 @@ fun CenterMapPreview(
         androidx.compose.material3.Surface(
             modifier = modifier,
             color = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
         ) {
             Column(
                 modifier = Modifier.padding(12.dp),

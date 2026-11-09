@@ -1,5 +1,12 @@
 package com.medicalrep.manager.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.tween
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.animateContentSize
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.platform.LocalContext
@@ -135,6 +143,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                 }
                                 IconButton(modifier = Modifier.size(40.dp), onClick = { pendingDelete = center }) {
                                     Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete", modifier = Modifier.size(20.dp))
+                                }
                                 }
                             }
                         }
@@ -283,13 +292,19 @@ private fun CenterFormDialog(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            OutlinedButton(
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = { openSavedMapLocation(context, latitude, longitude, mapUrl) }
+                            ) {
+                                Text(if (isArabic) "عرض المكان على الخريطة" else "View place on map")
+                            }
                         } else if (!mapUrl.isNullOrBlank()) {
-                            Text(
-                                if (isArabic) "تم حفظ رابط المكان وسيُفتح مباشرة على Google Maps."
-                                else "The place link is saved and will open directly in Google Maps.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            OutlinedButton(
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = { openSavedMapLocation(context, latitude, longitude, mapUrl) }
+                            ) {
+                                Text(if (isArabic) "عرض المكان على الخريطة" else "View place on map")
+                            }
                         } else {
                             Text(
                                 if (isArabic) "لم يتم تحديد موقع لهذا المركز بعد." else "No map location has been set for this center.",
@@ -298,16 +313,21 @@ private fun CenterFormDialog(
                             )
                         }
                         val hasCenterLocation = (latitude != null && longitude != null) || !mapUrl.isNullOrBlank()
-                        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(modifier = Modifier.fillMaxWidth().animateContentSize(animationSpec = tween(220)), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             if (hasCenterLocation) {
+                                OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = {
+                                    latitude = null; longitude = null; mapUrl = null; editCenterLocation = false
+                                }) { Text(if (isArabic) "مسح الموقع" else "Clear location") }
                                 OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = { editCenterLocation = !editCenterLocation }) {
                                     Text(if (isArabic) "تعديل الموقع" else "Edit location")
                                 }
-                                TextButton(modifier = Modifier.fillMaxWidth(), onClick = {
-                                    latitude = null; longitude = null; mapUrl = null; editCenterLocation = false
-                                }) { Text(if (isArabic) "مسح الموقع" else "Clear location") }
                             }
-                            if (!hasCenterLocation || editCenterLocation) {
+                            AnimatedVisibility(
+                                visible = !hasCenterLocation || editCenterLocation,
+                                enter = fadeIn(tween(180)) + expandVertically(tween(220)),
+                                exit = fadeOut(tween(120)) + shrinkVertically(tween(180))
+                            ) {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 CurrentLocationButton(isArabic = isArabic) { lat, lon ->
                                     latitude = lat; longitude = lon; mapUrl = null; editCenterLocation = false
                                 }

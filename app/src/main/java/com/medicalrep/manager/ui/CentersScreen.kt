@@ -104,7 +104,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(Icons.Default.LocalHospital, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -123,7 +123,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                             Icons.Default.LocationOn,
                                             contentDescription = if (isArabic) "الاتجاهات إلى المركز" else "Directions to center",
                                             tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(22.dp)
+                                            modifier = Modifier.size(20.dp)
                                         )
                                     }
                                 }

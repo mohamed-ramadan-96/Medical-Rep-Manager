@@ -1,5 +1,5 @@
 name: Android CI
-run-name: Android CI - retry after run #201
+run-name: ${{ github.event.head_commit.message || github.workflow }}
 
 on:
   push:

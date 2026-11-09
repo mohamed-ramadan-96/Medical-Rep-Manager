@@ -28,7 +28,8 @@ data class MedicalCenterEntity(
     val notes: String = "",
     val createdAt: Long = System.currentTimeMillis(),
     val latitude: Double? = null,
-    val longitude: Double? = null
+    val longitude: Double? = null,
+    val mapUrl: String? = null
 )
 
 
@@ -53,7 +54,8 @@ data class DoctorEntity(
     val centerId: Long? = null,
     val specialtyId: Long? = null,
     val latitude: Double? = null,
-    val longitude: Double? = null
+    val longitude: Double? = null,
+    val mapUrl: String? = null
 )
 
 
@@ -302,7 +304,7 @@ interface SpecialtyDao {
 
 @Database(
     entities = [DoctorEntity::class, MedicalCenterEntity::class, SpecialtyEntity::class, DoctorAttachmentEntity::class, CenterAttachmentEntity::class, DoctorAvailabilityEntity::class, DoctorVisitEntity::class, DoctorCenterLinkEntity::class],
-    version = 11,
+    version = 12,
     exportSchema = false
 )
 abstract class MedicalRepDatabase : RoomDatabase() {
@@ -490,6 +492,13 @@ abstract class MedicalRepDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE medical_centers ADD COLUMN mapUrl TEXT")
+                db.execSQL("ALTER TABLE doctors ADD COLUMN mapUrl TEXT")
+            }
+        }
+
         private val MIGRATION_8_9 = object : Migration(8, 9) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("""
@@ -550,7 +559,7 @@ abstract class MedicalRepDatabase : RoomDatabase() {
                     context.applicationContext,
                     MedicalRepDatabase::class.java,
                     "medical_rep_manager.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
                     .build().also { INSTANCE = it }
             }
     }

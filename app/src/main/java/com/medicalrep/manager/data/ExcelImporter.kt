@@ -29,13 +29,22 @@ object ExcelImporter {
         val rows = parseSheet(sheet, shared)
         check(rows.isNotEmpty()) { "Excel sheet is empty" }
 
+        check(rows.all { row -> row.keys.all { it == 0 || it == 1 } }) {
+            "Excel file must contain exactly two columns: Doctor Name and Phone Number"
+        }
         val header = rows.first().mapValues { it.value.trim().lowercase() }
-        val nameColumn = header.entries.firstOrNull {
-            it.value in setOf("name", "doctor name", "الاسم", "اسم الطبيب", "اسم الدكتور")
-        }?.key ?: 0
-        val phoneColumn = header.entries.firstOrNull {
-            it.value in setOf("phone", "phone number", "phone numbers", "الهاتف", "رقم الهاتف", "أرقام الهاتف", "رقم التليفون")
-        }?.key ?: 1
+        check(header.keys.containsAll(listOf(0, 1))) {
+            "Excel file must contain exactly two columns: Doctor Name and Phone Number"
+        }
+        val nameHeaders = setOf("name", "doctor name", "الاسم", "اسم الطبيب", "اسم الدكتور")
+        val phoneHeaders = setOf("phone", "phone number", "phone numbers", "الهاتف", "رقم الهاتف", "أرقام الهاتف", "رقم التليفون")
+        val nameColumn = header.entries.firstOrNull { it.key in 0..1 && it.value in nameHeaders }?.key
+            ?: error("First column must be Doctor Name")
+        val phoneColumn = header.entries.firstOrNull { it.key in 0..1 && it.value in phoneHeaders }?.key
+            ?: error("Second column must be Phone Number")
+        check(nameColumn != phoneColumn) {
+            "Excel file must contain Doctor Name and Phone Number as its two columns"
+        }
 
         return rows.drop(1).mapNotNull { row ->
             val name = row[nameColumn]?.trim().orEmpty()

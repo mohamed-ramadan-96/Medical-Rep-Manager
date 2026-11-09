@@ -263,6 +263,9 @@ interface DoctorDao {
 
     @Query("SELECT COUNT(*) FROM doctors")
     fun observeCount(): Flow<Int>
+
+    @Query("SELECT * FROM doctors")
+    suspend fun getAllForImport(): List<DoctorEntity>
 }
 
 @Dao

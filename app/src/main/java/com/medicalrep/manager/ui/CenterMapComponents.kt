@@ -255,13 +255,10 @@ private fun extractGoogleMapsPlaceName(raw: String, resolvedUrl: String?, page: 
     }
 
     val htmlTitle = page?.let { html ->
-        val metaTag = Regex("<meta[^>]*property=[\"']og:title[\"'][^>]*>", RegexOption.IGNORE_CASE)
-            .find(html)?.value
-        metaTag?.let { Regex("content=[\"']([^\"']+)[\"']", RegexOption.IGNORE_CASE).find(it)?.groupValues?.get(1) }
-            ?: Regex("<title[^>]*>(.*?)</title>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
-                .find(html)?.groupValues?.get(1)
+        Regex("<title[^>]*>(.*?)</title>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
+            .find(html)?.groupValues?.get(1)
     }?.let { title ->
-        title.replace("&amp;", "&").replace("&#39;", "'").replace("&quot;", "\"")
+        title.replace("&amp;", "&").replace("&#39;", "'")
             .substringBefore(" - Google Maps").trim()
     }
     if (!htmlTitle.isNullOrBlank() && !htmlTitle.equals("Google Maps", true)) return htmlTitle

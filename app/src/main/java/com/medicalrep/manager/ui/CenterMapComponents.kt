@@ -120,10 +120,10 @@ fun CenterMapPickerDialog(
 
     LaunchedEffect(resolving, sharedLink) {
         if (resolving && sharedLink.isNotBlank()) {
+            val resolved = resolveSharedMapLink(sharedLink)
             val parsed = parseMapCoordinates(sharedLink)
-                ?: resolveSharedMapLink(sharedLink)?.let { resolved ->
-                    parseMapCoordinates(resolved.url) ?: parseMapCoordinates(resolved.page)
-                }
+                ?: resolved?.let { parseMapCoordinates(it.url) ?: parseMapCoordinates(it.page) }
+                ?: geocodeSharedMapPlace(sharedLink, resolved?.url, resolved?.page)
             if (parsed != null) {
                 latitude = parsed.first
                 longitude = parsed.second
@@ -201,26 +201,98 @@ fun CenterMapPickerDialog(
 }
 
 private fun parseMapCoordinates(raw: String): Pair<Double, Double>? {
+    // Decode nested/escaped Google Maps URLs and HTML entities before inspecting coordinates.
     val value = Uri.decode(raw.trim())
+        .replace("&amp;", "&")
+        .replace("\\\\u003d", "=")
+        .replace("\\\\u0026", "&")
     val patterns = listOf(
-        // Prefer the place/pin coordinates embedded in Google Maps data over the map viewport (@lat,lon).
-        Regex("!3d(-?\\d{1,2}(?:\\.\\d+)?)!4d(-?\\d{1,3}(?:\\.\\d+)?)"),
-        Regex("!2d(-?\\d{1,3}(?:\\.\\d+)?)!3d(-?\\d{1,2}(?:\\.\\d+)?)"),
-        Regex("@(-?\\d{1,2}(?:\\.\\d+)?),\\s*(-?\\d{1,3}(?:\\.\\d+)?)"),
-        Regex("(?:[?&](?:q|query|destination|daddr|center|ll)=)(-?\\d{1,2}(?:\\.\\d+)?)(?:,|%2C)(-?\\d{1,3}(?:\\.\\d+)?)", RegexOption.IGNORE_CASE),
-        Regex("geo:(-?\\d{1,2}(?:\\.\\d+)?),(-?\\d{1,3}(?:\\.\\d+)?)", RegexOption.IGNORE_CASE),
-        Regex("^\\s*(-?\\d{1,2}(?:\\.\\d+)?)\\s*,\\s*(-?\\d{1,3}(?:\\.\\d+)?)\\s*$")
+        // Google Maps place/pin coordinates.
+        Regex("!3d(-?\\\\d{1,2}(?:\\\\.\\\\d+)?)!4d(-?\\\\d{1,3}(?:\\\\.\\\\d+)?)"),
+        Regex("!2d(-?\\\\d{1,3}(?:\\\\.\\\\d+)?)!3d(-?\\\\d{1,2}(?:\\\\.\\\\d+)?)"),
+        // Coordinates embedded in Maps URLs, page metadata, or JSON payloads.
+        Regex("@(-?\\\\d{1,2}(?:\\\\.\\\\d+)?),\\\\s*(-?\\\\d{1,3}(?:\\\\.\\\\d+)?)"),
+        Regex("(?:[?&](?:q|query|destination|daddr|center|ll)=)(-?\\\\d{1,2}(?:\\\\.\\\\d+)?)(?:,|%2C)(-?\\\\d{1,3}(?:\\\\.\\\\d+)?)", RegexOption.IGNORE_CASE),
+        Regex("\\\"(?:lat|latitude)\\\"\\\\s*:\\\\s*\\\"?(-?\\\\d{1,2}(?:\\\\.\\\\d+)?)\\\"?\\\\s*[,}]\\\\s*\\\"?(?:lng|lon|longitude)\\\"?\\\\s*:\\\\s*\\\"?(-?\\\\d{1,3}(?:\\\\.\\\\d+)?)", RegexOption.IGNORE_CASE),
+        Regex("geo:(-?\\\\d{1,2}(?:\\\\.\\\\d+)?),(-?\\\\d{1,3}(?:\\\\.\\\\d+)?)", RegexOption.IGNORE_CASE),
+        Regex("^\\\\s*(-?\\\\d{1,2}(?:\\\\.\\\\d+)?)\\\\s*,\\\\s*(-?\\\\d{1,3}(?:\\\\.\\\\d+)?)\\\\s*$")
     )
     for ((index, pattern) in patterns.withIndex()) {
         val match = pattern.find(value) ?: continue
         val first = match.groupValues[1].toDoubleOrNull() ?: continue
         val second = match.groupValues[2].toDoubleOrNull() ?: continue
-        // Google Maps !2d/!3d uses longitude first; other formats use latitude first.
+        // Google Maps !2d/!3d stores longitude before latitude; all other supported forms are lat/lon.
         val lat = if (index == 1) second else first
         val lon = if (index == 1) first else second
         if (lat in -90.0..90.0 && lon in -180.0..180.0) return lat to lon
     }
     return null
+}
+
+private fun extractGoogleMapsPlaceName(raw: String, resolvedUrl: String?, page: String?): String? {
+    val urlText = Regex("https?://[^\\\\s<>]+", RegexOption.IGNORE_CASE)
+        .find(raw)?.value?.trimEnd('.', ')', ']', ',')
+    val uri = runCatching { Uri.parse(resolvedUrl ?: urlText.orEmpty()) }.getOrNull()
+    if (uri != null) {
+        val segments = uri.pathSegments
+        val placeIndex = segments.indexOfFirst { it.equals("place", ignoreCase = true) }
+        if (placeIndex >= 0 && segments.size > placeIndex + 1) {
+            val candidate = segments[placeIndex + 1].replace('+', ' ').trim()
+            if (candidate.isNotBlank() && !candidate.startsWith("@")) return candidate
+        }
+        for (key in listOf("query", "q", "destination", "daddr")) {
+            val candidate = uri.getQueryParameter(key)?.trim().orEmpty()
+            if (candidate.isNotBlank() && !candidate.startsWith("place_id:", true) &&
+                !Regex("^-?\\\\d+(?:\\\\.\\\\d+)?\\\\s*,").containsMatchIn(candidate)
+            ) return candidate
+        }
+    }
+
+    val htmlTitle = page?.let {
+        Regex("(?:property=\\\"og:title\\\"[^>]*content=|content=\\\"[^\\\"]*\\\"[^>]*property=\\\"og:title\\\")[^>]*", RegexOption.IGNORE_CASE)
+            .find(it)?.value
+            ?.let { tag -> Regex("content=\\\"([^\\\"]+)\\\"", RegexOption.IGNORE_CASE).find(tag)?.groupValues?.get(1) }
+            ?: Regex("<title[^>]*>(.*?)</title>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
+                .find(it)?.groupValues?.get(1)
+    }?.let { title ->
+        title.replace("&amp;", "&").replace("&#39;", "'").replace("&quot;", "\\"")
+            .substringBefore(" - Google Maps").trim()
+    }
+    if (!htmlTitle.isNullOrBlank() && !htmlTitle.equals("Google Maps", true)) return htmlTitle
+
+    // Some share sheets include the selected place's display name before the URL.
+    val prefix = if (urlText != null) raw.substringBefore(urlText).trim() else raw.trim()
+    return prefix.takeIf { it.isNotBlank() && it.length in 2..160 && !it.contains("http", true) }
+}
+
+private suspend fun geocodeSharedMapPlace(
+    raw: String,
+    resolvedUrl: String?,
+    page: String?
+): Pair<Double, Double>? = withContext(Dispatchers.IO) {
+    var connection: HttpURLConnection? = null
+    try {
+        val placeName = extractGoogleMapsPlaceName(raw, resolvedUrl, page)
+            ?: return@withContext null
+        val encoded = java.net.URLEncoder.encode(placeName, "UTF-8")
+        val requestUrl = URL("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=$encoded")
+        connection = requestUrl.openConnection() as HttpURLConnection
+        connection.connectTimeout = 12000
+        connection.readTimeout = 12000
+        connection.requestMethod = "GET"
+        connection.setRequestProperty("User-Agent", "MedicalRepManager/1.0 (Android location lookup)")
+        connection.setRequestProperty("Accept", "application/json")
+        val body = connection.inputStream.bufferedReader().use { it.readText() }
+        val firstResult = Regex("\\\\{[^{}]*\\\"lat\\\"\\\\s*:\\\\s*\\\"(-?\\\\d+(?:\\\\.\\\\d+)?)\\\"[^{}]*\\\"lon\\\"\\\\s*:\\\\s*\\\"(-?\\\\d+(?:\\\\.\\\\d+)?)\\\"[^{}]*}")
+            .find(body) ?: return@withContext null
+        val lat = firstResult.groupValues[1].toDoubleOrNull() ?: return@withContext null
+        val lon = firstResult.groupValues[2].toDoubleOrNull() ?: return@withContext null
+        if (lat in -90.0..90.0 && lon in -180.0..180.0) lat to lon else null
+    } catch (_: Exception) {
+        null
+    } finally {
+        connection?.disconnect()
+    }
 }
 
 private data class ResolvedMapLink(val url: String, val page: String)

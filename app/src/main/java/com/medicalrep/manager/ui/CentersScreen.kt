@@ -335,11 +335,7 @@ private fun CenterFormDialog(
                                     Text(if (isArabic) "تعديل الموقع" else "Edit location")
                                 }
                             }
-                            AnimatedVisibility(
-                                visible = !hasCenterLocation || editCenterLocation,
-                                enter = fadeIn(tween(110)) + expandVertically(tween(150)),
-                                exit = fadeOut(tween(90)) + shrinkVertically(tween(120))
-                            ) {
+                            AnimatedLocationActions(visible = !hasCenterLocation || editCenterLocation) {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     CurrentLocationButton(isArabic = isArabic) { lat, lon ->
                                         latitude = lat

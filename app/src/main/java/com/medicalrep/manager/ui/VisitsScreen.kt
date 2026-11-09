@@ -131,7 +131,7 @@ fun VisitsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.
                         val doctor = doctors.firstOrNull { it.id == visit.doctorId }
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(18.dp),
+                            shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                         ) {
                             Row(

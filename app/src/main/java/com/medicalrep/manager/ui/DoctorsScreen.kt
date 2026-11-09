@@ -349,114 +349,137 @@ private fun DoctorDetailsDialog(
         onDismissRequest = onDismiss,
         title = { Text(doctor.name, fontWeight = FontWeight.Bold) },
         text = {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (doctor.specialty.isNotBlank()) item {
-                    Text((if (isArabic) "التخصص: " else "Specialty: ") + doctor.specialty)
-                }
-                if (doctor.phoneNumbers.isNotBlank()) item {
-                    Text((if (isArabic) "الهاتف: " else "Phone: ") + doctor.phoneNumbers.replace("\n", " • "))
-                }
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                            Text(
-                                if (isArabic) "موقع الطبيب" else "Doctor location",
-                                modifier = Modifier.weight(1f),
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            TextButton(onClick = { mapPickerDoctor = true }) {
-                                Text(
-                                    if (doctorLatitude != null && doctorLongitude != null) {
-                                        if (isArabic) "تعديل الموقع" else "Change location"
-                                    } else {
-                                        if (isArabic) "تحديد الموقع" else "Set location"
-                                    }
-                                )
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+                    ) {
+                        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (doctor.specialty.isNotBlank()) {
+                                Text(if (isArabic) "التخصص" else "Specialty", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                Text(doctor.specialty, style = MaterialTheme.typography.bodyLarge)
                             }
-                            CurrentLocationButton(isArabic = isArabic) { lat, lon ->
-                                doctorLatitude = lat
-                                doctorLongitude = lon
-                                onUpdateDoctorLocation(doctor.copy(latitude = lat, longitude = lon))
+                            if (doctor.phoneNumbers.isNotBlank()) {
+                                Text(if (isArabic) "أرقام الهاتف" else "Phone numbers", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                Text(doctor.phoneNumbers.replace("\\n", " • "), style = MaterialTheme.typography.bodyLarge)
                             }
-                            if ((doctorLatitude != null && doctorLongitude != null) || !doctorMapUrl.isNullOrBlank()) {
-                                IconButton(
-                                    modifier = Modifier.size(40.dp),
-                                    onClick = { directionsDoctor = true }
-                                ) {
-                                    Icon(
-                                        Icons.Default.LocationOn,
-                                        contentDescription = if (isArabic) "الاتجاهات إلى الطبيب" else "Directions to doctor",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
+                            if (doctor.specialty.isBlank() && doctor.phoneNumbers.isBlank()) {
+                                Text(if (isArabic) "لا توجد بيانات تواصل مضافة." else "No contact information added.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                        }
-                        if (doctorLatitude != null && doctorLongitude != null) {
-                            Text(
-                                String.format(Locale.US, "%.6f, %.6f", doctorLatitude, doctorLongitude),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
                         }
                     }
                 }
                 item {
-                    Text(if (isArabic) "المراكز ومواعيد التواجد" else "Centers and availability", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+                    ) {
+                        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(if (isArabic) "موقع الطبيب" else "Doctor location", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                TextButton(onClick = { mapPickerDoctor = true }) {
+                                    Text(if (doctorLatitude != null && doctorLongitude != null || !doctorMapUrl.isNullOrBlank()) {
+                                        if (isArabic) "تعديل الموقع" else "Change location"
+                                    } else {
+                                        if (isArabic) "تحديد الموقع" else "Set location"
+                                    })
+                                }
+                                CurrentLocationButton(isArabic = isArabic) { lat, lon ->
+                                    doctorLatitude = lat
+                                    doctorLongitude = lon
+                                    onUpdateDoctorLocation(doctor.copy(latitude = lat, longitude = lon))
+                                }
+                                if ((doctorLatitude != null && doctorLongitude != null) || !doctorMapUrl.isNullOrBlank()) {
+                                    IconButton(modifier = Modifier.size(40.dp), onClick = { directionsDoctor = true }) {
+                                        Icon(Icons.Default.LocationOn, contentDescription = if (isArabic) "الاتجاهات إلى الطبيب" else "Directions to doctor", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                                    }
+                                }
+                            }
+                            if (doctorLatitude != null && doctorLongitude != null) {
+                                Text(String.format(Locale.US, "%.6f, %.6f", doctorLatitude, doctorLongitude), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            } else if (!doctorMapUrl.isNullOrBlank()) {
+                                Text(if (isArabic) "تم حفظ رابط موقع الطبيب." else "Doctor's map link is saved.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+                item {
+                    Text(
+                        if (isArabic) "المراكز ومواعيد التواجد" else "Centers and availability",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
                 if (centers.isEmpty()) {
-                    item { Text(if (isArabic) "لم يتم ربط الطبيب بأي مركز." else "No centers linked to this doctor.") }
+                    item { Text(if (isArabic) "لم يتم ربط الطبيب بأي مركز." else "No centers linked to this doctor.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 } else {
                     items(centers, key = { it.id }) { center ->
                         val centerSlots = availability.filter { it.centerId == center.id || (it.centerId == null && center.id == doctor.centerId) }
                         val centerGroups = centerSlots.groupBy { it.slotGroupId }.values.toList()
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(center.name, fontWeight = FontWeight.SemiBold)
-                            if (center.address.isNotBlank()) Text((if (isArabic) "العنوان: " else "Address: ") + center.address)
-                            if (center.phone.isNotBlank()) Text((if (isArabic) "الهاتف: " else "Phone: ") + center.phone)
-                            if ((center.latitude != null && center.longitude != null) || !center.mapUrl.isNullOrBlank()) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+                        ) {
+                            Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(center.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                                if (center.address.isNotBlank()) {
+                                    Text(if (isArabic) "العنوان" else "Address", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                    Text(center.address)
+                                }
+                                if (center.phone.isNotBlank()) {
+                                    Text(if (isArabic) "الهاتف" else "Phone", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                    Text(center.phone)
+                                }
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Start
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
-                                    IconButton(
-                                        modifier = Modifier.size(40.dp),
-                                        onClick = { directionsCenter = center }
-                                    ) {
-                                        Icon(
-                                            Icons.Default.LocationOn,
-                                            contentDescription = if (isArabic) "الاتجاهات إلى هذا المركز" else "Directions to this center",
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(20.dp)
-                                        )
+                                    if ((center.latitude != null && center.longitude != null) || !center.mapUrl.isNullOrBlank()) {
+                                        IconButton(modifier = Modifier.size(40.dp), onClick = { directionsCenter = center }) {
+                                            Icon(Icons.Default.LocationOn, contentDescription = if (isArabic) "الاتجاهات إلى هذا المركز" else "Directions to this center", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                                        }
+                                    }
+                                    TextButton(onClick = { mapPickerCenter = center }) {
+                                        Text(if (center.latitude != null && center.longitude != null || !center.mapUrl.isNullOrBlank()) {
+                                            if (isArabic) "تعديل الموقع" else "Change location"
+                                        } else {
+                                            if (isArabic) "تحديد الموقع" else "Set location"
+                                        })
                                     }
                                 }
-                            }
-                            TextButton(onClick = { mapPickerCenter = center }) {
-                                Text(
-                                    if (center.latitude != null && center.longitude != null) {
-                                        if (isArabic) "تعديل موقع هذا المركز" else "Change this center's location"
-                                    } else {
-                                        if (isArabic) "تحديد موقع هذا المركز على الخريطة" else "Set this center's map location"
+                                androidx.compose.material3.HorizontalDivider()
+                                Text(if (isArabic) "مواعيد التواجد" else "Availability", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                                if (centerGroups.isEmpty()) {
+                                    Text(if (isArabic) "لم تُحدد مواعيد لهذا المركز." else "No hours set for this center.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                } else {
+                                    centerGroups.forEach { group ->
+                                        val first = group.first()
+                                        val dayNames = group.map { slot -> days.firstOrNull { it.first == slot.dayOfWeek }?.second.orEmpty() }.joinToString("، ")
+                                        Text("$dayNames  •  ${first.startTime} – ${first.endTime}", style = MaterialTheme.typography.bodyMedium)
+                                        if (first.notes.isNotBlank()) Text(first.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
-                                )
-                            }
-                            if (centerGroups.isEmpty()) {
-                                Text(if (isArabic) "لم تُحدد مواعيد لهذا المركز." else "No hours set for this center.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            } else {
-                                centerGroups.forEach { group ->
-                                    val first = group.first()
-                                    val dayNames = group.map { slot -> days.firstOrNull { it.first == slot.dayOfWeek }?.second.orEmpty() }.joinToString("، ")
-                                    Text(dayNames + " • " + first.startTime + " – " + first.endTime)
-                                    if (first.notes.isNotBlank()) Text(first.notes, style = MaterialTheme.typography.bodySmall)
                                 }
                             }
                         }
                     }
                 }
                 if (doctor.notes.isNotBlank()) item {
-                    Text((if (isArabic) "ملاحظات: " else "Notes: ") + doctor.notes)
+                    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(if (isArabic) "ملاحظات" else "Notes", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            Text(doctor.notes)
+                        }
+                    }
                 }
                 item {
                     Text(if (isArabic) "المواعيد المحددة للمتابعة" else "Scheduled follow-ups", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
@@ -467,11 +490,12 @@ private fun DoctorDetailsDialog(
                     items(upcomingFollowUps) { visit ->
                         val followUp = visit.nextFollowUpAt
                         if (followUp != null) {
-                            Text(
-                                (if (isArabic) "موعد المتابعة: " else "Follow-up: ") +
-                                    dateFormat.format(Date(followUp)) +
-                                    (if (visit.notes.isNotBlank()) " • ${visit.notes}" else "")
-                            )
+                            Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                                Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text((if (isArabic) "موعد المتابعة: " else "Follow-up: ") + dateFormat.format(Date(followUp)), fontWeight = FontWeight.SemiBold)
+                                    if (visit.notes.isNotBlank()) Text(visit.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
                         }
                     }
                 }

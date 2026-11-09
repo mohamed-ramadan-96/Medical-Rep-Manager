@@ -5,6 +5,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.filled.FileDownload
@@ -73,6 +74,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
     val scope = rememberCoroutineScope()
     var exportMenuExpanded by remember { mutableStateOf(false) }
     var importMenuExpanded by remember { mutableStateOf(false) }
+    var pendingRestoreUri by remember { mutableStateOf<Uri?>(null) }
 
     val excelExportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -107,25 +109,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
     }
     val fullBackupImportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri != null) scope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    val archive = File(context.cacheDir, "local-restore-${System.currentTimeMillis()}.zip")
-                    try {
-                        context.contentResolver.openInputStream(uri)?.use { input ->
-                            archive.outputStream().use { output -> input.copyTo(output) }
-                        } ?: error("Unable to read selected backup")
-                        DriveBackupEngine.restoreFromLocalFile(context, archive)
-                    } finally { archive.delete() }
-                }
-                Toast.makeText(context, if (isArabic) "تمت استعادة النسخة الكاملة." else "Full backup restored.", Toast.LENGTH_LONG).show()
-                findDashboardActivity(context)?.recreate()
-            } catch (error: Exception) {
-                Toast.makeText(context, (if (isArabic) "فشلت استعادة النسخة: " else "Restore failed: ") + (error.localizedMessage ?: ""), Toast.LENGTH_LONG).show()
-            }
-        }
-    }
+    ) { uri -> pendingRestoreUri = uri }
     val excelImportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
@@ -158,6 +142,45 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
             }
         }
     }
+    pendingRestoreUri?.let { selectedUri ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { pendingRestoreUri = null },
+            title = { Text(if (isArabic) "استعادة النسخة الكاملة؟" else "Restore full backup?") },
+            text = {
+                Text(if (isArabic)
+                    "سيتم استبدال بيانات التطبيق الحالية بالكامل بالبيانات الموجودة في الملف المحدد، بما فيها الأطباء والمراكز والمواعيد والمرفقات والصور. يُفضّل تصدير نسخة من بياناتك الحالية أولاً."
+                    else "This will replace all current app data with the selected backup, including doctors, centers, schedules, attachments and photos. Export a backup of your current data first if you may need it.")
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    pendingRestoreUri = null
+                    scope.launch {
+                        try {
+                            withContext(Dispatchers.IO) {
+                                val archive = File(context.cacheDir, "local-restore-${System.currentTimeMillis()}.zip")
+                                try {
+                                    context.contentResolver.openInputStream(selectedUri)?.use { input ->
+                                        archive.outputStream().use { output -> input.copyTo(output) }
+                                    } ?: error("Unable to read selected backup")
+                                    DriveBackupEngine.restoreFromLocalFile(context, archive)
+                                } finally { archive.delete() }
+                            }
+                            Toast.makeText(context, if (isArabic) "تمت استعادة النسخة الكاملة." else "Full backup restored.", Toast.LENGTH_LONG).show()
+                            findDashboardActivity(context)?.recreate()
+                        } catch (error: Exception) {
+                            Toast.makeText(context, (if (isArabic) "فشلت استعادة النسخة: " else "Restore failed: ") + (error.localizedMessage ?: ""), Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }) { Text(if (isArabic) "استعادة واستبدال البيانات" else "Restore and replace") }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { pendingRestoreUri = null }) {
+                    Text(if (isArabic) "إلغاء" else "Cancel")
+                }
+            }
+        )
+    }
+
     val todayStart = remember { Calendar.getInstance().apply {
         set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
         set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)

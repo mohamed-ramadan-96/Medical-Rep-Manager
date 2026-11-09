@@ -204,18 +204,18 @@ private fun parseMapCoordinates(raw: String): Pair<Double, Double>? {
     // Decode nested/escaped Google Maps URLs and HTML entities before inspecting coordinates.
     val value = Uri.decode(raw.trim())
         .replace("&amp;", "&")
-        .replace("\\\\u003d", "=")
-        .replace("\\\\u0026", "&")
+        .replace("\\u003d", "=")
+        .replace("\\u0026", "&")
     val patterns = listOf(
         // Google Maps place/pin coordinates.
-        Regex("!3d(-?\\\\d{1,2}(?:\\\\.\\\\d+)?)!4d(-?\\\\d{1,3}(?:\\\\.\\\\d+)?)"),
-        Regex("!2d(-?\\\\d{1,3}(?:\\\\.\\\\d+)?)!3d(-?\\\\d{1,2}(?:\\\\.\\\\d+)?)"),
+        Regex("!3d(-?\\d{1,2}(?:\\.\\d+)?)!4d(-?\\d{1,3}(?:\\.\\d+)?)"),
+        Regex("!2d(-?\\d{1,3}(?:\\.\\d+)?)!3d(-?\\d{1,2}(?:\\.\\d+)?)"),
         // Coordinates embedded in Maps URLs, page metadata, or JSON payloads.
-        Regex("@(-?\\\\d{1,2}(?:\\\\.\\\\d+)?),\\\\s*(-?\\\\d{1,3}(?:\\\\.\\\\d+)?)"),
-        Regex("(?:[?&](?:q|query|destination|daddr|center|ll)=)(-?\\\\d{1,2}(?:\\\\.\\\\d+)?)(?:,|%2C)(-?\\\\d{1,3}(?:\\\\.\\\\d+)?)", RegexOption.IGNORE_CASE),
-        Regex("\\\"(?:lat|latitude)\\\"\\\\s*:\\\\s*\\\"?(-?\\\\d{1,2}(?:\\\\.\\\\d+)?)\\\"?\\\\s*[,}]\\\\s*\\\"?(?:lng|lon|longitude)\\\"?\\\\s*:\\\\s*\\\"?(-?\\\\d{1,3}(?:\\\\.\\\\d+)?)", RegexOption.IGNORE_CASE),
-        Regex("geo:(-?\\\\d{1,2}(?:\\\\.\\\\d+)?),(-?\\\\d{1,3}(?:\\\\.\\\\d+)?)", RegexOption.IGNORE_CASE),
-        Regex("^\\\\s*(-?\\\\d{1,2}(?:\\\\.\\\\d+)?)\\\\s*,\\\\s*(-?\\\\d{1,3}(?:\\\\.\\\\d+)?)\\\\s*$")
+        Regex("@(-?\\d{1,2}(?:\\.\\d+)?),\\s*(-?\\d{1,3}(?:\\.\\d+)?)"),
+        Regex("(?:[?&](?:q|query|destination|daddr|center|ll)=)(-?\\d{1,2}(?:\\.\\d+)?)(?:,|%2C)(-?\\d{1,3}(?:\\.\\d+)?)", RegexOption.IGNORE_CASE),
+        Regex("\"(?:lat|latitude)\"\\s*:\\s*\"?(-?\\d{1,2}(?:\\.\\d+)?)\"?\\s*[,}]\\s*\"?(?:lng|lon|longitude)\"?\\s*:\\s*\"?(-?\\d{1,3}(?:\\.\\d+)?)", RegexOption.IGNORE_CASE),
+        Regex("geo:(-?\\d{1,2}(?:\\.\\d+)?),(-?\\d{1,3}(?:\\.\\d+)?)", RegexOption.IGNORE_CASE),
+        Regex("^\\s*(-?\\d{1,2}(?:\\.\\d+)?)\\s*,\\s*(-?\\d{1,3}(?:\\.\\d+)?)\\s*$")
     )
     for ((index, pattern) in patterns.withIndex()) {
         val match = pattern.find(value) ?: continue
@@ -230,7 +230,7 @@ private fun parseMapCoordinates(raw: String): Pair<Double, Double>? {
 }
 
 private fun extractGoogleMapsPlaceName(raw: String, resolvedUrl: String?, page: String?): String? {
-    val urlText = Regex("https?://[^\\\\s<>]+", RegexOption.IGNORE_CASE)
+    val urlText = Regex("https?://[^\\s<>]+", RegexOption.IGNORE_CASE)
         .find(raw)?.value?.trimEnd('.', ')', ']', ',')
     val uri = runCatching { Uri.parse(resolvedUrl ?: urlText.orEmpty()) }.getOrNull()
     if (uri != null) {
@@ -243,19 +243,19 @@ private fun extractGoogleMapsPlaceName(raw: String, resolvedUrl: String?, page: 
         for (key in listOf("query", "q", "destination", "daddr")) {
             val candidate = uri.getQueryParameter(key)?.trim().orEmpty()
             if (candidate.isNotBlank() && !candidate.startsWith("place_id:", true) &&
-                !Regex("^-?\\\\d+(?:\\\\.\\\\d+)?\\\\s*,").containsMatchIn(candidate)
+                !Regex("^-?\\d+(?:\\.\\d+)?\\s*,").containsMatchIn(candidate)
             ) return candidate
         }
     }
 
-    val htmlTitle = page?.let {
-        Regex("(?:property=\\\"og:title\\\"[^>]*content=|content=\\\"[^\\\"]*\\\"[^>]*property=\\\"og:title\\\")[^>]*", RegexOption.IGNORE_CASE)
-            .find(it)?.value
-            ?.let { tag -> Regex("content=\\\"([^\\\"]+)\\\"", RegexOption.IGNORE_CASE).find(tag)?.groupValues?.get(1) }
+    val htmlTitle = page?.let { html ->
+        val metaTag = Regex("<meta[^>]*property=[\"']og:title[\"'][^>]*>", RegexOption.IGNORE_CASE)
+            .find(html)?.value
+        metaTag?.let { Regex("content=[\"']([^\"']+)[\"']", RegexOption.IGNORE_CASE).find(it)?.groupValues?.get(1) }
             ?: Regex("<title[^>]*>(.*?)</title>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
-                .find(it)?.groupValues?.get(1)
+                .find(html)?.groupValues?.get(1)
     }?.let { title ->
-        title.replace("&amp;", "&").replace("&#39;", "'").replace("&quot;", "\\"")
+        title.replace("&amp;", "&").replace("&#39;", "'").replace("&quot;", "\"")
             .substringBefore(" - Google Maps").trim()
     }
     if (!htmlTitle.isNullOrBlank() && !htmlTitle.equals("Google Maps", true)) return htmlTitle
@@ -283,7 +283,7 @@ private suspend fun geocodeSharedMapPlace(
         connection.setRequestProperty("User-Agent", "MedicalRepManager/1.0 (Android location lookup)")
         connection.setRequestProperty("Accept", "application/json")
         val body = connection.inputStream.bufferedReader().use { it.readText() }
-        val firstResult = Regex("\\\\{[^{}]*\\\"lat\\\"\\\\s*:\\\\s*\\\"(-?\\\\d+(?:\\\\.\\\\d+)?)\\\"[^{}]*\\\"lon\\\"\\\\s*:\\\\s*\\\"(-?\\\\d+(?:\\\\.\\\\d+)?)\\\"[^{}]*}")
+        val firstResult = Regex("\\{[^{}]*\"lat\"\\s*:\\s*\"(-?\\d+(?:\\.\\d+)?)\"[^{}]*\"lon\"\\s*:\\s*\"(-?\\d+(?:\\.\\d+)?)\"[^{}]*}")
             .find(body) ?: return@withContext null
         val lat = firstResult.groupValues[1].toDoubleOrNull() ?: return@withContext null
         val lon = firstResult.groupValues[2].toDoubleOrNull() ?: return@withContext null

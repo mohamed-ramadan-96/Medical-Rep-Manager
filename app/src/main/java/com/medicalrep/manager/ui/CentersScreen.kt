@@ -50,6 +50,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.medicalrep.manager.data.MedicalCenterEntity
+import androidx.room.withTransaction
 import com.medicalrep.manager.data.MedicalRepDatabase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
@@ -158,7 +159,14 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             onDismiss = { showForm = false },
             onSave = { center ->
                 scope.launch {
-                    if (center.id == 0L) dao.insert(center) else dao.update(center)
+                    if (center.id == 0L) {
+                        dao.insert(center)
+                    } else {
+                        database.withTransaction {
+                            dao.update(center)
+                            doctorDao.renameLegacyCenter(center.id, center.name)
+                        }
+                    }
                 }
                 showForm = false
             }
@@ -209,8 +217,10 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     scope.launch {
                         val attachments = database.centerAttachmentDao().getForCenter(center.id)
                         withContext(Dispatchers.IO) { attachments.forEach { File(it.localPath).delete() } }
-                        doctorDao.detachCenter(center.id)
-                        dao.delete(center)
+                        database.withTransaction {
+                            doctorDao.detachCenter(center.id)
+                            dao.delete(center)
+                        }
                     }
                     pendingDelete = null
                 }) { Text(if (isArabic) "حذف" else "Delete") }

@@ -22,6 +22,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.padding
 import java.util.Locale
+import java.net.HttpURLConnection
+import java.net.URL
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Holds a Google Maps share payload delivered to the app through Android's share sheet.
@@ -106,6 +110,7 @@ fun CenterMapPickerDialog(
         if (!incoming.isNullOrBlank()) {
             sharedLink = incoming
             val parsed = parseMapCoordinates(incoming)
+                ?: resolveSharedMapLink(incoming)?.let { parseMapCoordinates(it) }
             if (parsed != null) {
                 latitude = parsed.first
                 longitude = parsed.second
@@ -193,4 +198,23 @@ private fun parseMapCoordinates(raw: String): Pair<Double, Double>? {
         if (lat in -90.0..90.0 && lon in -180.0..180.0) return lat to lon
     }
     return null
+}
+
+
+private suspend fun resolveSharedMapLink(raw: String): String? = withContext(Dispatchers.IO) {
+    try {
+        val match = Regex("https?://\\S+", RegexOption.IGNORE_CASE).find(raw)?.value ?: return@withContext null
+        val connection = URL(match).openConnection() as HttpURLConnection
+        connection.instanceFollowRedirects = true
+        connection.connectTimeout = 10000
+        connection.readTimeout = 10000
+        connection.requestMethod = "GET"
+        connection.setRequestProperty("User-Agent", "Mozilla/5.0")
+        connection.connect()
+        val resolved = connection.url.toString()
+        connection.disconnect()
+        resolved
+    } catch (_: Exception) {
+        null
+    }
 }

@@ -403,11 +403,7 @@ private fun DoctorDetailsDialog(
                                         Text(if (isArabic) "تعديل الموقع" else "Edit location")
                                     }
                                 }
-                                AnimatedVisibility(
-                                    visible = !hasDoctorLocation || editDoctorLocation,
-                                    enter = fadeIn(tween(110)) + expandVertically(tween(150)),
-                                    exit = fadeOut(tween(90)) + shrinkVertically(tween(120))
-                                ) {
+                                AnimatedLocationActions(visible = !hasDoctorLocation || editDoctorLocation) {
                                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     CurrentLocationButton(isArabic = isArabic) { lat, lon ->
                                         doctorLatitude = lat
@@ -475,11 +471,7 @@ private fun DoctorDetailsDialog(
                                             Text(if (isArabic) "تعديل الموقع" else "Edit location")
                                         }
                                     }
-                                    AnimatedVisibility(
-                                        visible = !hasCenterLocation || editCenterLocation,
-                                        enter = fadeIn(tween(110)) + expandVertically(tween(150)),
-                                        exit = fadeOut(tween(90)) + shrinkVertically(tween(120))
-                                    ) {
+                                    AnimatedLocationActions(visible = !hasCenterLocation || editCenterLocation) {
                                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                         CurrentLocationButton(isArabic = isArabic) { lat, lon ->
                                             onUpdateCenterLocation(center, lat, lon, null)
@@ -754,11 +746,7 @@ private fun DoctorFormDialog(
                                     Text(if (isArabic) "تعديل الموقع" else "Edit location")
                                 }
                             }
-                            AnimatedVisibility(
-                                visible = !hasDoctorLocation || editDoctorLocation,
-                                enter = fadeIn(tween(110)) + expandVertically(tween(150)),
-                                exit = fadeOut(tween(90)) + shrinkVertically(tween(120))
-                            ) {
+                            AnimatedLocationActions(visible = !hasDoctorLocation || editDoctorLocation) {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 CurrentLocationButton(isArabic = isArabic) { lat, lon ->
                                     latitude = lat; longitude = lon; mapUrl = null; editDoctorLocation = false

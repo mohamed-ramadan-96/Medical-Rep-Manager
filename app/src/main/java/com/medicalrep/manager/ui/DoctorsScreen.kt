@@ -180,6 +180,9 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             onDismiss = { detailsDoctor = null },
             onUpdateCenterLocation = { center, latitude, longitude ->
                 scope.launch { centerDao.update(center.copy(latitude = latitude, longitude = longitude)) }
+            },
+            onUpdateDoctorLocation = { updatedDoctor ->
+                scope.launch { dao.update(updatedDoctor) }
             }
         )
     }
@@ -318,11 +321,16 @@ private fun DoctorDetailsDialog(
     visits: List<DoctorVisitEntity>,
     isArabic: Boolean,
     onDismiss: () -> Unit,
-    onUpdateCenterLocation: (MedicalCenterEntity, Double, Double) -> Unit
+    onUpdateCenterLocation: (MedicalCenterEntity, Double, Double) -> Unit,
+    onUpdateDoctorLocation: (DoctorEntity) -> Unit
 ) {
     val context = LocalContext.current
     var mapPickerCenter by remember { mutableStateOf<MedicalCenterEntity?>(null) }
     var directionsCenter by remember { mutableStateOf<MedicalCenterEntity?>(null) }
+    var mapPickerDoctor by remember { mutableStateOf(false) }
+    var directionsDoctor by remember { mutableStateOf(false) }
+    var doctorLatitude by remember(doctor) { mutableStateOf(doctor.latitude) }
+    var doctorLongitude by remember(doctor) { mutableStateOf(doctor.longitude) }
     val days = listOf(
         1 to (if (isArabic) "الاثنين" else "Monday"),
         2 to (if (isArabic) "الثلاثاء" else "Tuesday"),
@@ -346,6 +354,46 @@ private fun DoctorDetailsDialog(
                 }
                 if (doctor.phoneNumbers.isNotBlank()) item {
                     Text((if (isArabic) "الهاتف: " else "Phone: ") + doctor.phoneNumbers.replace("\n", " • "))
+                }
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            Text(
+                                if (isArabic) "موقع الطبيب" else "Doctor location",
+                                modifier = Modifier.weight(1f),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            TextButton(onClick = { mapPickerDoctor = true }) {
+                                Text(
+                                    if (doctorLatitude != null && doctorLongitude != null) {
+                                        if (isArabic) "تعديل الموقع" else "Change location"
+                                    } else {
+                                        if (isArabic) "تحديد الموقع" else "Set location"
+                                    }
+                                )
+                            }
+                            if (doctorLatitude != null && doctorLongitude != null) {
+                                IconButton(
+                                    modifier = Modifier.size(40.dp),
+                                    onClick = { directionsDoctor = true }
+                                ) {
+                                    Icon(
+                                        Icons.Default.LocationOn,
+                                        contentDescription = if (isArabic) "الاتجاهات إلى الطبيب" else "Directions to doctor",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+                        }
+                        if (doctorLatitude != null && doctorLongitude != null) {
+                            Text(
+                                String.format(Locale.US, "%.6f, %.6f", doctorLatitude, doctorLongitude),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
                 item {
                     Text(if (isArabic) "المراكز ومواعيد التواجد" else "Centers and availability", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
@@ -468,6 +516,50 @@ private fun DoctorDetailsDialog(
             }
         )
     }
+
+    directionsDoctor.let { show ->
+        if (show) {
+            AlertDialog(
+                onDismissRequest = { directionsDoctor = false },
+                title = { Text(if (isArabic) "فتح الاتجاهات؟" else "Open directions?") },
+                text = {
+                    Text(
+                        if (isArabic) "هل تريد إظهار الاتجاهات إلى موقع الطبيب على Google Maps؟"
+                        else "Would you like to show directions to the doctor's location in Google Maps?"
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val lat = doctorLatitude
+                        val lon = doctorLongitude
+                        directionsDoctor = false
+                        if (lat != null && lon != null) openCenterDirections(context, lat, lon)
+                    }) { Text(if (isArabic) "نعم" else "Yes") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { directionsDoctor = false }) {
+                        Text(if (isArabic) "إلغاء" else "Cancel")
+                    }
+                }
+            )
+        }
+    }
+
+    if (mapPickerDoctor) {
+        CenterMapPickerDialog(
+            isArabic = isArabic,
+            initialLatitude = doctorLatitude,
+            initialLongitude = doctorLongitude,
+            onDismiss = { mapPickerDoctor = false },
+            onConfirm = { latitude, longitude ->
+                doctorLatitude = latitude
+                doctorLongitude = longitude
+                onUpdateDoctorLocation(doctor.copy(latitude = latitude, longitude = longitude))
+                mapPickerDoctor = false
+            }
+        )
+    }
+
 }
 
 @Composable
@@ -489,6 +581,9 @@ private fun DoctorFormDialog(
     var showCenterPicker by remember { mutableStateOf(false) }
     var notes by remember(initial) { mutableStateOf(initial?.notes.orEmpty()) }
     var photoUri by remember(initial) { mutableStateOf(initial?.photoUri) }
+    var latitude by remember(initial) { mutableStateOf(initial?.latitude) }
+    var longitude by remember(initial) { mutableStateOf(initial?.longitude) }
+    var showDoctorMapPicker by remember { mutableStateOf(false) }
     var nameError by remember { mutableStateOf(false) }
 
     val photoPicker = rememberLauncherForActivityResult(
@@ -572,6 +667,34 @@ private fun DoctorFormDialog(
                     }
                 }
                 item {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(if (isArabic) "موقع الطبيب" else "Doctor location", style = MaterialTheme.typography.labelLarge)
+                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            TextButton(onClick = { showDoctorMapPicker = true }) {
+                                Text(
+                                    if (latitude != null && longitude != null) {
+                                        if (isArabic) "تعديل الموقع على الخريطة" else "Change map location"
+                                    } else {
+                                        if (isArabic) "تحديد موقع الطبيب على الخريطة" else "Set doctor's map location"
+                                    }
+                                )
+                            }
+                            if (latitude != null && longitude != null) {
+                                TextButton(onClick = { latitude = null; longitude = null }) {
+                                    Text(if (isArabic) "إزالة" else "Remove")
+                                }
+                            }
+                        }
+                        if (latitude != null && longitude != null) {
+                            Text(
+                                String.format(Locale.US, "%.6f, %.6f", latitude, longitude),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+                item {
                     OutlinedTextField(
                         value = notes, onValueChange = { notes = it },
                         modifier = Modifier.fillMaxWidth(), minLines = 2,
@@ -596,7 +719,9 @@ private fun DoctorFormDialog(
                             centerId = selectedCenterIds.firstOrNull(),
                             notes = notes.trim(),
                             photoUri = photoUri,
-                            createdAt = initial?.createdAt ?: System.currentTimeMillis()
+                            createdAt = initial?.createdAt ?: System.currentTimeMillis(),
+                            latitude = latitude,
+                            longitude = longitude
                         ),
                         selectedCenterIds
                     )
@@ -657,6 +782,20 @@ private fun DoctorFormDialog(
                 TextButton(onClick = { showCenterPicker = false }) {
                     Text(if (isArabic) "إغلاق" else "Close")
                 }
+            }
+        )
+    }
+
+    if (showDoctorMapPicker) {
+        CenterMapPickerDialog(
+            isArabic = isArabic,
+            initialLatitude = latitude,
+            initialLongitude = longitude,
+            onDismiss = { showDoctorMapPicker = false },
+            onConfirm = { lat, lon ->
+                latitude = lat
+                longitude = lon
+                showDoctorMapPicker = false
             }
         )
     }

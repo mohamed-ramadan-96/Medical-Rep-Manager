@@ -282,6 +282,13 @@ private fun CenterFormDialog(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        } else if (!mapUrl.isNullOrBlank()) {
+                            Text(
+                                if (isArabic) "تم حفظ رابط المكان وسيُفتح مباشرة على Google Maps."
+                                else "The place link is saved and will open directly in Google Maps.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         } else {
                             Text(
                                 if (isArabic) "لم يتم تحديد موقع لهذا المركز بعد." else "No map location has been set for this center.",
@@ -295,7 +302,7 @@ private fun CenterFormDialog(
                                 longitude = lon
                             }
                             OutlinedButton(onClick = { showMapPicker = true }) {
-                                Text(if (latitude == null) { if (isArabic) "تحديد الموقع" else "Choose location" } else { if (isArabic) "تعديل الموقع" else "Change location" })
+                                Text(if (latitude == null && mapUrl.isNullOrBlank()) { if (isArabic) "تحديد الموقع" else "Choose location" } else { if (isArabic) "تعديل الموقع" else "Change location" })
                             }
                             if (latitude != null || longitude != null || !mapUrl.isNullOrBlank()) {
                                 TextButton(onClick = { latitude = null; longitude = null; mapUrl = null }) {

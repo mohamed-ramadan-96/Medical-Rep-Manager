@@ -296,16 +296,29 @@ private fun CenterFormDialog(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             CurrentLocationButton(isArabic = isArabic) { lat, lon ->
                                 latitude = lat
                                 longitude = lon
                             }
-                            OutlinedButton(onClick = { showMapPicker = true }) {
-                                Text(if (latitude == null && mapUrl.isNullOrBlank()) { if (isArabic) "تحديد الموقع" else "Choose location" } else { if (isArabic) "تعديل الموقع" else "Change location" })
+                            OutlinedButton(
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = { showMapPicker = true }
+                            ) {
+                                Text(if (latitude == null && mapUrl.isNullOrBlank()) {
+                                    if (isArabic) "تحديد الموقع على الخريطة" else "Choose location on map"
+                                } else {
+                                    if (isArabic) "تعديل الموقع على الخريطة" else "Change map location"
+                                })
                             }
                             if (latitude != null || longitude != null || !mapUrl.isNullOrBlank()) {
-                                TextButton(onClick = { latitude = null; longitude = null; mapUrl = null }) {
+                                TextButton(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    onClick = { latitude = null; longitude = null; mapUrl = null }
+                                ) {
                                     Text(if (isArabic) "مسح الموقع" else "Clear location")
                                 }
                             }

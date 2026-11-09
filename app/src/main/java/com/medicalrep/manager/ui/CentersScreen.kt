@@ -232,6 +232,7 @@ private fun CenterFormDialog(
     onDismiss: () -> Unit,
     onSave: (MedicalCenterEntity) -> Unit
 ) {
+    val context = LocalContext.current
     var name by remember(initial) { mutableStateOf(initial?.name.orEmpty()) }
     var address by remember(initial) { mutableStateOf(initial?.address.orEmpty()) }
     var phone by remember(initial) { mutableStateOf(initial?.phone.orEmpty()) }
@@ -312,12 +313,26 @@ private fun CenterFormDialog(
                             )
                         }
                         val hasCenterLocation = (latitude != null && longitude != null) || !mapUrl.isNullOrBlank()
-                        Column(modifier = Modifier.fillMaxWidth().animateContentSize(animationSpec = tween(220)), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().animateContentSize(animationSpec = tween(220)),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             if (hasCenterLocation) {
-                                OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = {
-                                    latitude = null; longitude = null; mapUrl = null; editCenterLocation = false
-                                }) { Text(if (isArabic) "مسح الموقع" else "Clear location") }
-                                OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = { editCenterLocation = !editCenterLocation }) {
+                                OutlinedButton(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    onClick = {
+                                        latitude = null
+                                        longitude = null
+                                        mapUrl = null
+                                        editCenterLocation = false
+                                    }
+                                ) {
+                                    Text(if (isArabic) "مسح الموقع" else "Clear location")
+                                }
+                                OutlinedButton(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    onClick = { editCenterLocation = !editCenterLocation }
+                                ) {
                                     Text(if (isArabic) "تعديل الموقع" else "Edit location")
                                 }
                             }
@@ -327,17 +342,23 @@ private fun CenterFormDialog(
                                 exit = fadeOut(tween(120)) + shrinkVertically(tween(180))
                             ) {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                CurrentLocationButton(isArabic = isArabic) { lat, lon ->
-                                    latitude = lat; longitude = lon; mapUrl = null; editCenterLocation = false
-                                }
-                                OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = { showMapPicker = true }) {
-                                    Text(if (isArabic) "اختيار من الخريطة" else "Choose on map")
+                                    CurrentLocationButton(isArabic = isArabic) { lat, lon ->
+                                        latitude = lat
+                                        longitude = lon
+                                        mapUrl = null
+                                        editCenterLocation = false
+                                    }
+                                    OutlinedButton(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        onClick = { showMapPicker = true }
+                                    ) {
+                                        Text(if (isArabic) "اختيار من الخريطة" else "Choose on map")
+                                    }
                                 }
                             }
                         }
                     }
                 }
-
             }
         },
         confirmButton = {

@@ -178,8 +178,8 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             visits = visits.filter { it.doctorId == doctor.id },
             isArabic = isArabic,
             onDismiss = { detailsDoctor = null },
-            onUpdateCenterLocation = { center, latitude, longitude ->
-                scope.launch { centerDao.update(center.copy(latitude = latitude, longitude = longitude)) }
+            onUpdateCenterLocation = { center, latitude, longitude, mapUrl ->
+                scope.launch { centerDao.update(center.copy(latitude = latitude, longitude = longitude, mapUrl = mapUrl)) }
             },
             onUpdateDoctorLocation = { updatedDoctor ->
                 scope.launch { dao.update(updatedDoctor) }
@@ -321,7 +321,7 @@ private fun DoctorDetailsDialog(
     visits: List<DoctorVisitEntity>,
     isArabic: Boolean,
     onDismiss: () -> Unit,
-    onUpdateCenterLocation: (MedicalCenterEntity, Double, Double) -> Unit,
+    onUpdateCenterLocation: (MedicalCenterEntity, Double?, Double?, String?) -> Unit,
     onUpdateDoctorLocation: (DoctorEntity) -> Unit
 ) {
     val context = LocalContext.current
@@ -331,6 +331,7 @@ private fun DoctorDetailsDialog(
     var directionsDoctor by remember { mutableStateOf(false) }
     var doctorLatitude by remember(doctor) { mutableStateOf(doctor.latitude) }
     var doctorLongitude by remember(doctor) { mutableStateOf(doctor.longitude) }
+    var doctorMapUrl by remember(doctor) { mutableStateOf(doctor.mapUrl) }
     val days = listOf(
         1 to (if (isArabic) "الاثنين" else "Monday"),
         2 to (if (isArabic) "الثلاثاء" else "Tuesday"),
@@ -377,7 +378,7 @@ private fun DoctorDetailsDialog(
                                 doctorLongitude = lon
                                 onUpdateDoctorLocation(doctor.copy(latitude = lat, longitude = lon))
                             }
-                            if (doctorLatitude != null && doctorLongitude != null) {
+                            if ((doctorLatitude != null && doctorLongitude != null) || !doctorMapUrl.isNullOrBlank()) {
                                 IconButton(
                                     modifier = Modifier.size(40.dp),
                                     onClick = { directionsDoctor = true }
@@ -413,7 +414,7 @@ private fun DoctorDetailsDialog(
                             Text(center.name, fontWeight = FontWeight.SemiBold)
                             if (center.address.isNotBlank()) Text((if (isArabic) "العنوان: " else "Address: ") + center.address)
                             if (center.phone.isNotBlank()) Text((if (isArabic) "الهاتف: " else "Phone: ") + center.phone)
-                            if (center.latitude != null && center.longitude != null) {
+                            if ((center.latitude != null && center.longitude != null) || !center.mapUrl.isNullOrBlank()) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
@@ -496,9 +497,7 @@ private fun DoctorDetailsDialog(
                     val latitude = center.latitude
                     val longitude = center.longitude
                     directionsCenter = null
-                    if (latitude != null && longitude != null) {
-                        openCenterDirections(context, latitude, longitude)
-                    }
+                    openSavedMapLocation(context, latitude, longitude, center.mapUrl)
                 }) { Text(if (isArabic) "نعم" else "Yes") }
             },
             dismissButton = {
@@ -514,9 +513,10 @@ private fun DoctorDetailsDialog(
             isArabic = isArabic,
             initialLatitude = center.latitude,
             initialLongitude = center.longitude,
+            initialMapUrl = center.mapUrl,
             onDismiss = { mapPickerCenter = null },
-            onConfirm = { latitude, longitude ->
-                onUpdateCenterLocation(center, latitude, longitude)
+            onConfirm = { latitude, longitude, mapUrl ->
+                onUpdateCenterLocation(center, latitude, longitude, mapUrl)
                 mapPickerCenter = null
             }
         )
@@ -538,7 +538,7 @@ private fun DoctorDetailsDialog(
                         val lat = doctorLatitude
                         val lon = doctorLongitude
                         directionsDoctor = false
-                        if (lat != null && lon != null) openCenterDirections(context, lat, lon)
+                        openSavedMapLocation(context, lat, lon, doctorMapUrl)
                     }) { Text(if (isArabic) "نعم" else "Yes") }
                 },
                 dismissButton = {
@@ -555,11 +555,13 @@ private fun DoctorDetailsDialog(
             isArabic = isArabic,
             initialLatitude = doctorLatitude,
             initialLongitude = doctorLongitude,
+            initialMapUrl = doctorMapUrl,
             onDismiss = { mapPickerDoctor = false },
-            onConfirm = { latitude, longitude ->
+            onConfirm = { latitude, longitude, mapUrl ->
                 doctorLatitude = latitude
                 doctorLongitude = longitude
-                onUpdateDoctorLocation(doctor.copy(latitude = latitude, longitude = longitude))
+                doctorMapUrl = mapUrl
+                onUpdateDoctorLocation(doctor.copy(latitude = latitude, longitude = longitude, mapUrl = mapUrl))
                 mapPickerDoctor = false
             }
         )
@@ -588,6 +590,7 @@ private fun DoctorFormDialog(
     var photoUri by remember(initial) { mutableStateOf(initial?.photoUri) }
     var latitude by remember(initial) { mutableStateOf(initial?.latitude) }
     var longitude by remember(initial) { mutableStateOf(initial?.longitude) }
+    var mapUrl by remember(initial) { mutableStateOf(initial?.mapUrl) }
     var showDoctorMapPicker by remember { mutableStateOf(false) }
     var nameError by remember { mutableStateOf(false) }
 
@@ -688,8 +691,8 @@ private fun DoctorFormDialog(
                                     }
                                 )
                             }
-                            if (latitude != null && longitude != null) {
-                                TextButton(onClick = { latitude = null; longitude = null }) {
+                            if (latitude != null && longitude != null || !mapUrl.isNullOrBlank()) {
+                                TextButton(onClick = { latitude = null; longitude = null; mapUrl = null }) {
                                     Text(if (isArabic) "إزالة" else "Remove")
                                 }
                             }
@@ -730,7 +733,8 @@ private fun DoctorFormDialog(
                             photoUri = photoUri,
                             createdAt = initial?.createdAt ?: System.currentTimeMillis(),
                             latitude = latitude,
-                            longitude = longitude
+                            longitude = longitude,
+                            mapUrl = mapUrl
                         ),
                         selectedCenterIds
                     )
@@ -800,10 +804,12 @@ private fun DoctorFormDialog(
             isArabic = isArabic,
             initialLatitude = latitude,
             initialLongitude = longitude,
+            initialMapUrl = mapUrl,
             onDismiss = { showDoctorMapPicker = false },
-            onConfirm = { lat, lon ->
+            onConfirm = { lat, lon, url ->
                 latitude = lat
                 longitude = lon
+                mapUrl = url
                 showDoctorMapPicker = false
             }
         )

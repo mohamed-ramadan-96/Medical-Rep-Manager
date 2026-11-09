@@ -44,7 +44,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.animation.animateContentSize
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.platform.LocalContext
@@ -314,7 +313,7 @@ private fun CenterFormDialog(
                         }
                         val hasCenterLocation = (latitude != null && longitude != null) || !mapUrl.isNullOrBlank()
                         Column(
-                            modifier = Modifier.fillMaxWidth().animateContentSize(animationSpec = tween(220)),
+                            modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             if (hasCenterLocation) {
@@ -338,8 +337,8 @@ private fun CenterFormDialog(
                             }
                             AnimatedVisibility(
                                 visible = !hasCenterLocation || editCenterLocation,
-                                enter = fadeIn(tween(180)) + expandVertically(tween(220)),
-                                exit = fadeOut(tween(120)) + shrinkVertically(tween(180))
+                                enter = fadeIn(tween(110)) + expandVertically(tween(150)),
+                                exit = fadeOut(tween(90)) + shrinkVertically(tween(120))
                             ) {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     CurrentLocationButton(isArabic = isArabic) { lat, lon ->

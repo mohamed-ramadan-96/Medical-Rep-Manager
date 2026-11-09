@@ -317,7 +317,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                             text = { Text(if (isArabic) "استيراد القائمة من ملف Excel" else "Import list from Excel file") },
                             onClick = {
                                 importMenuExpanded = false
-                                excelImportLauncher.launch(arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/octet-stream", "*/*"))
+                                showExcelImportConfirmation = true
                             }
                         )
                         DropdownMenuItem(

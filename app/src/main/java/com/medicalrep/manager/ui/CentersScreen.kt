@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,6 +15,7 @@ import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocalHospital
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -60,6 +60,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     var showForm by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<MedicalCenterEntity?>(null) }
     var attachmentsCenter by remember { mutableStateOf<MedicalCenterEntity?>(null) }
+    var directionsCenter by remember { mutableStateOf<MedicalCenterEntity?>(null) }
 
     Scaffold(
         modifier = Modifier.padding(padding),
@@ -111,17 +112,18 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                     if (center.address.isNotBlank()) Text(center.address, style = MaterialTheme.typography.bodyMedium)
                                     if (center.phone.isNotBlank()) Text(center.phone, style = MaterialTheme.typography.bodyMedium)
                                     if (center.notes.isNotBlank()) Text(center.notes, style = MaterialTheme.typography.bodySmall)
-                                    if (center.latitude != null && center.longitude != null) {
-                                        CenterMapPreview(
-                                            latitude = center.latitude,
-                                            longitude = center.longitude,
-                                            modifier = Modifier.fillMaxWidth().height(112.dp)
+                                }
+                                if (center.latitude != null && center.longitude != null) {
+                                    IconButton(
+                                        modifier = Modifier.size(40.dp),
+                                        onClick = { directionsCenter = center }
+                                    ) {
+                                        Icon(
+                                            Icons.Default.LocationOn,
+                                            contentDescription = if (isArabic) "الاتجاهات إلى المركز" else "Directions to center",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(22.dp)
                                         )
-                                        TextButton(onClick = {
-                                            openCenterDirections(context, center.latitude, center.longitude)
-                                        }) {
-                                            Text(if (isArabic) "الاتجاهات إلى المركز" else "Directions to center")
-                                        }
                                     }
                                 }
                                 IconButton(modifier = Modifier.size(40.dp), onClick = { attachmentsCenter = center }) {
@@ -157,6 +159,34 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
 
     attachmentsCenter?.let { center ->
         CenterAttachmentsDialog(center = center, isArabic = isArabic, database = database, onDismiss = { attachmentsCenter = null })
+    }
+
+    directionsCenter?.let { center ->
+        AlertDialog(
+            onDismissRequest = { directionsCenter = null },
+            title = { Text(if (isArabic) "فتح الاتجاهات؟" else "Open directions?") },
+            text = {
+                Text(
+                    if (isArabic) "هل تريد إظهار الاتجاهات إلى ${center.name} على Google Maps؟"
+                    else "Would you like to show directions to ${center.name} in Google Maps?"
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val latitude = center.latitude
+                    val longitude = center.longitude
+                    directionsCenter = null
+                    if (latitude != null && longitude != null) {
+                        openCenterDirections(context, latitude, longitude)
+                    }
+                }) { Text(if (isArabic) "نعم" else "Yes") }
+            },
+            dismissButton = {
+                TextButton(onClick = { directionsCenter = null }) {
+                    Text(if (isArabic) "إلغاء" else "Cancel")
+                }
+            }
+        )
     }
 
     pendingDelete?.let { center ->

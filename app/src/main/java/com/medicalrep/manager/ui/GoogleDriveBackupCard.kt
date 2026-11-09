@@ -155,27 +155,36 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
                     DriveBackupScheduler.configure(context, enabled, interval)
                 })
             }
-            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { menuExpanded = true }) {
-                    Text(when (interval) {
-                        1 -> if (isArabic) "يوميًا" else "Daily"
-                        2 -> if (isArabic) "كل يومين" else "Every 2 days"
-                        else -> if (isArabic) "أسبوعيًا" else "Weekly"
-                    })
-                }
-                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                    listOf(1, 2, 7).forEach { days ->
-                        DropdownMenuItem(
-                            text = { Text(when (days) { 1 -> if (isArabic) "يوميًا" else "Daily"; 2 -> if (isArabic) "كل يومين" else "Every 2 days"; else -> if (isArabic) "أسبوعيًا" else "Weekly" }) },
-                            onClick = {
-                                interval = days
-                                menuExpanded = false
-                                DriveBackupScheduler.configure(context, enabled, interval)
-                            }
-                        )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    if (isArabic) "تكرار النسخ:" else "Backup frequency:",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                androidx.compose.foundation.layout.Box {
+                    OutlinedButton(onClick = { menuExpanded = true }) {
+                        Text(when (interval) {
+                            1 -> if (isArabic) "يوميًا" else "Daily"
+                            2 -> if (isArabic) "كل يومين" else "Every 2 days"
+                            else -> if (isArabic) "أسبوعيًا" else "Weekly"
+                        })
+                    }
+                    DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                        listOf(1, 2, 7).forEach { days ->
+                            DropdownMenuItem(
+                                text = { Text(when (days) { 1 -> if (isArabic) "يوميًا" else "Daily"; 2 -> if (isArabic) "كل يومين" else "Every 2 days"; else -> if (isArabic) "أسبوعيًا" else "Weekly" }) },
+                                onClick = {
+                                    interval = days
+                                    menuExpanded = false
+                                    DriveBackupScheduler.configure(context, enabled, interval)
+                                }
+                            )
+                        }
                     }
                 }
-                Text(if (isArabic) "تكرار النسخ" else "Frequency", style = MaterialTheme.typography.bodySmall)
             }
             val lastBackup = prefs.getLong(DriveBackupScheduler.KEY_LAST_BACKUP, 0L)
             Text(

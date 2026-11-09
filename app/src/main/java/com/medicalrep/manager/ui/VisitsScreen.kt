@@ -246,7 +246,7 @@ private fun VisitFormDialog(
             )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedSelectionField(
                     label = if (isArabic) "الطبيب" else "Doctor",
                     value = doctors.firstOrNull { it.id == selectedDoctorId }?.name

@@ -133,10 +133,10 @@ fun CenterAttachmentsDialog(
                             ) {
                                 Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                 Text(attachment.displayName, modifier = Modifier.weight(1f).padding(horizontal = 8.dp), maxLines = 2)
-                                IconButton(onClick = { openCenterAttachment(context, attachment) }) {
+                                IconButton(modifier = Modifier.size(40.dp), onClick = { openCenterAttachment(context, attachment) }) {
                                     Icon(Icons.Default.OpenInNew, contentDescription = if (isArabic) "فتح" else "Open")
                                 }
-                                IconButton(onClick = {
+                                IconButton(modifier = Modifier.size(40.dp), onClick = {
                                     scope.launch {
                                         dao.delete(attachment)
                                         withContext(Dispatchers.IO) { File(attachment.localPath).delete() }

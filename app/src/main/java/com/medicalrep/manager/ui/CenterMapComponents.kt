@@ -3,32 +3,53 @@ package com.medicalrep.manager.ui
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Handler
-import android.os.Looper
-import android.webkit.JavascriptInterface
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import android.webkit.WebSettings
-import android.graphics.Color
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import java.util.Locale
+
+/**
+ * Holds a Google Maps share payload delivered to the app through Android's share sheet.
+ * The picker observes this state and converts the shared URL into coordinates.
+ */
+object MapShareState {
+    var sharedText by mutableStateOf<String?>(null)
+}
+
+fun handleMapShareIntent(intent: Intent?) {
+    if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {
+        MapShareState.sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
+    }
+}
+
+fun openGoogleMapsLocationPicker(context: Context, latitude: Double?, longitude: Double?) {
+    val uri = if (latitude != null && longitude != null) {
+        Uri.parse(String.format(Locale.US, "geo:%f,%f?q=%f,%f", latitude, longitude, latitude, longitude))
+    } else {
+        Uri.parse("geo:26.8,30.8?z=6")
+    }
+    val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+        setPackage("com.google.android.apps.maps")
+    }
+    try {
+        context.startActivity(intent)
+    } catch (_: android.content.ActivityNotFoundException) {
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps")))
+    }
+}
 
 fun openCenterDirections(context: Context, latitude: Double, longitude: Double) {
     val uri = Uri.parse(
@@ -44,66 +65,24 @@ fun CenterMapPreview(
     modifier: Modifier = Modifier,
     onLocationPicked: ((Double, Double) -> Unit)? = null
 ) {
-    val context = LocalContext.current
-    AndroidView(
-        modifier = modifier,
-        factory = {
-            WebView(context).apply {
-                settings.javaScriptEnabled = true
-                settings.domStorageEnabled = true
-                settings.loadsImagesAutomatically = true
-                settings.blockNetworkImage = false
-                settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                setBackgroundColor(Color.WHITE)
-                isVerticalScrollBarEnabled = false
-                isHorizontalScrollBarEnabled = false
-                webViewClient = WebViewClient()
-                addJavascriptInterface(
-                    object {
-                        @JavascriptInterface
-                        fun picked(lat: Double, lon: Double) {
-                            Handler(Looper.getMainLooper()).post { onLocationPicked?.invoke(lat, lon) }
-                        }
-                    },
-                    "AndroidMap"
+    if (latitude != null && longitude != null) {
+        androidx.compose.material3.Surface(
+            modifier = modifier,
+            color = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text("موقع محفوظ على Google Maps", style = androidx.compose.material3.MaterialTheme.typography.labelMedium)
+                Text(
+                    String.format(Locale.US, "%.6f, %.6f", latitude, longitude),
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall
                 )
-                val lat = latitude?.toString() ?: "26.8"
-                val lon = longitude?.toString() ?: "30.8"
-                val zoom = if (latitude != null && longitude != null) 16 else 5
-                val initialMarker = if (latitude != null && longitude != null) "place($lat,$lon);" else ""
-                val html = """
-                    <!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-                    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-                    <style>html,body,#map{height:100%;width:100%;margin:0;padding:0} .leaflet-control-attribution{font-size:8px}</style>
-                    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" onerror="this.onerror=null;this.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'"></script></head><body><div id="map"></div>
-                    <script>
-                    if(typeof L === "undefined"){document.getElementById("map").innerHTML="<div style='padding:18px;font:14px sans-serif;color:#444'>تعذر تحميل الخريطة. تأكد من اتصال الإنترنت ثم أعد فتح النافذة.</div>";} else {
-                    const map=L.map('map').setView([$lat,$lon],$zoom);
-                    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
-                    let marker=null;
-                    function place(lat,lon){
-                      if(marker){map.removeLayer(marker);}
-                      marker=L.marker([lat,lon]).addTo(map);
-                    }
-                    window.setCenter=function(lat,lon){map.setView([lat,lon],16);place(lat,lon);};
-                    $initialMarker
-                    map.on('contextmenu',function(e){
-                      if(e.originalEvent){e.originalEvent.preventDefault();}
-                      place(e.latlng.lat,e.latlng.lng);
-                      if(window.AndroidMap){AndroidMap.picked(e.latlng.lat,e.latlng.lng);}
-                    });
-                    }
-                    </script></body></html>
-                """.trimIndent()
-                loadDataWithBaseURL("https://local.map/", html, "text/html", "UTF-8", null)
-            }
-        },
-        update = { webView ->
-            if (latitude != null && longitude != null) {
-                webView.evaluateJavascript("if(window.setCenter){setCenter($latitude,$longitude);}", null)
             }
         }
-    )
+    }
 }
 
 @Composable
@@ -114,10 +93,27 @@ fun CenterMapPickerDialog(
     onDismiss: () -> Unit,
     onConfirm: (Double, Double) -> Unit
 ) {
+    val context = LocalContext.current
     var latitude by remember(initialLatitude, initialLongitude) { mutableStateOf(initialLatitude) }
     var longitude by remember(initialLatitude, initialLongitude) { mutableStateOf(initialLongitude) }
     var sharedLink by remember { mutableStateOf("") }
     var linkError by remember { mutableStateOf(false) }
+
+    LaunchedEffect(MapShareState.sharedText) {
+        val incoming = MapShareState.sharedText
+        if (!incoming.isNullOrBlank()) {
+            sharedLink = incoming
+            val parsed = parseMapCoordinates(incoming)
+            if (parsed != null) {
+                latitude = parsed.first
+                longitude = parsed.second
+                linkError = false
+            } else {
+                linkError = true
+            }
+            MapShareState.sharedText = null
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -125,22 +121,22 @@ fun CenterMapPickerDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    if (isArabic) "اضغط مطولًا على موقع المركز في الخريطة لوضع العلامة وحفظ الإحداثيات."
-                    else "Long-press the center location on the map to place a pin and save its coordinates."
+                    if (isArabic) "افتح Google Maps، اضغط مطولًا على موقع المركز، ثم اختر مشاركة واختر Medical Rep Manager. سيعود رابط الموقع إلى هنا تلقائيًا."
+                    else "Open Google Maps, long-press the center location, tap Share, then choose Medical Rep Manager. The shared location link will return here automatically."
                 )
-                CenterMapPreview(
-                    latitude = latitude,
-                    longitude = longitude,
-                    modifier = Modifier.fillMaxWidth().height(280.dp),
-                    onLocationPicked = { lat, lon -> latitude = lat; longitude = lon }
-                )
+                OutlinedButton(
+                    onClick = { openGoogleMapsLocationPicker(context, latitude, longitude) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (isArabic) "فتح Google Maps لاختيار الموقع" else "Open Google Maps to choose location")
+                }
                 OutlinedTextField(
                     value = sharedLink,
                     onValueChange = { sharedLink = it; linkError = false },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     isError = linkError,
-                    label = { Text(if (isArabic) "أو الصق رابط Google Maps / الإحداثيات" else "Or paste a Google Maps link / coordinates") }
+                    label = { Text(if (isArabic) "رابط الموقع المُشارك أو الإحداثيات" else "Shared location link or coordinates") }
                 )
                 OutlinedButton(
                     onClick = {
@@ -156,14 +152,14 @@ fun CenterMapPickerDialog(
                 ) { Text(if (isArabic) "استخراج الموقع من الرابط" else "Read location from link") }
                 if (linkError) {
                     Text(
-                        if (isArabic) "لم أتمكن من استخراج الإحداثيات. جرّب نسخ رابط يحتوي على دبوس الموقع أو اكتب الإحداثيات بصيغة lat, lon."
-                        else "Could not read coordinates. Paste a pin link or enter coordinates as lat, lon."
+                        if (isArabic) "الرابط لا يحتوي على إحداثيات قابلة للاستخراج. استخدم مشاركة الموقع من Google Maps أو الصق الإحداثيات بصيغة lat, lon."
+                        else "The link has no readable coordinates. Share a dropped pin from Google Maps or paste coordinates as lat, lon."
                     )
                 }
                 if (latitude != null && longitude != null) {
                     Text(String.format(Locale.US, "Latitude: %.6f   Longitude: %.6f", latitude, longitude))
                 } else {
-                    Text(if (isArabic) "لم يتم تحديد موقع بعد." else "No location selected yet.")
+                    Text(if (isArabic) "لم يتم استلام موقع بعد." else "No location received yet.")
                 }
             }
         },

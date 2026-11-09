@@ -77,14 +77,30 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
     val slots by availabilityDao.observeAll().collectAsState(initial = emptyList())
     val doctors by doctorDao.observeAll().collectAsState(initial = emptyList())
     val centers by database.medicalCenterDao().observeAll().collectAsState(initial = emptyList())
+    val specialties by database.specialtyDao().observeAll().collectAsState(initial = emptyList())
     val doctorCenterLinks by database.doctorCenterLinkDao().observeAll().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     var editingGroup by remember { mutableStateOf<List<DoctorAvailabilityEntity>>(emptyList()) }
     var showForm by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<List<DoctorAvailabilityEntity>?>(null) }
+    var selectedDay by remember { mutableStateOf(0) }
+    var selectedCenterId by remember { mutableStateOf(0L) }
+    var selectedSpecialty by remember { mutableStateOf("all") }
+    var dayMenu by remember { mutableStateOf(false) }
+    var centerFilterMenu by remember { mutableStateOf(false) }
+    var specialtyFilterMenu by remember { mutableStateOf(false) }
 
-    val groupedSlots = slots.groupBy { it.slotGroupId }
+    val groupedSlots = slots.groupBy { it.slotGroupId.ifBlank { "legacy-${it.id}" } }
         .values.sortedWith(compareBy({ it.firstOrNull()?.dayOfWeek ?: 0 }, { it.firstOrNull()?.startTime.orEmpty() }))
+    val filteredGroups = groupedSlots.mapNotNull { group ->
+        val matching = group.filter { slot ->
+            val doctor = doctors.firstOrNull { it.id == slot.doctorId }
+            (selectedDay == 0 || slot.dayOfWeek == selectedDay) &&
+            (selectedCenterId == 0L || slot.centerId == selectedCenterId) &&
+            (selectedSpecialty == "all" || doctor?.specialty.equals(selectedSpecialty, ignoreCase = true))
+        }
+        matching.takeIf { it.isNotEmpty() }
+    }
 
     Scaffold(
         modifier = Modifier.padding(padding),
@@ -107,16 +123,39 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                 modifier = Modifier.padding(top = 8.dp)
             )
             Text(
-                if (isArabic) "أضف أكثر من فترة للطبيب نفسه، ولكل فترة أيام وساعات مستقلة." else "Add multiple independent time slots for the same doctor, each with its own days and hours.",
+                if (isArabic) "استعرض الأطباء حسب اليوم أو المركز أو التخصص، ويمكنك إضافة وتعديل مواعيد التواجد." else "Browse doctors by day, center or specialty, and add or edit their availability.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.weight(1f)) {
+                    OutlinedSelectionField(label = if (isArabic) "اليوم" else "Day", value = if (selectedDay == 0) { if (isArabic) "كل الأيام" else "All days" } else weekDays.firstOrNull { it.first == selectedDay }?.second?.let { if (isArabic) it.second else it.first }.orEmpty(), onClick = { dayMenu = true })
+                    DropdownMenu(expanded = dayMenu, onDismissRequest = { dayMenu = false }) {
+                        DropdownMenuItem(text = { Text(if (isArabic) "كل الأيام" else "All days") }, onClick = { selectedDay = 0; dayMenu = false })
+                        weekDays.forEach { (day, names) -> DropdownMenuItem(text = { Text(if (isArabic) names.second else names.first) }, onClick = { selectedDay = day; dayMenu = false }) }
+                    }
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    OutlinedSelectionField(label = if (isArabic) "التخصص" else "Specialty", value = if (selectedSpecialty == "all") { if (isArabic) "كل التخصصات" else "All specialties" } else selectedSpecialty, onClick = { specialtyFilterMenu = true })
+                    DropdownMenu(expanded = specialtyFilterMenu, onDismissRequest = { specialtyFilterMenu = false }) {
+                        DropdownMenuItem(text = { Text(if (isArabic) "كل التخصصات" else "All specialties") }, onClick = { selectedSpecialty = "all"; specialtyFilterMenu = false })
+                        specialties.map { it.name }.distinct().sorted().forEach { name -> DropdownMenuItem(text = { Text(name) }, onClick = { selectedSpecialty = name; specialtyFilterMenu = false }) }
+                    }
+                }
+            }
+            OutlinedSelectionField(label = if (isArabic) "المركز" else "Center", value = if (selectedCenterId == 0L) { if (isArabic) "كل المراكز" else "All centers" } else centers.firstOrNull { it.id == selectedCenterId }?.name.orEmpty(), onClick = { centerFilterMenu = true })
+            DropdownMenu(expanded = centerFilterMenu, onDismissRequest = { centerFilterMenu = false }) {
+                DropdownMenuItem(text = { Text(if (isArabic) "كل المراكز" else "All centers") }, onClick = { selectedCenterId = 0L; centerFilterMenu = false })
+                centers.forEach { center -> DropdownMenuItem(text = { Text(center.name) }, onClick = { selectedCenterId = center.id; centerFilterMenu = false }) }
+            }
             if (doctors.isEmpty()) {
                 Text(if (isArabic) "أضف طبيباً أولاً حتى تتمكن من تحديد مواعيده." else "Add a doctor first to define their availability.", modifier = Modifier.padding(top = 20.dp))
             } else if (groupedSlots.isEmpty()) {
                 Text(if (isArabic) "لم تتم إضافة مواعيد متاحة بعد. اضغط + للبدء." else "No availability added yet. Tap + to get started.", modifier = Modifier.padding(top = 20.dp))
+            } else if (filteredGroups.isEmpty()) {
+                Text(if (isArabic) "لا توجد مواعيد مطابقة للاختيارات." else "No availability matches these filters.", modifier = Modifier.padding(top = 20.dp))
             } else {
                 LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    items(groupedSlots, key = { group -> group.first().id }) { group ->
+                    items(filteredGroups, key = { group -> group.first().id }) { group ->
                         val slot = group.first()
                         val doctor = doctors.firstOrNull { it.id == slot.doctorId }
                         val centerName = centers.firstOrNull { it.id == slot.centerId }?.name

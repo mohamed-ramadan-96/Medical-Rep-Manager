@@ -364,8 +364,8 @@ object DriveBackupEngine {
                     check(hasTable(table)) { "Backup database is missing required table: $table" }
                 }
                 writable.rawQuery("PRAGMA user_version", null).use { cursor ->
-                    check(cursor.moveToFirst() && cursor.getInt(0) == 12) {
-                        "Unsupported database schema version; expected version 12"
+                    check(cursor.moveToFirst() && cursor.getInt(0) == 13) {
+                        "Unsupported database schema version; expected version 13"
                     }
                 }
                 writable.rawQuery("PRAGMA integrity_check", null).use { cursor ->

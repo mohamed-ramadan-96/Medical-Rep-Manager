@@ -69,7 +69,7 @@ private val tabs = listOf(
     Tab("Doctors", "الأطباء", Icons.Filled.PeopleAlt),
     Tab("Centers", "المراكز", Icons.Filled.LocalHospital),
     Tab("Specialties", "التخصصات", Icons.Filled.MedicalServices),
-    Tab("Schedule", "الجدول", Icons.Filled.CalendarMonth),
+    Tab("Doctor hours", "مواعيد الأطباء", Icons.Filled.CalendarMonth),
     Tab("Visits", "الزيارات", Icons.Filled.History)
 )
 
@@ -100,7 +100,7 @@ fun MedicalRepApp() {
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                if (isArabic) "نظّم زياراتك وعلاقاتك المهنية" else "Organize your professional visits",
+                                if (isArabic) "دليل بيانات الأطباء ومواعيدهم" else "Doctor directory and availability",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

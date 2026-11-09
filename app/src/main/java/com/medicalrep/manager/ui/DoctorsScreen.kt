@@ -35,6 +35,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -87,9 +89,22 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val centers by centerDao.observeAll().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     var searchText by remember { mutableStateOf("") }
+    var selectedArea by remember { mutableStateOf("all") }
+    var selectedSpecialty by remember { mutableStateOf("all") }
+    var selectedCenter by remember { mutableStateOf("all") }
+    var areaMenu by remember { mutableStateOf(false) }
+    var specialtyMenu by remember { mutableStateOf(false) }
+    var centerMenu by remember { mutableStateOf(false) }
     val doctors by remember(searchText) {
         if (searchText.isBlank()) dao.observeAll() else dao.search(searchText.trim())
     }.collectAsState(initial = emptyList())
+    val availableAreas = doctors.map { it.area.trim() }.filter { it.isNotBlank() }.distinct().sorted()
+    val filteredDoctors = doctors.filter { doctor ->
+        (selectedArea == "all" || doctor.area.trim().equals(selectedArea, ignoreCase = true)) &&
+        (selectedSpecialty == "all" || doctor.specialty.equals(selectedSpecialty, ignoreCase = true)) &&
+        (selectedCenter == "all" || doctorCenterLinks.any { it.doctorId == doctor.id && it.centerId.toString() == selectedCenter } ||
+            (doctorCenterLinks.none { it.doctorId == doctor.id } && doctor.centerId?.toString() == selectedCenter))
+    }
     var editingDoctor by remember { mutableStateOf<DoctorEntity?>(null) }
     var showForm by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<DoctorEntity?>(null) }
@@ -122,16 +137,33 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 onValueChange = { searchText = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                label = { Text(if (isArabic) "ابحث بالاسم أو التخصص أو الهاتف" else "Search name, specialty or phone") }
+                label = { Text(if (isArabic) "ابحث بالاسم أو التخصص أو الهاتف أو المنطقة" else "Search name, specialty, phone or area") }
             )
-            Text(
-                if (isArabic) "عدد الأطباء: ${doctors.size}" else "Doctors: ${doctors.size}",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            if (doctors.isEmpty()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.weight(1f)) {
+                    OutlinedSelectionField(label = if (isArabic) "المنطقة" else "Area", value = if (selectedArea == "all") { if (isArabic) "كل المناطق" else "All areas" } else selectedArea, onClick = { areaMenu = true })
+                    DropdownMenu(expanded = areaMenu, onDismissRequest = { areaMenu = false }) {
+                        DropdownMenuItem(text = { Text(if (isArabic) "كل المناطق" else "All areas") }, onClick = { selectedArea = "all"; areaMenu = false })
+                        availableAreas.forEach { area -> DropdownMenuItem(text = { Text(area) }, onClick = { selectedArea = area; areaMenu = false }) }
+                    }
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    OutlinedSelectionField(label = if (isArabic) "التخصص" else "Specialty", value = if (selectedSpecialty == "all") { if (isArabic) "كل التخصصات" else "All specialties" } else selectedSpecialty, onClick = { specialtyMenu = true })
+                    DropdownMenu(expanded = specialtyMenu, onDismissRequest = { specialtyMenu = false }) {
+                        DropdownMenuItem(text = { Text(if (isArabic) "كل التخصصات" else "All specialties") }, onClick = { selectedSpecialty = "all"; specialtyMenu = false })
+                        specialties.map { it.name }.plus(doctors.map { it.specialty }).filter { it.isNotBlank() }.distinct().sorted().forEach { name -> DropdownMenuItem(text = { Text(name) }, onClick = { selectedSpecialty = name; specialtyMenu = false }) }
+                    }
+                }
+            }
+            OutlinedSelectionField(label = if (isArabic) "المركز" else "Center", value = if (selectedCenter == "all") { if (isArabic) "كل المراكز" else "All centers" } else centers.firstOrNull { it.id.toString() == selectedCenter }?.name.orEmpty(), onClick = { centerMenu = true })
+            DropdownMenu(expanded = centerMenu, onDismissRequest = { centerMenu = false }) {
+                DropdownMenuItem(text = { Text(if (isArabic) "كل المراكز" else "All centers") }, onClick = { selectedCenter = "all"; centerMenu = false })
+                centers.forEach { center -> DropdownMenuItem(text = { Text(center.name) }, onClick = { selectedCenter = center.id.toString(); centerMenu = false }) }
+            }
+            Text(if (isArabic) "عدد الأطباء: ${filteredDoctors.size} من ${doctors.size}" else "Doctors: ${filteredDoctors.size} of ${doctors.size}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (filteredDoctors.isEmpty()) {
                 Text(
-                    if (isArabic) "لا يوجد أطباء حتى الآن. اضغط + لإضافة أول طبيب." else "No doctors yet. Tap + to add your first doctor.",
+                    if (doctors.isEmpty()) { if (isArabic) "لا يوجد أطباء حتى الآن. اضغط + لإضافة أول طبيب." else "No doctors yet. Tap + to add your first doctor." } else { if (isArabic) "لا توجد نتائج مطابقة للفلاتر المحددة." else "No doctors match the selected filters." },
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 24.dp)
                 )
@@ -140,7 +172,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(doctors, key = { it.id }) { doctor ->
+                    items(filteredDoctors, key = { it.id }) { doctor ->
                         DoctorCard(
                             doctor = doctor,
                             centerName = centers.filter { center -> doctorCenterLinks.any { it.doctorId == doctor.id && it.centerId == center.id } }.joinToString("، ") { it.name }.ifBlank { centers.firstOrNull { it.id == doctor.centerId }?.name ?: doctor.medicalCenter },
@@ -284,6 +316,9 @@ private fun DoctorCard(
                         Text(doctor.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         if (doctor.specialty.isNotBlank()) {
                             Text(doctor.specialty, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium)
+                        }
+                        if (doctor.area.isNotBlank()) {
+                            Text((if (isArabic) "المنطقة: " else "Area: ") + doctor.area, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -639,6 +674,7 @@ private fun DoctorFormDialog(
     var selectedSpecialtyId by remember(initial, specialties) { mutableStateOf(initial?.specialtyId ?: specialties.firstOrNull { it.name == initial?.specialty }?.id) }
     var showSpecialtyPicker by remember { mutableStateOf(false) }
     var phones by remember(initial) { mutableStateOf(initial?.phoneNumbers.orEmpty()) }
+    var area by remember(initial) { mutableStateOf(initial?.area.orEmpty()) }
     var selectedCenterIds by remember(initial, initialCenterIds, centers) { mutableStateOf(initialCenterIds.ifEmpty { setOfNotNull(initial?.centerId ?: centers.firstOrNull { it.name == initial?.medicalCenter }?.id) }) }
     var showCenterPicker by remember { mutableStateOf(false) }
     var notes by remember(initial) { mutableStateOf(initial?.notes.orEmpty()) }
@@ -723,6 +759,9 @@ private fun DoctorFormDialog(
                     )
                 }
                 item {
+                    OutlinedTextField(value = area, onValueChange = { area = it }, modifier = Modifier.fillMaxWidth(), singleLine = true, label = { Text(if (isArabic) "المنطقة / المدينة (مثال: الزقازيق)" else "Area / City (e.g. Zagazig)") })
+                }
+                item {
                     OutlinedSelectionField(
                         label = if (isArabic) "المركز أو العيادة" else "Medical center / clinic",
                         value = if (selectedCenterIds.isEmpty()) {
@@ -787,6 +826,7 @@ private fun DoctorFormDialog(
                             specialty = specialties.firstOrNull { it.id == selectedSpecialtyId }?.name.orEmpty(),
                             specialtyId = selectedSpecialtyId,
                             phoneNumbers = phones.trim(),
+                            area = area.trim(),
                             medicalCenter = centers.firstOrNull { it.id == selectedCenterIds.firstOrNull() }?.name.orEmpty(),
                             centerId = selectedCenterIds.firstOrNull(),
                             notes = notes.trim(),

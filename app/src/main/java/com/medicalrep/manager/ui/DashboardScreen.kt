@@ -301,7 +301,16 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                     }
                     DropdownMenu(expanded = exportMenuExpanded, onDismissRequest = { exportMenuExpanded = false }) {
                         DropdownMenuItem(
-                            text = { Text(if (isArabic) "تصدير القائمة كملف \u2066Excel\u2069" else "Export list as Excel file") },
+                            text = {
+                                if (isArabic) {
+                                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            Text("تصدير القائمة كملف")
+                                            Text("Excel")
+                                        }
+                                    }
+                                } else Text("Export list as Excel file")
+                            },
                             onClick = { exportMenuExpanded = false; showExcelExportConfirmation = true }
                         )
                         DropdownMenuItem(
@@ -317,7 +326,16 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                     }
                     DropdownMenu(expanded = importMenuExpanded, onDismissRequest = { importMenuExpanded = false }) {
                         DropdownMenuItem(
-                            text = { Text(if (isArabic) "استيراد القائمة من ملف \u2066Excel\u2069" else "Import list from Excel file") },
+                            text = {
+                                if (isArabic) {
+                                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            Text("استيراد القائمة من ملف")
+                                            Text("Excel")
+                                        }
+                                    }
+                                } else Text("Import list from Excel file")
+                            },
                             onClick = {
                                 importMenuExpanded = false
                                 showExcelImportConfirmation = true

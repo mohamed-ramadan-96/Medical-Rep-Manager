@@ -127,6 +127,8 @@ fun CenterMapPickerDialog(
         val incoming = MapShareState.sharedText
         if (!incoming.isNullOrBlank()) {
             sharedLink = incoming.trim()
+            latitude = null
+            longitude = null
             mapUrl = extractSharedMapUrl(incoming)
             linkError = false
             MapShareState.sharedText = null
@@ -197,6 +199,8 @@ fun CenterMapPickerDialog(
                     value = sharedLink,
                     onValueChange = {
                         sharedLink = it
+                        latitude = null
+                        longitude = null
                         mapUrl = extractSharedMapUrl(it)
                         linkError = false
                     },

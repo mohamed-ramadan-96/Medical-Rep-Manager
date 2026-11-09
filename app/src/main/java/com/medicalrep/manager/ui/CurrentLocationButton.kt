@@ -5,6 +5,15 @@ import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.using
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -96,5 +105,24 @@ internal fun CurrentLocationButton(
                 else -> "Use my current location"
             }
         )
+    }
+}
+
+
+@Composable
+internal fun AnimatedLocationActions(
+    visible: Boolean,
+    content: @Composable () -> Unit
+) {
+    AnimatedContent(
+        targetState = visible,
+        transitionSpec = {
+            (fadeIn(tween(180)) + slideInVertically(tween(220)) { height -> height / 6 }) togetherWith
+                (fadeOut(tween(120)) + slideOutVertically(tween(160)) { height -> -height / 10 }) using
+                SizeTransform(clip = false)
+        },
+        label = "location_actions_transition"
+    ) { showActions ->
+        if (showActions) content()
     }
 }

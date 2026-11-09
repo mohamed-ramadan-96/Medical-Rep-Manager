@@ -387,7 +387,7 @@ private fun DoctorDetailsDialog(
                                         Icons.Default.LocationOn,
                                         contentDescription = if (isArabic) "الاتجاهات إلى الطبيب" else "Directions to doctor",
                                         tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(22.dp)
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
                             }
@@ -428,7 +428,7 @@ private fun DoctorDetailsDialog(
                                             Icons.Default.LocationOn,
                                             contentDescription = if (isArabic) "الاتجاهات إلى هذا المركز" else "Directions to this center",
                                             tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(22.dp)
+                                            modifier = Modifier.size(20.dp)
                                         )
                                     }
                                 }

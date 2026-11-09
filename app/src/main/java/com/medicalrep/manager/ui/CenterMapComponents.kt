@@ -302,7 +302,7 @@ private data class ResolvedMapLink(val url: String, val page: String)
 
 private suspend fun resolveSharedMapLink(raw: String): ResolvedMapLink? = withContext(Dispatchers.IO) {
     try {
-        var currentUrl = Regex("https?://[^\\\\s<>]+", RegexOption.IGNORE_CASE)
+        var currentUrl = Regex("https?://[^\\s<>]+", RegexOption.IGNORE_CASE)
             .find(raw)?.value?.trimEnd('.', ')', ']', ',')
             ?: return@withContext null
 

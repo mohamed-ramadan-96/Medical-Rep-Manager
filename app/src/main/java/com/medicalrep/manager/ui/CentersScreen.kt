@@ -44,7 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.animateContentSize
+import androidx.compose.animation.animateContentSize
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.platform.LocalContext
@@ -143,7 +143,6 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                 }
                                 IconButton(modifier = Modifier.size(40.dp), onClick = { pendingDelete = center }) {
                                     Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete", modifier = Modifier.size(20.dp))
-                                }
                                 }
                             }
                         }

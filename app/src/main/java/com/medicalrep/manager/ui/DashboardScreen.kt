@@ -75,6 +75,8 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
     var exportMenuExpanded by remember { mutableStateOf(false) }
     var importMenuExpanded by remember { mutableStateOf(false) }
     var pendingRestoreUri by remember { mutableStateOf<Uri?>(null) }
+    var showExcelExportConfirmation by remember { mutableStateOf(false) }
+    var pendingExcelImportUri by remember { mutableStateOf<Uri?>(null) }
 
     val excelExportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -112,36 +114,80 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
     ) { uri -> pendingRestoreUri = uri }
     val excelImportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri != null) scope.launch {
-            try {
-                val result = withContext(Dispatchers.IO) {
-                    val imported = ExcelImporter.readDoctors(context.contentResolver, uri)
-                    val dao = database.doctorDao()
-                    val existing = dao.getAllForImport()
-                    val knownPhones = existing.flatMap { splitPhones(it.phoneNumbers) }.mapNotNull(::normalizePhone).toMutableSet()
-                    var added = 0
-                    var skipped = 0
-                    imported.forEach { row ->
-                        val rowPhones = splitPhones(row.phone).mapNotNull(::normalizePhone).toSet()
-                        if (rowPhones.isEmpty() || rowPhones.any { it in knownPhones }) {
-                            skipped++
-                        } else {
-                            dao.insert(DoctorEntity(name = row.name, phoneNumbers = row.phone))
-                            knownPhones.addAll(rowPhones)
-                            added++
+    ) { uri -> pendingExcelImportUri = uri }
+
+    pendingExcelImportUri?.let { selectedUri ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { pendingExcelImportUri = null },
+            title = { Text(if (isArabic) "تأكيد استيراد ملف Excel" else "Confirm Excel import") },
+            text = {
+                Text(if (isArabic)
+                    "يجب أن يحتوي ملف Excel على عمودين فقط: اسم الطبيب ورقم الهاتف. وجود أي عمود إضافي أو نقص أحد العمودين سيؤدي إلى فشل الاستيراد."
+                    else "The Excel file must contain exactly two columns: Doctor Name and Phone Number. Any extra column or a missing column will cause the import to fail.")
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    pendingExcelImportUri = null
+                    scope.launch {
+                        try {
+                            val result = withContext(Dispatchers.IO) {
+                                val imported = ExcelImporter.readDoctors(context.contentResolver, selectedUri)
+                                val dao = database.doctorDao()
+                                val existing = dao.getAllForImport()
+                                val knownPhones = existing.flatMap { splitPhones(it.phoneNumbers) }.mapNotNull(::normalizePhone).toMutableSet()
+                                var added = 0
+                                var skipped = 0
+                                imported.forEach { row ->
+                                    val rowPhones = splitPhones(row.phone).mapNotNull(::normalizePhone).toSet()
+                                    if (rowPhones.isEmpty() || rowPhones.any { it in knownPhones }) {
+                                        skipped++
+                                    } else {
+                                        dao.insert(DoctorEntity(name = row.name, phoneNumbers = row.phone))
+                                        knownPhones.addAll(rowPhones)
+                                        added++
+                                    }
+                                }
+                                added to skipped
+                            }
+                            Toast.makeText(context, if (isArabic)
+                                "تمت إضافة ${result.first} طبيب جديد، وتخطي ${result.second} مكرر."
+                                else "Added ${result.first} new doctors; skipped ${result.second} duplicates.", Toast.LENGTH_LONG).show()
+                        } catch (error: Exception) {
+                            Toast.makeText(context, (if (isArabic) "فشل استيراد Excel: " else "Excel import failed: ") + (error.localizedMessage ?: ""), Toast.LENGTH_LONG).show()
                         }
                     }
-                    added to skipped
+                }) { Text(if (isArabic) "متابعة الاستيراد" else "Continue import") }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { pendingExcelImportUri = null }) {
+                    Text(if (isArabic) "إلغاء" else "Cancel")
                 }
-                Toast.makeText(context, if (isArabic)
-                    "تمت إضافة ${result.first} طبيب جديد، وتخطي ${result.second} مكرر."
-                    else "Added ${result.first} new doctors; skipped ${result.second} duplicates.", Toast.LENGTH_LONG).show()
-            } catch (error: Exception) {
-                Toast.makeText(context, (if (isArabic) "فشل استيراد Excel: " else "Excel import failed: ") + (error.localizedMessage ?: ""), Toast.LENGTH_LONG).show()
             }
-        }
+        )
     }
+    if (showExcelExportConfirmation) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showExcelExportConfirmation = false },
+            title = { Text(if (isArabic) "تأكيد تصدير Excel" else "Confirm Excel export") },
+            text = {
+                Text(if (isArabic)
+                    "سيحتوي ملف Excel على اسم الطبيب ورقم الهاتف فقط، دون أي بيانات أخرى."
+                    else "The Excel file will contain only the doctor's name and phone number, with no other data.")
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    showExcelExportConfirmation = false
+                    excelExportLauncher.launch("Doctors.xlsx")
+                }) { Text(if (isArabic) "متابعة التصدير" else "Continue export") }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showExcelExportConfirmation = false }) {
+                    Text(if (isArabic) "إلغاء" else "Cancel")
+                }
+            }
+        )
+    }
+
     pendingRestoreUri?.let { selectedUri ->
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { pendingRestoreUri = null },
@@ -250,7 +296,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                     DropdownMenu(expanded = exportMenuExpanded, onDismissRequest = { exportMenuExpanded = false }) {
                         DropdownMenuItem(
                             text = { Text(if (isArabic) "Excel — أسماء وأرقام الأطباء" else "Excel — doctor names & phones") },
-                            onClick = { exportMenuExpanded = false; excelExportLauncher.launch("Doctors.xlsx") }
+                            onClick = { exportMenuExpanded = false; showExcelExportConfirmation = true }
                         )
                         DropdownMenuItem(
                             text = { Text(if (isArabic) "نسخة كاملة من التطبيق" else "Full app backup") },

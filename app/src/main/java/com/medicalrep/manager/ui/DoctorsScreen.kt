@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -321,6 +322,7 @@ private fun DoctorDetailsDialog(
 ) {
     val context = LocalContext.current
     var mapPickerCenter by remember { mutableStateOf<MedicalCenterEntity?>(null) }
+    var directionsCenter by remember { mutableStateOf<MedicalCenterEntity?>(null) }
     val days = listOf(
         1 to (if (isArabic) "الاثنين" else "Monday"),
         2 to (if (isArabic) "الثلاثاء" else "Tuesday"),
@@ -359,15 +361,22 @@ private fun DoctorDetailsDialog(
                             if (center.address.isNotBlank()) Text((if (isArabic) "العنوان: " else "Address: ") + center.address)
                             if (center.phone.isNotBlank()) Text((if (isArabic) "الهاتف: " else "Phone: ") + center.phone)
                             if (center.latitude != null && center.longitude != null) {
-                                CenterMapPreview(
-                                    latitude = center.latitude,
-                                    longitude = center.longitude,
-                                    modifier = Modifier.fillMaxWidth().height(120.dp)
-                                )
-                                TextButton(onClick = {
-                                    openCenterDirections(context, center.latitude, center.longitude)
-                                }) {
-                                    Text(if (isArabic) "الاتجاهات إلى هذا المركز" else "Directions to this center")
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Start
+                                ) {
+                                    IconButton(
+                                        modifier = Modifier.size(40.dp),
+                                        onClick = { directionsCenter = center }
+                                    ) {
+                                        Icon(
+                                            Icons.Default.LocationOn,
+                                            contentDescription = if (isArabic) "الاتجاهات إلى هذا المركز" else "Directions to this center",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
                                 }
                             }
                             TextButton(onClick = { mapPickerCenter = center }) {
@@ -418,6 +427,34 @@ private fun DoctorDetailsDialog(
             TextButton(onClick = onDismiss) { Text(if (isArabic) "إغلاق" else "Close") }
         }
     )
+
+    directionsCenter?.let { center ->
+        AlertDialog(
+            onDismissRequest = { directionsCenter = null },
+            title = { Text(if (isArabic) "فتح الاتجاهات؟" else "Open directions?") },
+            text = {
+                Text(
+                    if (isArabic) "هل تريد عرض الاتجاهات إلى ${center.name} على Google Maps؟"
+                    else "Would you like to open directions to ${center.name} in Google Maps?"
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val latitude = center.latitude
+                    val longitude = center.longitude
+                    directionsCenter = null
+                    if (latitude != null && longitude != null) {
+                        openCenterDirections(context, latitude, longitude)
+                    }
+                }) { Text(if (isArabic) "نعم" else "Yes") }
+            },
+            dismissButton = {
+                TextButton(onClick = { directionsCenter = null }) {
+                    Text(if (isArabic) "إلغاء" else "Cancel")
+                }
+            }
+        )
+    }
 
     mapPickerCenter?.let { center ->
         CenterMapPickerDialog(

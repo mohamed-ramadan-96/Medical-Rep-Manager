@@ -114,7 +114,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                     if (center.phone.isNotBlank()) Text(center.phone, style = MaterialTheme.typography.bodyMedium)
                                     if (center.notes.isNotBlank()) Text(center.notes, style = MaterialTheme.typography.bodySmall)
                                 }
-                                if (center.latitude != null && center.longitude != null) {
+                                if ((center.latitude != null && center.longitude != null) || !center.mapUrl.isNullOrBlank()) {
                                     IconButton(
                                         modifier = Modifier.size(40.dp),
                                         onClick = { directionsCenter = center }
@@ -177,9 +177,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     val latitude = center.latitude
                     val longitude = center.longitude
                     directionsCenter = null
-                    if (latitude != null && longitude != null) {
-                        openCenterDirections(context, latitude, longitude)
-                    }
+                    openSavedMapLocation(context, latitude, longitude, center.mapUrl)
                 }) { Text(if (isArabic) "نعم" else "Yes") }
             },
             dismissButton = {
@@ -232,6 +230,7 @@ private fun CenterFormDialog(
     var notes by remember(initial) { mutableStateOf(initial?.notes.orEmpty()) }
     var latitude by remember(initial) { mutableStateOf(initial?.latitude) }
     var longitude by remember(initial) { mutableStateOf(initial?.longitude) }
+    var mapUrl by remember(initial) { mutableStateOf(initial?.mapUrl) }
     var showMapPicker by remember { mutableStateOf(false) }
     var nameError by remember { mutableStateOf(false) }
 
@@ -298,8 +297,8 @@ private fun CenterFormDialog(
                             OutlinedButton(onClick = { showMapPicker = true }) {
                                 Text(if (latitude == null) { if (isArabic) "تحديد الموقع" else "Choose location" } else { if (isArabic) "تعديل الموقع" else "Change location" })
                             }
-                            if (latitude != null || longitude != null) {
-                                TextButton(onClick = { latitude = null; longitude = null }) {
+                            if (latitude != null || longitude != null || !mapUrl.isNullOrBlank()) {
+                                TextButton(onClick = { latitude = null; longitude = null; mapUrl = null }) {
                                     Text(if (isArabic) "مسح الموقع" else "Clear location")
                                 }
                             }
@@ -320,7 +319,8 @@ private fun CenterFormDialog(
                         notes = notes.trim(),
                         createdAt = initial?.createdAt ?: System.currentTimeMillis(),
                         latitude = latitude,
-                        longitude = longitude
+                        longitude = longitude,
+                        mapUrl = mapUrl
                     )
                 )
             }) { Text(if (isArabic) "حفظ" else "Save") }
@@ -335,10 +335,12 @@ private fun CenterFormDialog(
             isArabic = isArabic,
             initialLatitude = latitude,
             initialLongitude = longitude,
+            initialMapUrl = mapUrl,
             onDismiss = { showMapPicker = false },
-            onConfirm = { lat, lon ->
+            onConfirm = { lat, lon, url ->
                 latitude = lat
                 longitude = lon
+                mapUrl = url
                 showMapPicker = false
             }
         )

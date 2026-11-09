@@ -121,9 +121,14 @@ fun CenterMapPickerDialog(
     LaunchedEffect(resolving, sharedLink) {
         if (resolving && sharedLink.isNotBlank()) {
             val resolved = resolveSharedMapLink(sharedLink)
-            val parsed = parseMapCoordinates(sharedLink)
-                ?: resolved?.let { parseMapCoordinates(it.url) ?: parseMapCoordinates(it.page) }
+            val parsed = parseMapCoordinates(sharedLink, allowViewport = false)
+                ?: resolved?.let {
+                    parseMapCoordinates(it.url, allowViewport = false)
+                        ?: parseMapCoordinates(it.page, allowViewport = false)
+                }
                 ?: geocodeSharedMapPlace(sharedLink, resolved?.url, resolved?.page)
+                ?: parseMapCoordinates(sharedLink)
+                ?: resolved?.let { parseMapCoordinates(it.url) }
             if (parsed != null) {
                 latitude = parsed.first
                 longitude = parsed.second
@@ -200,7 +205,7 @@ fun CenterMapPickerDialog(
     )
 }
 
-private fun parseMapCoordinates(raw: String): Pair<Double, Double>? {
+private fun parseMapCoordinates(raw: String, allowViewport: Boolean = true): Pair<Double, Double>? {
     // Decode nested/escaped Google Maps URLs and HTML entities before inspecting coordinates.
     val value = Uri.decode(raw.trim())
         .replace("&amp;", "&")
@@ -211,12 +216,13 @@ private fun parseMapCoordinates(raw: String): Pair<Double, Double>? {
         Regex("!3d(-?\\d{1,2}(?:\\.\\d+)?)!4d(-?\\d{1,3}(?:\\.\\d+)?)"),
         Regex("!2d(-?\\d{1,3}(?:\\.\\d+)?)!3d(-?\\d{1,2}(?:\\.\\d+)?)"),
         // Coordinates embedded in Maps URLs, page metadata, or JSON payloads.
-        Regex("@(-?\\d{1,2}(?:\\.\\d+)?),\\s*(-?\\d{1,3}(?:\\.\\d+)?)"),
         Regex("(?:[?&](?:q|query|destination|daddr|center|ll)=)(-?\\d{1,2}(?:\\.\\d+)?)(?:,|%2C)(-?\\d{1,3}(?:\\.\\d+)?)", RegexOption.IGNORE_CASE),
         Regex("\"(?:lat|latitude)\"\\s*:\\s*\"?(-?\\d{1,2}(?:\\.\\d+)?)\"?\\s*[,}]\\s*\"?(?:lng|lon|longitude)\"?\\s*:\\s*\"?(-?\\d{1,3}(?:\\.\\d+)?)", RegexOption.IGNORE_CASE),
         Regex("geo:(-?\\d{1,2}(?:\\.\\d+)?),(-?\\d{1,3}(?:\\.\\d+)?)", RegexOption.IGNORE_CASE),
         Regex("^\\s*(-?\\d{1,2}(?:\\.\\d+)?)\\s*,\\s*(-?\\d{1,3}(?:\\.\\d+)?)\\s*$")
-    )
+    ) + if (allowViewport) listOf(
+        Regex("@(-?\\d{1,2}(?:\\.\\d+)?),\\s*(-?\\d{1,3}(?:\\.\\d+)?)")
+    ) else emptyList()
     for ((index, pattern) in patterns.withIndex()) {
         val match = pattern.find(value) ?: continue
         val first = match.groupValues[1].toDoubleOrNull() ?: continue

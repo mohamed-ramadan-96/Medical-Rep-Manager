@@ -12,6 +12,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
@@ -22,6 +24,7 @@ import java.util.Locale
 @Composable
 internal fun CurrentLocationButton(
     isArabic: Boolean,
+    modifier: Modifier = Modifier,
     onLocation: (Double, Double) -> Unit
 ) {
     val context = LocalContext.current
@@ -76,6 +79,7 @@ internal fun CurrentLocationButton(
     }
 
     OutlinedButton(
+        modifier = modifier.fillMaxWidth(),
         onClick = {
             val fine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
             val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED

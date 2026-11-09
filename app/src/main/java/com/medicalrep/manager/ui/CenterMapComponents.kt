@@ -121,7 +121,6 @@ fun CenterMapPickerDialog(
     var sharedLink by remember { mutableStateOf("") }
     var linkError by remember { mutableStateOf(false) }
     var resolving by remember { mutableStateOf(false) }
-    var debugInfo by remember { mutableStateOf("") }
 
     LaunchedEffect(MapShareState.sharedText) {
         val incoming = MapShareState.sharedText
@@ -158,16 +157,7 @@ fun CenterMapPickerDialog(
                 ?: parseMapCoordinates(sharedLink)
                 ?: resolved?.let { parseMapCoordinates(it.url) }
 
-            debugInfo = buildString {
-                append("Redirect status: ").append(resolved?.statusCode?.toString() ?: "unavailable")
-                append("\\nFinal URL: ").append(resolved?.url ?: "not resolved")
-                append("\\nPage size: ").append(resolved?.page?.length ?: 0)
-                append("\\nMaps URLs found in page: ").append(pageMapUrls.size)
-                append("\\nPlace name: ").append(placeName ?: "not extracted")
-                append("\\nCoordinates in link/page: ").append(if (directCoordinates != null) "yes" else "no")
-                append("\\nName lookup: ").append(if (geocoded != null) "found coordinates" else if (directCoordinates == null) "no coordinates returned" else "not needed")
-                resolved?.error?.let { append("\\nConnection error: ").append(it) }
-            }
+
             mapUrl = extractSharedMapUrl(sharedLink) ?: sharedLink.trim().takeIf { it.startsWith("http", true) }
             if (parsed != null) {
                 latitude = parsed.first
@@ -225,10 +215,11 @@ fun CenterMapPickerDialog(
                 }
                 if (linkError) {
                     Text(
-                        if (isArabic) "تعذر تحديد المكان. تفاصيل التشخيص:"
-                        else "Could not locate this place. Diagnostics:"
+                        if (isArabic) "تعذر استخراج الإحداثيات؛ سيتم حفظ رابط المكان وفتحه مباشرة على Google Maps."
+                        else "Couldn't extract coordinates. The place link will be saved and opened directly in Google Maps.",
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Text(debugInfo, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
                 }
                 if (latitude != null && longitude != null) {
                     Text(String.format(Locale.US, "Latitude: %.6f   Longitude: %.6f", latitude, longitude))

@@ -203,9 +203,10 @@ fun CenterMapPickerDialog(
 private fun parseMapCoordinates(raw: String): Pair<Double, Double>? {
     val value = Uri.decode(raw.trim())
     val patterns = listOf(
-        Regex("@(-?\\d{1,2}(?:\\.\\d+)?),\\s*(-?\\d{1,3}(?:\\.\\d+)?)"),
+        // Prefer the place/pin coordinates embedded in Google Maps data over the map viewport (@lat,lon).
         Regex("!3d(-?\\d{1,2}(?:\\.\\d+)?)!4d(-?\\d{1,3}(?:\\.\\d+)?)"),
         Regex("!2d(-?\\d{1,3}(?:\\.\\d+)?)!3d(-?\\d{1,2}(?:\\.\\d+)?)"),
+        Regex("@(-?\\d{1,2}(?:\\.\\d+)?),\\s*(-?\\d{1,3}(?:\\.\\d+)?)"),
         Regex("(?:[?&](?:q|query|destination|daddr|center|ll)=)(-?\\d{1,2}(?:\\.\\d+)?)(?:,|%2C)(-?\\d{1,3}(?:\\.\\d+)?)", RegexOption.IGNORE_CASE),
         Regex("geo:(-?\\d{1,2}(?:\\.\\d+)?),(-?\\d{1,3}(?:\\.\\d+)?)", RegexOption.IGNORE_CASE),
         Regex("^\\s*(-?\\d{1,2}(?:\\.\\d+)?)\\s*,\\s*(-?\\d{1,3}(?:\\.\\d+)?)\\s*$")
@@ -215,8 +216,8 @@ private fun parseMapCoordinates(raw: String): Pair<Double, Double>? {
         val first = match.groupValues[1].toDoubleOrNull() ?: continue
         val second = match.groupValues[2].toDoubleOrNull() ?: continue
         // Google Maps !2d/!3d uses longitude first; other formats use latitude first.
-        val lat = if (index == 2) second else first
-        val lon = if (index == 2) first else second
+        val lat = if (index == 1) second else first
+        val lon = if (index == 1) first else second
         if (lat in -90.0..90.0 && lon in -180.0..180.0) return lat to lon
     }
     return null

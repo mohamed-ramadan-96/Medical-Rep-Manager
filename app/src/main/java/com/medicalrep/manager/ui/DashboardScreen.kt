@@ -289,9 +289,8 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                 Box(modifier = Modifier.weight(1f)) {
                     Button(onClick = { exportMenuExpanded = true }, modifier = Modifier.fillMaxWidth()) {
-                        Icon(Icons.Default.FileDownload, contentDescription = null)
+                        Icon(Icons.Default.FileUpload, contentDescription = null)
                         Text(if (isArabic) "تصدير" else "Export", modifier = Modifier.padding(start = 4.dp))
-                        Icon(Icons.Default.KeyboardArrowUp, contentDescription = null)
                     }
                     DropdownMenu(expanded = exportMenuExpanded, onDismissRequest = { exportMenuExpanded = false }) {
                         DropdownMenuItem(
@@ -306,23 +305,22 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                 }
                 Box(modifier = Modifier.weight(1f)) {
                     Button(onClick = { importMenuExpanded = true }, modifier = Modifier.fillMaxWidth()) {
-                        Icon(Icons.Default.FileUpload, contentDescription = null)
+                        Icon(Icons.Default.FileDownload, contentDescription = null)
                         Text(if (isArabic) "استيراد" else "Import", modifier = Modifier.padding(start = 4.dp))
-                        Icon(Icons.Default.KeyboardArrowUp, contentDescription = null)
                     }
                     DropdownMenu(expanded = importMenuExpanded, onDismissRequest = { importMenuExpanded = false }) {
-                        DropdownMenuItem(
-                            text = { Text(if (isArabic) "استعادة نسخة التطبيق الكاملة" else "Restore full app backup") },
-                            onClick = {
-                                importMenuExpanded = false
-                                fullBackupImportLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
-                            }
-                        )
                         DropdownMenuItem(
                             text = { Text(if (isArabic) "استيراد قائمة الأطباء من Excel" else "Import doctors from Excel") },
                             onClick = {
                                 importMenuExpanded = false
                                 excelImportLauncher.launch(arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/octet-stream", "*/*"))
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(if (isArabic) "استعادة نسخة التطبيق الكاملة" else "Restore full app backup") },
+                            onClick = {
+                                importMenuExpanded = false
+                                fullBackupImportLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
                             }
                         )
                     }

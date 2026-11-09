@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -20,24 +21,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.padding
-import java.util.Locale
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Holds a Google Maps share payload delivered to the app through Android's share sheet.
- * The picker observes this state and converts the shared URL into coordinates.
+ * Shared Google Maps payload delivered by Android's share sheet.
+ * MainActivity uses singleTask so this payload reaches the existing picker screen.
  */
 object MapShareState {
     var sharedText by mutableStateOf<String?>(null)
 }
 
 fun handleMapShareIntent(intent: Intent?) {
-    if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {
-        MapShareState.sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
+    if (intent?.action == Intent.ACTION_SEND) {
+        val text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()
+            ?: intent.getStringExtra(Intent.EXTRA_HTML_TEXT)
+        if (!text.isNullOrBlank()) MapShareState.sharedText = text
     }
 }
 
@@ -104,13 +106,17 @@ fun CenterMapPickerDialog(
     var longitude by remember(initialLatitude, initialLongitude) { mutableStateOf(initialLongitude) }
     var sharedLink by remember { mutableStateOf("") }
     var linkError by remember { mutableStateOf(false) }
+    var resolving by remember { mutableStateOf(false) }
 
     LaunchedEffect(MapShareState.sharedText) {
         val incoming = MapShareState.sharedText
         if (!incoming.isNullOrBlank()) {
-            sharedLink = incoming
+            sharedLink = incoming.trim()
+            resolving = true
             val parsed = parseMapCoordinates(incoming)
-                ?: resolveSharedMapLink(incoming)?.let { parseMapCoordinates(it) }
+                ?: resolveSharedMapLink(incoming)?.let { resolved ->
+                    parseMapCoordinates(resolved.url) ?: parseMapCoordinates(resolved.page)
+                }
             if (parsed != null) {
                 latitude = parsed.first
                 longitude = parsed.second
@@ -118,6 +124,7 @@ fun CenterMapPickerDialog(
             } else {
                 linkError = true
             }
+            resolving = false
             MapShareState.sharedText = null
         }
     }
@@ -128,8 +135,8 @@ fun CenterMapPickerDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    if (isArabic) "افتح Google Maps، اضغط مطولًا على موقع المركز، ثم اختر مشاركة واختر Medical Rep Manager. سيعود رابط الموقع إلى هنا تلقائيًا."
-                    else "Open Google Maps, long-press the center location, tap Share, then choose Medical Rep Manager. The shared location link will return here automatically."
+                    if (isArabic) "افتح Google Maps، اضغط مطولًا على موقع المركز، ثم اختر مشاركة واختر Medical Rep Manager. سيتم استخراج الإحداثيات من رابط Google Maps تلقائيًا."
+                    else "Open Google Maps, long-press the center location, tap Share, then choose Medical Rep Manager. Coordinates will be extracted from the shared Google Maps link automatically."
                 )
                 OutlinedButton(
                     onClick = { openGoogleMapsLocationPicker(context, latitude, longitude) },
@@ -139,28 +146,33 @@ fun CenterMapPickerDialog(
                 }
                 OutlinedTextField(
                     value = sharedLink,
-                    onValueChange = { sharedLink = it; linkError = false },
+                    onValueChange = {
+                        sharedLink = it
+                        linkError = false
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     isError = linkError,
-                    label = { Text(if (isArabic) "رابط الموقع المُشارك أو الإحداثيات" else "Shared location link or coordinates") }
+                    label = { Text(if (isArabic) "رابط Google Maps" else "Google Maps link") }
                 )
                 OutlinedButton(
+                    enabled = sharedLink.isNotBlank() && !resolving,
                     onClick = {
-                        val parsed = parseMapCoordinates(sharedLink)
-                        if (parsed == null) linkError = true
-                        else {
-                            latitude = parsed.first
-                            longitude = parsed.second
-                            linkError = false
-                        }
+                        resolving = true
                     },
                     modifier = Modifier.fillMaxWidth()
-                ) { Text(if (isArabic) "استخراج الموقع من الرابط" else "Read location from link") }
+                ) {
+                    Text(
+                        when {
+                            resolving -> if (isArabic) "جارٍ استخراج الموقع..." else "Reading location..."
+                            else -> if (isArabic) "استخراج الموقع من الرابط" else "Extract location from link"
+                        }
+                    )
+                }
                 if (linkError) {
                     Text(
-                        if (isArabic) "الرابط لا يحتوي على إحداثيات قابلة للاستخراج. استخدم مشاركة الموقع من Google Maps أو الصق الإحداثيات بصيغة lat, lon."
-                        else "The link has no readable coordinates. Share a dropped pin from Google Maps or paste coordinates as lat, lon."
+                        if (isArabic) "تعذر استخراج إحداثيات من الرابط. تأكد أنه رابط مشاركة موقع من Google Maps."
+                        else "Could not extract coordinates from this link. Make sure it is a Google Maps location share link."
                     )
                 }
                 if (latitude != null && longitude != null) {
@@ -187,34 +199,56 @@ private fun parseMapCoordinates(raw: String): Pair<Double, Double>? {
     val patterns = listOf(
         Regex("@(-?\\d{1,2}(?:\\.\\d+)?),\\s*(-?\\d{1,3}(?:\\.\\d+)?)"),
         Regex("!3d(-?\\d{1,2}(?:\\.\\d+)?)!4d(-?\\d{1,3}(?:\\.\\d+)?)"),
-        Regex("(?:[?&](?:q|query|destination|daddr)=)(-?\\d{1,2}(?:\\.\\d+)?)(?:,|%2C)(-?\\d{1,3}(?:\\.\\d+)?)", RegexOption.IGNORE_CASE),
+        Regex("!2d(-?\\d{1,3}(?:\\.\\d+)?)!3d(-?\\d{1,2}(?:\\.\\d+)?)"),
+        Regex("(?:[?&](?:q|query|destination|daddr|center|ll)=)(-?\\d{1,2}(?:\\.\\d+)?)(?:,|%2C)(-?\\d{1,3}(?:\\.\\d+)?)", RegexOption.IGNORE_CASE),
         Regex("geo:(-?\\d{1,2}(?:\\.\\d+)?),(-?\\d{1,3}(?:\\.\\d+)?)", RegexOption.IGNORE_CASE),
         Regex("^\\s*(-?\\d{1,2}(?:\\.\\d+)?)\\s*,\\s*(-?\\d{1,3}(?:\\.\\d+)?)\\s*$")
     )
-    for (pattern in patterns) {
+    for ((index, pattern) in patterns.withIndex()) {
         val match = pattern.find(value) ?: continue
-        val lat = match.groupValues[1].toDoubleOrNull() ?: continue
-        val lon = match.groupValues[2].toDoubleOrNull() ?: continue
+        val first = match.groupValues[1].toDoubleOrNull() ?: continue
+        val second = match.groupValues[2].toDoubleOrNull() ?: continue
+        // Google Maps !2d/!3d uses longitude first; other formats use latitude first.
+        val lat = if (index == 2) second else first
+        val lon = if (index == 2) first else second
         if (lat in -90.0..90.0 && lon in -180.0..180.0) return lat to lon
     }
     return null
 }
 
+private data class ResolvedMapLink(val url: String, val page: String)
 
-private suspend fun resolveSharedMapLink(raw: String): String? = withContext(Dispatchers.IO) {
+private suspend fun resolveSharedMapLink(raw: String): ResolvedMapLink? = withContext(Dispatchers.IO) {
+    var connection: HttpURLConnection? = null
     try {
-        val match = Regex("https?://\\S+", RegexOption.IGNORE_CASE).find(raw)?.value ?: return@withContext null
-        val connection = URL(match).openConnection() as HttpURLConnection
+        val match = Regex("https?://[^\\s<>]+", RegexOption.IGNORE_CASE).find(raw)?.value
+            ?: return@withContext null
+        connection = URL(match.trimEnd('.', ')', ']', ',')).openConnection() as HttpURLConnection
         connection.instanceFollowRedirects = true
-        connection.connectTimeout = 10000
-        connection.readTimeout = 10000
+        connection.connectTimeout = 15000
+        connection.readTimeout = 15000
         connection.requestMethod = "GET"
-        connection.setRequestProperty("User-Agent", "Mozilla/5.0")
+        connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/120.0 Mobile Safari/537.36")
+        connection.setRequestProperty("Accept", "text/html,application/xhtml+xml,*/*")
         connection.connect()
-        val resolved = connection.url.toString()
-        connection.disconnect()
-        resolved
+        val resolvedUrl = connection.url.toString()
+        val stream = if (connection.responseCode in 200..399) connection.inputStream else connection.errorStream
+        val page = stream?.bufferedReader()?.use { reader ->
+            val output = StringBuilder()
+            val buffer = CharArray(8192)
+            var total = 0
+            while (total < 2_000_000) {
+                val count = reader.read(buffer, 0, minOf(buffer.size, 2_000_000 - total))
+                if (count <= 0) break
+                output.append(buffer, 0, count)
+                total += count
+            }
+            output.toString()
+        }.orEmpty()
+        ResolvedMapLink(resolvedUrl, page)
     } catch (_: Exception) {
         null
+    } finally {
+        connection?.disconnect()
     }
 }

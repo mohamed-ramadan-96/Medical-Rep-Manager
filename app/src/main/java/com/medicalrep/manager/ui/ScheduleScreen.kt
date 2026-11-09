@@ -228,19 +228,24 @@ private fun AvailabilityFormDialog(
         title = { Text(if (initialGroup.isEmpty()) { if (isArabic) "إضافة مواعيد للطبيب" else "Add doctor availability" } else { if (isArabic) "تعديل الفترة" else "Edit time slot" }) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(if (isArabic) "الطبيب" else "Doctor", style = MaterialTheme.typography.labelLarge)
-                TextButton(onClick = { doctorMenu = true }) {
-                    Text(doctors.firstOrNull { it.id == selectedDoctorId }?.name ?: if (isArabic) "اختر الطبيب" else "Choose doctor")
-                }
+                OutlinedSelectionField(
+                    label = if (isArabic) "الطبيب" else "Doctor",
+                    value = doctors.firstOrNull { it.id == selectedDoctorId }?.name
+                        ?: if (isArabic) "اختر الطبيب" else "Choose doctor",
+                    onClick = { doctorMenu = true }
+                )
                 DropdownMenu(expanded = doctorMenu, onDismissRequest = { doctorMenu = false }) {
                     doctors.forEach { doctor ->
                         DropdownMenuItem(text = { Text(doctor.name) }, onClick = { selectedDoctorId = doctor.id; selectedCenterId = doctorCenterLinks.firstOrNull { it.doctorId == doctor.id }?.centerId ?: doctor.centerId; doctorMenu = false })
                     }
                 }
-                Text(if (isArabic) "المركز" else "Center", style = MaterialTheme.typography.labelLarge)
-                TextButton(onClick = { centerMenu = true }, enabled = linkedCenters.isNotEmpty()) {
-                    Text(linkedCenters.firstOrNull { it.id == selectedCenterId }?.name ?: if (isArabic) "اختر المركز" else "Choose center")
-                }
+                OutlinedSelectionField(
+                    label = if (isArabic) "المركز" else "Center",
+                    value = linkedCenters.firstOrNull { it.id == selectedCenterId }?.name
+                        ?: if (isArabic) "اختر المركز" else "Choose center",
+                    onClick = { centerMenu = true },
+                    enabled = linkedCenters.isNotEmpty()
+                )
                 DropdownMenu(expanded = centerMenu, onDismissRequest = { centerMenu = false }) {
                     linkedCenters.forEach { center ->
                         DropdownMenuItem(text = { Text(center.name) }, onClick = { selectedCenterId = center.id; centerMenu = false })

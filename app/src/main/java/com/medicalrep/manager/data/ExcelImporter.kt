@@ -30,26 +30,24 @@ object ExcelImporter {
         check(rows.isNotEmpty()) { "Excel sheet is empty" }
 
         check(rows.all { row -> row.keys.all { it == 0 || it == 1 } }) {
-            "Excel file must contain exactly two columns: Doctor Name and Phone Number"
-        }
-        val header = rows.first().mapValues { it.value.trim().lowercase() }
-        check(header.keys.containsAll(listOf(0, 1))) {
-            "Excel file must contain exactly two columns: Doctor Name and Phone Number"
+            "Excel file must not contain more than two columns"
         }
         val nameHeaders = setOf("name", "doctor name", "الاسم", "اسم الطبيب", "اسم الدكتور")
         val phoneHeaders = setOf("phone", "phone number", "phone numbers", "الهاتف", "رقم الهاتف", "أرقام الهاتف", "رقم التليفون")
-        val nameColumn = header.entries.firstOrNull { it.key in 0..1 && it.value in nameHeaders }?.key
-            ?: error("First column must be Doctor Name")
-        val phoneColumn = header.entries.firstOrNull { it.key in 0..1 && it.value in phoneHeaders }?.key
-            ?: error("Second column must be Phone Number")
-        check(nameColumn != phoneColumn) {
-            "Excel file must contain Doctor Name and Phone Number as its two columns"
-        }
+        val header = rows.first().mapValues { it.value.trim().lowercase() }
+        val hasHeader = header[0] in nameHeaders
+        val phoneColumn = if (hasHeader && header[1].isNullOrBlank()) null else if (hasHeader) {
+            check(header[1] in phoneHeaders) {
+                "Second column must be Phone Number"
+            }
+            1
+        } else null
 
-        return rows.drop(1).mapNotNull { row ->
-            val name = row[nameColumn]?.trim().orEmpty()
-            val phone = row[phoneColumn]?.trim().orEmpty()
-            if (name.isBlank() || phone.isBlank()) null else ImportedDoctorRow(name, phone)
+        val dataRows = if (hasHeader) rows.drop(1) else rows
+        return dataRows.mapNotNull { row ->
+            val name = row[0]?.trim().orEmpty()
+            val phone = if (phoneColumn != null) row[phoneColumn]?.trim().orEmpty() else ""
+            if (name.isBlank()) null else ImportedDoctorRow(name, phone)
         }
     }
 

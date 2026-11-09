@@ -8,6 +8,8 @@ import android.os.Looper
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebSettings
+import android.graphics.Color
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,7 +50,11 @@ fun CenterMapPreview(
         factory = {
             WebView(context).apply {
                 settings.javaScriptEnabled = true
-                settings.domStorageEnabled = false
+                settings.domStorageEnabled = true
+                settings.loadsImagesAutomatically = true
+                settings.blockNetworkImage = false
+                settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                setBackgroundColor(Color.WHITE)
                 isVerticalScrollBarEnabled = false
                 isHorizontalScrollBarEnabled = false
                 webViewClient = WebViewClient()
@@ -69,8 +75,9 @@ fun CenterMapPreview(
                     <!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
                     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
                     <style>html,body,#map{height:100%;width:100%;margin:0;padding:0} .leaflet-control-attribution{font-size:8px}</style>
-                    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script></head><body><div id="map"></div>
+                    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" onerror="this.onerror=null;this.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'"></script></head><body><div id="map"></div>
                     <script>
+                    if(typeof L === "undefined"){document.getElementById("map").innerHTML="<div style='padding:18px;font:14px sans-serif;color:#444'>تعذر تحميل الخريطة. تأكد من اتصال الإنترنت ثم أعد فتح النافذة.</div>";} else {
                     const map=L.map('map').setView([$lat,$lon],$zoom);
                     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
                     let marker=null;
@@ -81,9 +88,11 @@ fun CenterMapPreview(
                     window.setCenter=function(lat,lon){map.setView([lat,lon],16);place(lat,lon);};
                     $initialMarker
                     map.on('contextmenu',function(e){
+                      if(e.originalEvent){e.originalEvent.preventDefault();}
                       place(e.latlng.lat,e.latlng.lng);
                       if(window.AndroidMap){AndroidMap.picked(e.latlng.lat,e.latlng.lng);}
                     });
+                    }
                     </script></body></html>
                 """.trimIndent()
                 loadDataWithBaseURL("https://local.map/", html, "text/html", "UTF-8", null)

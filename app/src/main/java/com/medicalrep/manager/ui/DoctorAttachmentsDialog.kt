@@ -141,10 +141,10 @@ fun DoctorAttachmentsDialog(
                                     maxLines = 2,
                                     style = MaterialTheme.typography.bodyMedium
                                 )
-                                IconButton(onClick = { openAttachment(context, attachment) }) {
+                                IconButton(modifier = Modifier.size(40.dp), onClick = { openAttachment(context, attachment) }) {
                                     Icon(Icons.Default.OpenInNew, contentDescription = if (isArabic) "فتح" else "Open")
                                 }
-                                IconButton(onClick = {
+                                IconButton(modifier = Modifier.size(40.dp), onClick = {
                                     scope.launch {
                                         dao.delete(attachment)
                                         withContext(Dispatchers.IO) { File(attachment.localPath).delete() }

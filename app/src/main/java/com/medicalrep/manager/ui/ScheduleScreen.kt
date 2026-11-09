@@ -123,7 +123,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                         val dayNames = group.mapNotNull { item -> weekDays.firstOrNull { it.first == item.dayOfWeek }?.second?.let { if (isArabic) it.second else it.first } }.joinToString("، ")
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(18.dp),
+                            shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                         ) {
                             Row(

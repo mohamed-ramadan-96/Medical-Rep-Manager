@@ -67,14 +67,14 @@ internal fun CurrentLocationButton(
                             "Couldn't get a fresh GPS reading. Check that Location is enabled and try again."
                         )
                         !location.hasAccuracy() || location.accuracy > 50f -> showMessage(
-                            "الموقع المستلم غير دقيق بما يكفي (\${if (location.hasAccuracy()) location.accuracy.toInt() else "—"} متر). حاول مرة أخرى في مكان مفتوح.",
-                            "The location reading isn't accurate enough (\${if (location.hasAccuracy()) location.accuracy.toInt() else "—"} m). Please try again in an open area."
+                            "الموقع المستلم غير دقيق بما يكفي (${if (location.hasAccuracy()) location.accuracy.toInt() else "—"} متر). حاول مرة أخرى في مكان مفتوح.",
+                            "The location reading isn't accurate enough (${if (location.hasAccuracy()) location.accuracy.toInt() else "—"} m). Please try again in an open area."
                         )
                         else -> {
                             onLocation(location.latitude, location.longitude)
                             Toast.makeText(
                                 context,
-                                if (isArabic) "تم تحديد موقعك الحالي بدقة \${location.accuracy.toInt()} متر" else "Current location captured (±\${location.accuracy.toInt()} m)",
+                                if (isArabic) "تم تحديد موقعك الحالي بدقة ${location.accuracy.toInt()} متر" else "Current location captured (±${location.accuracy.toInt()} m)",
                                 Toast.LENGTH_SHORT
                             ).show()
                         }

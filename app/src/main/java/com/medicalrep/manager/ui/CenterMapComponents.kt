@@ -141,8 +141,8 @@ fun CenterMapPickerDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    if (isArabic) "افتح Google Maps، اضغط مطولًا على موقع المركز، ثم اختر مشاركة واختر Medical Rep Manager. سيتم استخراج الإحداثيات من رابط Google Maps تلقائيًا."
-                    else "Open Google Maps, long-press the center location, tap Share, then choose Medical Rep Manager. Coordinates will be extracted from the shared Google Maps link automatically."
+                    if (isArabic) "افتح Google Maps، وابحث عن المكان أو اختره من الخريطة، ثم افتح بطاقة المكان واضغط مشاركة واختر Medical Rep Manager. سنحاول استخراج الإحداثيات من الرابط أو تحديد المكان من اسمه تلقائيًا. ويمكنك استخدام الضغط المطوّل لوضع Pin إذا أردت تحديد نقطة دقيقة بنفسك."
+                    else "Open Google Maps, search for or select the place, open its place card, tap Share, then choose Medical Rep Manager. We'll try to read coordinates from the link or locate the place by name automatically. You can still long-press to drop a pin when you need an exact custom point."
                 )
                 OutlinedButton(
                     onClick = { openGoogleMapsLocationPicker(context, latitude, longitude) },
@@ -177,8 +177,8 @@ fun CenterMapPickerDialog(
                 }
                 if (linkError) {
                     Text(
-                        if (isArabic) "تعذر استخراج إحداثيات من الرابط. تأكد أنه رابط مشاركة موقع من Google Maps."
-                        else "Could not extract coordinates from this link. Make sure it is a Google Maps location share link."
+                        if (isArabic) "تعذر تحديد المكان من الرابط أو اسمه. جرّب مشاركة المكان من بطاقة Google Maps مرة أخرى، أو استخدم الضغط المطوّل لوضع Pin."
+                        else "Could not locate this place from its link or name. Try sharing it again from the Google Maps place card, or long-press to drop a pin."
                     )
                 }
                 if (latitude != null && longitude != null) {

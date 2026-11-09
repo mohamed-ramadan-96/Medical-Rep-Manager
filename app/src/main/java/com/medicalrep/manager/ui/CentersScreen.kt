@@ -232,6 +232,7 @@ private fun CenterFormDialog(
     var longitude by remember(initial) { mutableStateOf(initial?.longitude) }
     var mapUrl by remember(initial) { mutableStateOf(initial?.mapUrl) }
     var showMapPicker by remember { mutableStateOf(false) }
+    var editCenterLocation by remember { mutableStateOf(false) }
     var nameError by remember { mutableStateOf(false) }
 
     AlertDialog(
@@ -296,30 +297,22 @@ private fun CenterFormDialog(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            CurrentLocationButton(isArabic = isArabic) { lat, lon ->
-                                latitude = lat
-                                longitude = lon
+                        val hasCenterLocation = (latitude != null && longitude != null) || !mapUrl.isNullOrBlank()
+                        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (hasCenterLocation) {
+                                OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = { editCenterLocation = !editCenterLocation }) {
+                                    Text(if (isArabic) "تعديل الموقع" else "Edit location")
+                                }
+                                TextButton(modifier = Modifier.fillMaxWidth(), onClick = {
+                                    latitude = null; longitude = null; mapUrl = null; editCenterLocation = false
+                                }) { Text(if (isArabic) "مسح الموقع" else "Clear location") }
                             }
-                            OutlinedButton(
-                                modifier = Modifier.fillMaxWidth(),
-                                onClick = { showMapPicker = true }
-                            ) {
-                                Text(if (latitude == null && mapUrl.isNullOrBlank()) {
-                                    if (isArabic) "تحديد الموقع على الخريطة" else "Choose location on map"
-                                } else {
-                                    if (isArabic) "تعديل الموقع على الخريطة" else "Change map location"
-                                })
-                            }
-                            if (latitude != null || longitude != null || !mapUrl.isNullOrBlank()) {
-                                TextButton(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    onClick = { latitude = null; longitude = null; mapUrl = null }
-                                ) {
-                                    Text(if (isArabic) "مسح الموقع" else "Clear location")
+                            if (!hasCenterLocation || editCenterLocation) {
+                                CurrentLocationButton(isArabic = isArabic) { lat, lon ->
+                                    latitude = lat; longitude = lon; mapUrl = null; editCenterLocation = false
+                                }
+                                OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = { showMapPicker = true }) {
+                                    Text(if (isArabic) "اختيار من الخريطة" else "Choose on map")
                                 }
                             }
                         }

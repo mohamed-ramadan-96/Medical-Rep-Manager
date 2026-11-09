@@ -246,7 +246,7 @@ private fun DoctorCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {
         Row(

@@ -349,7 +349,7 @@ private fun DoctorDetailsDialog(
         onDismissRequest = onDismiss,
         title = { Text(doctor.name, fontWeight = FontWeight.Bold) },
         text = {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (doctor.specialty.isNotBlank()) item {
                     Text((if (isArabic) "التخصص: " else "Specialty: ") + doctor.specialty)
                 }

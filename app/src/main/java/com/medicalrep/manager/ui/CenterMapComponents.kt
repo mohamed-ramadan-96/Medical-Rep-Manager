@@ -250,7 +250,7 @@ private fun extractGoogleMapsUrls(page: String): List<String> {
 }
 
 private fun extractGoogleMapsPlaceName(raw: String, resolvedUrl: String?, page: String?): String? {
-    val rawUrl = Regex("https?://[^\\\\s<>]+", RegexOption.IGNORE_CASE)
+    val rawUrl = Regex("https?://[^\\s<>]+", RegexOption.IGNORE_CASE)
         .find(raw)?.value?.trimEnd('.', ')', ']', ',')
     val candidateUrls = buildList {
         if (!resolvedUrl.isNullOrBlank()) add(resolvedUrl)
@@ -269,7 +269,7 @@ private fun extractGoogleMapsPlaceName(raw: String, resolvedUrl: String?, page: 
         for (key in listOf("query", "q", "destination", "daddr")) {
             val candidate = uri.getQueryParameter(key)?.trim().orEmpty()
             if (candidate.isNotBlank() && !candidate.startsWith("place_id:", true) &&
-                !Regex("^-?\\\\d+(?:\\\\.\\\\d+)?\\\\s*,").containsMatchIn(candidate)
+                !Regex("^-?\\d+(?:\\.\\d+)?\\s*,").containsMatchIn(candidate)
             ) return candidate
         }
     }

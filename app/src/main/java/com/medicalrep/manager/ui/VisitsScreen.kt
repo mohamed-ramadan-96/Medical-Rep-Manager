@@ -247,10 +247,12 @@ private fun VisitFormDialog(
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                Text(if (isArabic) "الطبيب" else "Doctor", style = MaterialTheme.typography.labelLarge)
-                TextButton(onClick = { doctorMenu = true }) {
-                    Text(doctors.firstOrNull { it.id == selectedDoctorId }?.name ?: if (isArabic) "اختر الطبيب" else "Choose doctor")
-                }
+                OutlinedSelectionField(
+                    label = if (isArabic) "الطبيب" else "Doctor",
+                    value = doctors.firstOrNull { it.id == selectedDoctorId }?.name
+                        ?: if (isArabic) "اختر الطبيب" else "Choose doctor",
+                    onClick = { doctorMenu = true }
+                )
                 DropdownMenu(expanded = doctorMenu, onDismissRequest = { doctorMenu = false }) {
                     doctors.forEach { doctor ->
                         DropdownMenuItem(

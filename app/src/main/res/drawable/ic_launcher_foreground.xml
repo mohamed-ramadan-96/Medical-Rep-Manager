@@ -1,59 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="512"
-    android:viewportHeight="512">
-    <!-- Doctor directory book outline -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="19"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M158,105 L345,105 Q378,105 378,139 L378,375 Q378,407 345,407 L158,407 Q126,407 126,375 L126,139 Q126,105 158,105 Z" />
-    <!-- Binder rings -->
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M105,166 L145,166 Q157,166 157,178 Q157,190 145,190 L105,190 Q93,190 93,178 Q93,166 105,166 Z
-            M105,244 L145,244 Q157,244 157,256 Q157,268 145,268 L105,268 Q93,268 93,256 Q93,244 105,244 Z
-            M105,322 L145,322 Q157,322 157,334 Q157,346 145,346 L105,346 Q93,346 93,334 Q93,322 105,322 Z" />
-    <!-- Doctor head -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="16"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M216,205 C216,164 244,139 278,139 C314,139 339,165 339,205 L339,227 C339,272 314,300 278,300 C242,300 216,272 216,227 Z" />
-    <!-- Hairline and ears -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="15"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M218,207 C229,192 239,181 253,178 C278,194 308,193 336,177 M216,222 L205,219 M340,222 L351,219" />
-    <!-- Shoulders and coat -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="17"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M210,303 C177,310 158,333 158,369 L158,374 L397,374 L397,369 C397,333 378,310 345,303 M210,303 L237,348 L278,385 L319,348 L345,303" />
-    <!-- Tie -->
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M263,316 L293,316 L286,337 L299,368 L278,390 L257,368 L270,337 Z" />
-    <!-- Stethoscope -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="13"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M188,315 L188,339 C188,361 203,376 221,376 C239,376 250,364 250,347 M250,347 L250,337 M250,337 C250,325 261,316 274,316" />
-    <path android:fillColor="#FFFFFFFF" android:pathData="M178,315 A10,10 0 1,0 198,315 A10,10 0 1,0 178,315 Z" />
-    <path android:fillColor="#FFFFFFFF" android:pathData="M264,316 A10,10 0 1,0 284,316 A10,10 0 1,0 264,316 Z" />
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="512" android:viewportHeight="512">
+    <path android:fillColor="#279FE8" android:pathData="M256,58 A84,84 0 1,0 256,226 A84,84 0 1,0 256,58 Z" />
+    <path android:fillColor="#279FE8" android:pathData="M256,196 C169,196 91,252 73,344 C63,396 103,439 158,450 C219,463 293,463 354,450 C409,439 449,396 439,344 C421,252 343,196 256,196 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M218,167 L294,167 C294,193 277,211 256,211 C235,211 218,193 218,167 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M256,267 A14,14 0 1,0 256,295 A14,14 0 1,0 256,267 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M243,315 Q243,306 256,306 Q269,306 269,315 L269,384 Q269,393 256,393 Q243,393 243,384 Z" />
 </vector>

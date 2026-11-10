@@ -69,7 +69,7 @@ private val tabs = listOf(
     Tab("Doctors", "الأطباء", Icons.Filled.PeopleAlt),
     Tab("Centers", "المراكز", Icons.Filled.LocalHospital),
     Tab("Specialties", "التخصصات", Icons.Filled.MedicalServices),
-    Tab("Doctor hours", "مواعيد الأطباء", Icons.Filled.CalendarMonth),
+    Tab("Hours", "المواعيد", Icons.Filled.CalendarMonth),
     Tab("Visits", "الزيارات", Icons.Filled.History)
 )
 
@@ -123,7 +123,7 @@ fun MedicalRepApp() {
                             selected = selectedTab == index,
                             onClick = { selectedTab = index },
                             icon = { Icon(tab.icon, contentDescription = null) },
-                            label = { Text(if (isArabic) tab.titleAr else tab.titleEn) }
+                            label = { Text(if (isArabic) tab.titleAr else tab.titleEn, maxLines = 1, softWrap = false) }
                         )
                     }
                 }

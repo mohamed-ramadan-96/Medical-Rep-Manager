@@ -28,6 +28,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
@@ -95,6 +98,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     var areaMenu by remember { mutableStateOf(false) }
     var specialtyMenu by remember { mutableStateOf(false) }
     var centerMenu by remember { mutableStateOf(false) }
+    var showFilters by remember { mutableStateOf(false) }
     val doctors by remember(searchText) {
         if (searchText.isBlank()) dao.observeAll() else dao.search(searchText.trim())
     }.collectAsState(initial = emptyList())
@@ -139,6 +143,17 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 singleLine = true,
                 label = { Text(if (isArabic) "ابحث بالاسم أو التخصص أو الهاتف أو المنطقة" else "Search name, specialty, phone or area") }
             )
+            TextButton(onClick = { showFilters = !showFilters }, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(20.dp))
+                Text(if (isArabic) "فلترة" else "Filters", modifier = Modifier.padding(horizontal = 8.dp))
+                Icon(if (showFilters) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null, modifier = Modifier.size(20.dp))
+            }
+            AnimatedVisibility(
+                visible = showFilters,
+                enter = expandVertically(animationSpec = tween(220)) + fadeIn(animationSpec = tween(180)),
+                exit = shrinkVertically(animationSpec = tween(180)) + fadeOut(animationSpec = tween(140))
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
                     OutlinedSelectionField(label = if (isArabic) "المنطقة" else "Area", value = if (selectedArea == "all") { if (isArabic) "كل المناطق" else "All areas" } else selectedArea, onClick = { areaMenu = true })
@@ -159,6 +174,9 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             DropdownMenu(expanded = centerMenu, onDismissRequest = { centerMenu = false }) {
                 DropdownMenuItem(text = { Text(if (isArabic) "كل المراكز" else "All centers") }, onClick = { selectedCenter = "all"; centerMenu = false })
                 centers.forEach { center -> DropdownMenuItem(text = { Text(center.name) }, onClick = { selectedCenter = center.id.toString(); centerMenu = false }) }
+            }
+
+                }
             }
             Text(if (isArabic) "عدد الأطباء: ${filteredDoctors.size} من ${doctors.size}" else "Doctors: ${filteredDoctors.size} of ${doctors.size}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (filteredDoctors.isEmpty()) {

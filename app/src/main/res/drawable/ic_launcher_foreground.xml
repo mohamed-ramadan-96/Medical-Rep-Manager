@@ -54,6 +54,6 @@
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:pathData="M188,315 L188,339 C188,361 203,376 221,376 C239,376 250,364 250,347 M250,347 L250,337 M250,337 C250,325 261,316 274,316" />
-    <circle android:fillColor="#FFFFFFFF" android:cx="188" android:cy="315" android:radius="10" />
-    <circle android:fillColor="#FFFFFFFF" android:cx="274" android:cy="316" android:radius="10" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M178,315 A10,10 0 1,0 198,315 A10,10 0 1,0 178,315 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M264,316 A10,10 0 1,0 284,316 A10,10 0 1,0 264,316 Z" />
 </vector>

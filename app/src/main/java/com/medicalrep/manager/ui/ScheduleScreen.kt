@@ -7,6 +7,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,6 +21,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -89,6 +98,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
     var dayMenu by remember { mutableStateOf(false) }
     var centerFilterMenu by remember { mutableStateOf(false) }
     var specialtyFilterMenu by remember { mutableStateOf(false) }
+    var showFilters by remember { mutableStateOf(false) }
 
     val groupedSlots = slots.groupBy { it.slotGroupId.ifBlank { "legacy-${it.id}" } }
         .values.sortedWith(compareBy({ it.firstOrNull()?.dayOfWeek ?: 0 }, { it.firstOrNull()?.startTime.orEmpty() }))
@@ -126,6 +136,17 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                 if (isArabic) "استعرض الأطباء حسب اليوم أو المركز أو التخصص، ويمكنك إضافة وتعديل مواعيد التواجد." else "Browse doctors by day, center or specialty, and add or edit their availability.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            TextButton(onClick = { showFilters = !showFilters }, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(20.dp))
+                Text(if (isArabic) "فلترة" else "Filters", modifier = Modifier.padding(horizontal = 8.dp))
+                Icon(if (showFilters) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null, modifier = Modifier.size(20.dp))
+            }
+            AnimatedVisibility(
+                visible = showFilters,
+                enter = expandVertically(animationSpec = tween(220)) + fadeIn(animationSpec = tween(180)),
+                exit = shrinkVertically(animationSpec = tween(180)) + fadeOut(animationSpec = tween(140))
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
                     OutlinedSelectionField(label = if (isArabic) "اليوم" else "Day", value = if (selectedDay == 0) { if (isArabic) "كل الأيام" else "All days" } else weekDays.firstOrNull { it.first == selectedDay }?.second?.let { if (isArabic) it.second else it.first }.orEmpty(), onClick = { dayMenu = true })
@@ -146,6 +167,9 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
             DropdownMenu(expanded = centerFilterMenu, onDismissRequest = { centerFilterMenu = false }) {
                 DropdownMenuItem(text = { Text(if (isArabic) "كل المراكز" else "All centers") }, onClick = { selectedCenterId = 0L; centerFilterMenu = false })
                 centers.forEach { center -> DropdownMenuItem(text = { Text(center.name) }, onClick = { selectedCenterId = center.id; centerFilterMenu = false }) }
+            }
+
+                }
             }
             if (doctors.isEmpty()) {
                 Text(if (isArabic) "أضف طبيباً أولاً حتى تتمكن من تحديد مواعيده." else "Add a doctor first to define their availability.", modifier = Modifier.padding(top = 20.dp))

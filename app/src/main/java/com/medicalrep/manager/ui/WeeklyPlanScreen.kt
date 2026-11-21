@@ -143,7 +143,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
     }.map { it.doctorId }.toSet()
     val eligibleDoctors = doctors.filter { doctor ->
         doctor.id in eligibleDoctorIds &&
-            doctor.region.trim().equals(selectedRegion, ignoreCase = true) &&
+            doctor.area.trim().equals(selectedRegion, ignoreCase = true) &&
             (links.any { it.doctorId == doctor.id && it.centerId == selectedCenterId } ||
                 (links.none { it.doctorId == doctor.id } && doctor.centerId == selectedCenterId)) &&
             doctor.id !in assignedDoctorIdsThisWeek

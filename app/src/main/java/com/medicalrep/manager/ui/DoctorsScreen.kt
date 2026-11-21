@@ -349,13 +349,13 @@ private fun DoctorDetailsDialog(
     var doctorMapUrl by remember(doctor) { mutableStateOf(doctor.mapUrl) }
     var editDoctorLocation by remember { mutableStateOf(false) }
     val days = listOf(
+        6 to (if (isArabic) "السبت" else "Saturday"),
+        7 to (if (isArabic) "الأحد" else "Sunday"),
         1 to (if (isArabic) "الاثنين" else "Monday"),
         2 to (if (isArabic) "الثلاثاء" else "Tuesday"),
         3 to (if (isArabic) "الأربعاء" else "Wednesday"),
         4 to (if (isArabic) "الخميس" else "Thursday"),
-        5 to (if (isArabic) "الجمعة" else "Friday"),
-        6 to (if (isArabic) "السبت" else "Saturday"),
-        7 to (if (isArabic) "الأحد" else "Sunday")
+        5 to (if (isArabic) "الجمعة" else "Friday")
     )
     val upcomingFollowUps = visits.filter { (it.nextFollowUpAt ?: 0L) >= System.currentTimeMillis() }
         .sortedBy { it.nextFollowUpAt }

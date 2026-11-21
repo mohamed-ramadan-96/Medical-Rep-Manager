@@ -360,6 +360,8 @@ private fun AvailabilityFormDialog(
             }) { Text(if (isArabic) "حفظ" else "Save") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(if (isArabic) "إلغاء" else "Cancel") } }
+    )
+
     timePickerTarget?.let { (draftIndex, isStart) ->
         val current = drafts.getOrNull(draftIndex)
         if (current != null) {

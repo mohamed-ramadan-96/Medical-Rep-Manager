@@ -22,6 +22,10 @@
 
 ## Phase 3 — Daily workflow
 - [x] Multiple weekly availability slots per doctor
+- [x] Geographic area field on doctor profiles
+- [x] Monthly calendar-based weekly visit planning, grouped by region, center, and doctor
+- [x] Prevent assigning the same doctor more than once in a Saturday–Friday plan week
+- [x] Export a selected week or full month to an offline Excel workbook
 - [x] Local visit records with doctor, date/time, outcome, notes, and optional follow-up date
 - [ ] Search and filters
 - [x] Live dashboard statistics: doctors, centers, today's visits, total visits, upcoming follow-ups, and recent activity

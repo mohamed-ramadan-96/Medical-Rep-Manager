@@ -41,3 +41,11 @@
 - Google Drive backup is optional and user-authorized.
 - Never upload doctor data unless the user explicitly configures backup.
 - Keep credentials, signing keys, and personal data out of Git.
+
+## Weekly visit planning
+- [x] Reuse the existing doctor geographic area field (`area`) to build region choices; do not add a duplicate region field.
+- [x] Monthly calendar-based weekly visit planning, grouped by region, center, and doctor.
+- [x] Allow multiple doctors per center/day while preventing a doctor from being assigned more than once in a Saturday–Friday plan week.
+- [x] Keep centers selectable across days; removing a doctor restores their availability for the rest of the week.
+- [x] Export a selected week or full month to an offline Excel workbook.
+- [x] Add Room migration 13→14 for weekly plan entries.

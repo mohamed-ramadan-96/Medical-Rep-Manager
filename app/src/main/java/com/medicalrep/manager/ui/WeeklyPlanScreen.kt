@@ -132,7 +132,6 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
     val currentDayEntries = entries.filter { it.visitDate == selectedDate.toString() }
         .sortedWith(compareBy({ it.centerNameSnapshot }, { it.doctorNameSnapshot }))
     val assignedDoctorIdsThisWeek = weekEntries.map { it.doctorId }.toSet()
-    val currentDayDoctorIds = currentDayEntries.map { it.doctorId }.toSet()
 
     val linkedCentersForRegion = centers.filter { center ->
         doctors.any { doctor ->
@@ -151,7 +150,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
             doctor.region.trim().equals(selectedRegion, ignoreCase = true) &&
             (links.any { it.doctorId == doctor.id && it.centerId == selectedCenterId } ||
                 (links.none { it.doctorId == doctor.id } && doctor.centerId == selectedCenterId)) &&
-            (doctor.id !in assignedDoctorIdsThisWeek || doctor.id in currentDayDoctorIds)
+            doctor.id !in assignedDoctorIdsThisWeek
     }.sortedBy { it.name.lowercase(Locale.ROOT) }
 
     var selectedDoctorIds by remember(selectedDate, selectedRegion, selectedCenterId, eligibleDoctors) {
@@ -459,8 +458,8 @@ private fun buildExportRows(
             date = entry.visitDate,
             day = dayLabel(date, isArabic),
             region = entry.regionSnapshot,
-            center = centers.firstOrNull { it.id == entry.centerId }?.name ?: entry.centerNameSnapshot,
-            doctor = doctors.firstOrNull { it.id == entry.doctorId }?.name ?: entry.doctorNameSnapshot
+            center = entry.centerNameSnapshot,
+            doctor = entry.doctorNameSnapshot
         )
     }
 }

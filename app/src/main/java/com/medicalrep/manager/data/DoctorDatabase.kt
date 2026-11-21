@@ -113,6 +113,32 @@ data class DoctorVisitEntity(
     val createdAt: Long = System.currentTimeMillis()
 )
 
+@Entity(
+    tableName = "weekly_plan_entries",
+    foreignKeys = [
+        ForeignKey(entity = DoctorEntity::class, parentColumns = ["id"], childColumns = ["doctorId"], onDelete = ForeignKey.CASCADE),
+        ForeignKey(entity = MedicalCenterEntity::class, parentColumns = ["id"], childColumns = ["centerId"], onDelete = ForeignKey.SET_NULL)
+    ],
+    indices = [
+        Index("weekStartDate"),
+        Index("visitDate"),
+        Index("doctorId"),
+        Index("centerId"),
+        Index(value = ["weekStartDate", "doctorId"], unique = true)
+    ]
+)
+data class WeeklyPlanEntryEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val weekStartDate: String,
+    val visitDate: String,
+    val doctorId: Long,
+    val centerId: Long?,
+    val regionSnapshot: String,
+    val centerNameSnapshot: String,
+    val doctorNameSnapshot: String,
+    val createdAt: Long = System.currentTimeMillis()
+)
+
 @Dao
 interface DoctorVisitDao {
     @Query("SELECT * FROM doctor_visits ORDER BY visitedAt DESC")
@@ -171,6 +197,21 @@ data class DoctorAvailabilityEntity(
     @ColumnInfo(defaultValue = "''") val slotGroupId: String = "",
     val centerId: Long? = null
 )
+
+@Dao
+interface WeeklyPlanDao {
+    @Query("SELECT * FROM weekly_plan_entries ORDER BY visitDate ASC, centerNameSnapshot COLLATE NOCASE ASC, doctorNameSnapshot COLLATE NOCASE ASC")
+    fun observeAll(): Flow<List<WeeklyPlanEntryEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(entry: WeeklyPlanEntryEntity): Long
+
+    @Delete
+    suspend fun delete(entry: WeeklyPlanEntryEntity)
+
+    @Query("DELETE FROM weekly_plan_entries WHERE weekStartDate = :weekStartDate")
+    suspend fun deleteWeek(weekStartDate: String)
+}
 
 @Dao
 interface DoctorCenterLinkDao {
@@ -314,8 +355,8 @@ interface SpecialtyDao {
 }
 
 @Database(
-    entities = [DoctorEntity::class, MedicalCenterEntity::class, SpecialtyEntity::class, DoctorAttachmentEntity::class, CenterAttachmentEntity::class, DoctorAvailabilityEntity::class, DoctorVisitEntity::class, DoctorCenterLinkEntity::class],
-    version = 13,
+    entities = [DoctorEntity::class, MedicalCenterEntity::class, SpecialtyEntity::class, DoctorAttachmentEntity::class, CenterAttachmentEntity::class, DoctorAvailabilityEntity::class, DoctorVisitEntity::class, DoctorCenterLinkEntity::class, WeeklyPlanEntryEntity::class],
+    version = 14,
     exportSchema = false
 )
 abstract class MedicalRepDatabase : RoomDatabase() {
@@ -327,6 +368,7 @@ abstract class MedicalRepDatabase : RoomDatabase() {
     abstract fun doctorCenterLinkDao(): DoctorCenterLinkDao
     abstract fun doctorAvailabilityDao(): DoctorAvailabilityDao
     abstract fun doctorVisitDao(): DoctorVisitDao
+    abstract fun weeklyPlanDao(): WeeklyPlanDao
 
     companion object {
         @Volatile private var INSTANCE: MedicalRepDatabase? = null
@@ -563,6 +605,31 @@ abstract class MedicalRepDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS weekly_plan_entries (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        weekStartDate TEXT NOT NULL,
+                        visitDate TEXT NOT NULL,
+                        doctorId INTEGER NOT NULL,
+                        centerId INTEGER,
+                        regionSnapshot TEXT NOT NULL,
+                        centerNameSnapshot TEXT NOT NULL,
+                        doctorNameSnapshot TEXT NOT NULL,
+                        createdAt INTEGER NOT NULL,
+                        FOREIGN KEY(doctorId) REFERENCES doctors(id) ON DELETE CASCADE,
+                        FOREIGN KEY(centerId) REFERENCES medical_centers(id) ON DELETE SET NULL
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_weekly_plan_entries_weekStartDate ON weekly_plan_entries(weekStartDate)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_weekly_plan_entries_visitDate ON weekly_plan_entries(visitDate)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_weekly_plan_entries_doctorId ON weekly_plan_entries(doctorId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_weekly_plan_entries_centerId ON weekly_plan_entries(centerId)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_weekly_plan_entries_weekStartDate_doctorId ON weekly_plan_entries(weekStartDate, doctorId)")
+            }
+        }
+
         fun closeInstance() {
             synchronized(this) {
                 INSTANCE?.close()
@@ -576,7 +643,7 @@ abstract class MedicalRepDatabase : RoomDatabase() {
                     context.applicationContext,
                     MedicalRepDatabase::class.java,
                     "medical_rep_manager.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
                     .build().also { INSTANCE = it }
             }
     }

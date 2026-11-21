@@ -1,6 +1,5 @@
 package com.medicalrep.manager.ui
 
-import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -53,9 +52,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.medicalrep.manager.data.DoctorCenterLinkEntity
-import com.medicalrep.manager.data.DoctorEntity
-import com.medicalrep.manager.data.MedicalCenterEntity
 import com.medicalrep.manager.data.MedicalRepDatabase
 import com.medicalrep.manager.data.WeeklyPlanEntryEntity
 import com.medicalrep.manager.data.WeeklyPlanExcelExporter
@@ -408,7 +404,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                         Text(if (isArabic) "تصدير Excel" else "Export to Excel", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         Button(
                             onClick = {
-                                exportRows = buildExportRows(monthEntries, doctors, centers, isArabic)
+                                exportRows = buildExportRows(monthEntries, isArabic)
                                 exportFileName = "weekly-plan-${month}.xlsx"
                                 exportLauncher.launch(exportFileName)
                             },
@@ -420,7 +416,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                         }
                         Button(
                             onClick = {
-                                exportRows = buildExportRows(weekEntries, doctors, centers, isArabic)
+                                exportRows = buildExportRows(weekEntries, isArabic)
                                 exportFileName = "weekly-plan-week-${weekStart}.xlsx"
                                 exportLauncher.launch(exportFileName)
                             },
@@ -448,8 +444,6 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
 
 private fun buildExportRows(
     source: List<WeeklyPlanEntryEntity>,
-    doctors: List<DoctorEntity>,
-    centers: List<MedicalCenterEntity>,
     isArabic: Boolean
 ): List<WeeklyPlanExportRow> {
     return source.sortedWith(compareBy({ it.visitDate }, { it.centerNameSnapshot }, { it.doctorNameSnapshot })).map { entry ->

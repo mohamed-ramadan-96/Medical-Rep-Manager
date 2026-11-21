@@ -89,7 +89,10 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
     var pendingDelete by remember { mutableStateOf<List<DoctorAvailabilityEntity>?>(null) }
 
     val groupedSlots = slots.groupBy { it.slotGroupId }
-        .values.sortedWith(compareBy({ it.firstOrNull()?.dayOfWeek ?: 0 }, { it.firstOrNull()?.startTime.orEmpty() }))
+        .values.sortedWith(compareBy(
+            { group -> weekDays.indexOfFirst { it.first == group.firstOrNull()?.dayOfWeek }.let { if (it < 0) Int.MAX_VALUE else it } },
+            { group -> group.firstOrNull()?.startTime.orEmpty() }
+        ))
 
     Scaffold(
         modifier = Modifier.padding(padding),
@@ -125,7 +128,9 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                         val slot = group.first()
                         val doctor = doctors.firstOrNull { it.id == slot.doctorId }
                         val centerName = centers.firstOrNull { it.id == slot.centerId }?.name
-                        val dayNames = group.mapNotNull { item -> weekDays.firstOrNull { it.first == item.dayOfWeek }?.second?.let { if (isArabic) it.second else it.first } }.joinToString("، ")
+                        val dayNames = weekDays.mapNotNull { (number, names) ->
+                            group.firstOrNull { it.dayOfWeek == number }?.let { if (isArabic) names.second else names.first }
+                        }.joinToString("، ")
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),

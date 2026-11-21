@@ -71,7 +71,17 @@ jobs:
             echo "::error::Release APK was not produced."
             exit 1
           fi
-          apksigner verify --verbose "$APK_PATH"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          if [ -z "$SDK_ROOT" ] || [ ! -d "$SDK_ROOT/build-tools" ]; then
+            echo "::error::Android SDK build-tools directory was not found."
+            exit 1
+          fi
+          APKSIGNER="$(find "$SDK_ROOT/build-tools" -maxdepth 2 -type f -name apksigner -print | sort -V | tail -n 1)"
+          if [ -z "$APKSIGNER" ]; then
+            echo "::error::apksigner was not found in Android SDK build-tools."
+            exit 1
+          fi
+          "$APKSIGNER" verify --verbose "$APK_PATH"
           echo "APK_PATH=$APK_PATH" >> "$GITHUB_ENV"
 
       - name: Set up Node.js

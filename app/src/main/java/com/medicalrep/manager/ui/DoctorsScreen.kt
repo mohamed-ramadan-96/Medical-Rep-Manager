@@ -299,6 +299,13 @@ private fun DoctorCard(
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
+                if (doctor.region.isNotBlank()) {
+                    Text(
+                        (if (isArabic) "المنطقة: " else "Area: ") + doctor.region,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
                 if (doctor.notes.isNotBlank()) {
                     Text(doctor.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -642,6 +649,7 @@ private fun DoctorFormDialog(
     var selectedCenterIds by remember(initial, initialCenterIds, centers) { mutableStateOf(initialCenterIds.ifEmpty { setOfNotNull(initial?.centerId ?: centers.firstOrNull { it.name == initial?.medicalCenter }?.id) }) }
     var showCenterPicker by remember { mutableStateOf(false) }
     var notes by remember(initial) { mutableStateOf(initial?.notes.orEmpty()) }
+    var region by remember(initial) { mutableStateOf(initial?.region.orEmpty()) }
     var photoUri by remember(initial) { mutableStateOf(initial?.photoUri) }
     var latitude by remember(initial) { mutableStateOf(initial?.latitude) }
     var longitude by remember(initial) { mutableStateOf(initial?.longitude) }
@@ -768,6 +776,13 @@ private fun DoctorFormDialog(
                 }
                 item {
                     OutlinedTextField(
+                        value = region, onValueChange = { region = it },
+                        modifier = Modifier.fillMaxWidth(), singleLine = true,
+                        label = { Text(if (isArabic) "المنطقة الجغرافية (مثال: الزقازيق، المنيا)" else "Geographic area (e.g. Zagazig, Minya)") }
+                    )
+                }
+                item {
+                    OutlinedTextField(
                         value = notes, onValueChange = { notes = it },
                         modifier = Modifier.fillMaxWidth(), minLines = 2,
                         label = { Text(if (isArabic) "ملاحظات" else "Notes") }
@@ -794,7 +809,8 @@ private fun DoctorFormDialog(
                             createdAt = initial?.createdAt ?: System.currentTimeMillis(),
                             latitude = latitude,
                             longitude = longitude,
-                            mapUrl = mapUrl
+                            mapUrl = mapUrl,
+                            region = region.trim()
                         ),
                         selectedCenterIds
                     )

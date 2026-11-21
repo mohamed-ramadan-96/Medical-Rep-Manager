@@ -322,8 +322,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                         )
                     }
                 } else {
-                    lazyItems(eligibleDoctors.size) { index ->
-                        val doctor = eligibleDoctors[index]
+                    lazyItems(eligibleDoctors, key = { it.id }) { doctor ->
                         Row(
                             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
                                 .background(MaterialTheme.colorScheme.surfaceContainerLow)

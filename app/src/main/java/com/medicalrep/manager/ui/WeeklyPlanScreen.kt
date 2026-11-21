@@ -14,10 +14,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.items as lazyItems
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -208,7 +208,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                             verticalArrangement = Arrangement.spacedBy(3.dp),
                             horizontalArrangement = Arrangement.spacedBy(3.dp)
                         ) {
-                            items(cells) { date ->
+                            gridItems(cells) { date ->
                                 if (date == null) {
                                     Box(Modifier.height(40.dp))
                                 } else {
@@ -322,7 +322,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                         )
                     }
                 } else {
-                    items(eligibleDoctors.size) { index ->
+                    lazyItems(eligibleDoctors.size) { index ->
                         val doctor = eligibleDoctors[index]
                         Row(
                             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
@@ -380,7 +380,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
             if (currentDayEntries.isEmpty()) {
                 item { Text(if (isArabic) "لم تتم إضافة أطباء لهذا اليوم بعد." else "No doctors have been added to this date yet.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             } else {
-                items(currentDayEntries, key = { it.id }) { entry ->
+                lazyItems(currentDayEntries, key = { it.id }) { entry ->
                     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(12.dp),

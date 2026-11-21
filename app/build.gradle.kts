@@ -48,7 +48,7 @@ android {
             }
         }
         release {
-            signingConfig = signingConfigs.getByName("stable")
+            signingConfigs.findByName("stable")?.let { signingConfig = it }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

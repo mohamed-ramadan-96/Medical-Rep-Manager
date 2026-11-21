@@ -75,7 +75,7 @@ private val weekDays = listOf(
 )
 
 private data class AvailabilityDraft(
-    val days: Set<Int> = setOf(1),
+    val days: Set<Int> = setOf(6),
     val startTime: String = "09:00",
     val endTime: String = "17:00",
     val notes: String = "",

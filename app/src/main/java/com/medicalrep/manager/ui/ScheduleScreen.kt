@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,6 +31,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,6 +53,7 @@ import com.medicalrep.manager.data.DoctorCenterLinkEntity
 import com.medicalrep.manager.data.MedicalRepDatabase
 import kotlinx.coroutines.launch
 import java.util.UUID
+import java.util.Locale
 
 private val weekDays = listOf(
     6 to ("Saturday" to "السبت"),
@@ -218,6 +223,7 @@ private fun AvailabilityFormDialog(
         mutableStateOf(initial?.centerId ?: doctorCenterLinks.firstOrNull { it.doctorId == selectedDoctorId }?.centerId ?: doctors.firstOrNull { it.id == selectedDoctorId }?.centerId)
     }
     var error by remember { mutableStateOf<String?>(null) }
+    var timePickerTarget by remember { mutableStateOf<Pair<Int, Boolean>?>(null) }
     val linkedCenters = centers.filter { center ->
         doctorCenterLinks.any { it.doctorId == selectedDoctorId && it.centerId == center.id } ||
             (doctorCenterLinks.none { it.doctorId == selectedDoctorId } && doctors.firstOrNull { it.id == selectedDoctorId }?.centerId == center.id)
@@ -288,16 +294,20 @@ private fun AvailabilityFormDialog(
                                     }
                                 }
                                 OutlinedTextField(
-                                    value = draft.startTime,
-                                    onValueChange = { value -> drafts = drafts.toMutableList().also { it[index] = draft.copy(startTime = value) }; error = null },
-                                    modifier = Modifier.fillMaxWidth(), singleLine = true,
-                                    label = { Text(if (isArabic) "من (HH:MM)" else "From (HH:MM)") }
+                                    value = displayAvailabilityTime(draft.startTime),
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    modifier = Modifier.fillMaxWidth().clickable { timePickerTarget = index to true },
+                                    singleLine = true,
+                                    label = { Text(if (isArabic) "من — اختر الوقت (AM / PM)" else "From — choose time (AM / PM)") }
                                 )
                                 OutlinedTextField(
-                                    value = draft.endTime,
-                                    onValueChange = { value -> drafts = drafts.toMutableList().also { it[index] = draft.copy(endTime = value) }; error = null },
-                                    modifier = Modifier.fillMaxWidth(), singleLine = true,
-                                    label = { Text(if (isArabic) "إلى (HH:MM)" else "To (HH:MM)") }
+                                    value = displayAvailabilityTime(draft.endTime),
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    modifier = Modifier.fillMaxWidth().clickable { timePickerTarget = index to false },
+                                    singleLine = true,
+                                    label = { Text(if (isArabic) "إلى — اختر الوقت (AM / PM)" else "To — choose time (AM / PM)") }
                                 )
                                 OutlinedTextField(
                                     value = draft.notes,
@@ -350,5 +360,63 @@ private fun AvailabilityFormDialog(
             }) { Text(if (isArabic) "حفظ" else "Save") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(if (isArabic) "إلغاء" else "Cancel") } }
+    timePickerTarget?.let { (draftIndex, isStart) ->
+        val current = drafts.getOrNull(draftIndex)
+        if (current != null) {
+            AvailabilityTimePickerDialog(
+                isArabic = isArabic,
+                initialValue = if (isStart) current.startTime else current.endTime,
+                onDismiss = { timePickerTarget = null },
+                onConfirm = { hour, minute ->
+                    val value = String.format(Locale.US, "%02d:%02d", hour, minute)
+                    drafts = drafts.toMutableList().also { list ->
+                        val draft = list[draftIndex]
+                        list[draftIndex] = if (isStart) draft.copy(startTime = value) else draft.copy(endTime = value)
+                    }
+                    error = null
+                    timePickerTarget = null
+                }
+            )
+        }
+    }
+}
+
+private fun displayAvailabilityTime(value: String): String {
+    val pieces = value.split(":")
+    val hour = pieces.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 23) ?: 9
+    val minute = pieces.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 59) ?: 0
+    val suffix = if (hour < 12) "AM" else "PM"
+    val displayHour = when (hour % 12) { 0 -> 12; else -> hour % 12 }
+    return String.format(Locale.US, "%02d:%02d %s", displayHour, minute, suffix)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AvailabilityTimePickerDialog(
+    isArabic: Boolean,
+    initialValue: String,
+    onDismiss: () -> Unit,
+    onConfirm: (Int, Int) -> Unit
+) {
+    val pieces = initialValue.split(":")
+    val initialHour = pieces.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 23) ?: 9
+    val initialMinute = pieces.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 59) ?: 0
+    val state = rememberTimePickerState(
+        initialHour = initialHour,
+        initialMinute = initialMinute,
+        is24Hour = false
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (isArabic) "اختيار الوقت" else "Choose time") },
+        text = { TimePicker(state = state) },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(state.hour, state.minute) }) {
+                Text(if (isArabic) "تأكيد" else "Confirm")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(if (isArabic) "إلغاء" else "Cancel") }
+        }
     )
 }

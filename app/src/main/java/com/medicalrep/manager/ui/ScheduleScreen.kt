@@ -51,13 +51,13 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 private val weekDays = listOf(
+    6 to ("Saturday" to "السبت"),
+    7 to ("Sunday" to "الأحد"),
     1 to ("Monday" to "الاثنين"),
     2 to ("Tuesday" to "الثلاثاء"),
     3 to ("Wednesday" to "الأربعاء"),
     4 to ("Thursday" to "الخميس"),
-    5 to ("Friday" to "الجمعة"),
-    6 to ("Saturday" to "السبت"),
-    7 to ("Sunday" to "الأحد")
+    5 to ("Friday" to "الجمعة")
 )
 
 private data class AvailabilityDraft(

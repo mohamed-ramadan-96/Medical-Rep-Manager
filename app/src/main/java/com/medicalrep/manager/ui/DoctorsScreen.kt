@@ -453,6 +453,110 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             }
         )
     }
+    if (showSpecialtiesManager) {
+        AlertDialog(
+            onDismissRequest = { showSpecialtiesManager = false },
+            title = { Text(if (isArabic) "إدارة التخصصات" else "Manage specialties") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (specialties.isEmpty()) {
+                        Text(
+                            if (isArabic) "لا توجد تخصصات مضافة حتى الآن." else "No specialties added yet.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 12.dp)
+                        )
+                    } else {
+                        LazyColumn(modifier = Modifier.heightIn(max = 360.dp)) {
+                            items(specialties, key = { it.id }) { specialty ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(specialty.name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                                    IconButton(onClick = { specialtyPendingDelete = specialty }) {
+                                        Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف التخصص" else "Delete specialty", tint = MaterialTheme.colorScheme.error)
+                                    }
+                                }
+                                androidx.compose.material3.HorizontalDivider()
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = {
+                        newSpecialtyName = ""
+                        showAddSpecialtyDialog = true
+                    }) {
+                        Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة تخصص" else "Add specialty", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
+                    }
+                    TextButton(onClick = { showSpecialtiesManager = false }) { Text(if (isArabic) "إغلاق" else "Close") }
+                }
+            }
+        )
+    }
+
+    if (showAddSpecialtyDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddSpecialtyDialog = false },
+            title = { Text(if (isArabic) "إضافة تخصص جديد" else "Add new specialty") },
+            text = {
+                OutlinedTextField(
+                    value = newSpecialtyName,
+                    onValueChange = { newSpecialtyName = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text(if (isArabic) "اسم التخصص" else "Specialty name") }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val name = newSpecialtyName.trim()
+                    if (name.isNotBlank() && specialties.none { it.name.equals(name, true) }) {
+                        scope.launch {
+                            specialtyDao.insert(SpecialtyEntity(id = 0L, name = name, createdAt = System.currentTimeMillis()))
+                        }
+                        showAddSpecialtyDialog = false
+                    }
+                }) { Text(if (isArabic) "إضافة" else "Add") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddSpecialtyDialog = false }) { Text(if (isArabic) "إلغاء" else "Cancel") }
+            }
+        )
+    }
+
+    specialtyPendingDelete?.let { specialty ->
+        AlertDialog(
+            onDismissRequest = { specialtyPendingDelete = null },
+            title = { Text(if (isArabic) "حذف التخصص؟" else "Delete specialty?") },
+            text = {
+                Text(
+                    if (isArabic) "سيتم حذف «${specialty.name}» وفصل الأطباء المرتبطين به، دون حذف بياناتهم."
+                    else "This removes “${specialty.name}” and unlinks its doctors without deleting their records."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    scope.launch {
+                        database.withTransaction {
+                            dao.detachSpecialty(specialty.id)
+                            specialtyDao.delete(specialty)
+                        }
+                    }
+                    specialtyPendingDelete = null
+                }) { Text(if (isArabic) "حذف" else "Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { specialtyPendingDelete = null }) { Text(if (isArabic) "إلغاء" else "Cancel") }
+            }
+        )
+    }
 }
 
 @Composable
@@ -866,110 +970,7 @@ private fun DoctorDetailsDialog(
         )
     }
 
-    if (showSpecialtiesManager) {
-        AlertDialog(
-            onDismissRequest = { showSpecialtiesManager = false },
-            title = { Text(if (isArabic) "إدارة التخصصات" else "Manage specialties") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    if (specialties.isEmpty()) {
-                        Text(
-                            if (isArabic) "لا توجد تخصصات مضافة حتى الآن." else "No specialties added yet.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 12.dp)
-                        )
-                    } else {
-                        LazyColumn(modifier = Modifier.heightIn(max = 360.dp)) {
-                            items(specialties, key = { it.id }) { specialty ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(specialty.name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                                    IconButton(onClick = { specialtyPendingDelete = specialty }) {
-                                        Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف التخصص" else "Delete specialty", tint = MaterialTheme.colorScheme.error)
-                                    }
-                                }
-                                androidx.compose.material3.HorizontalDivider()
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = {
-                        newSpecialtyName = ""
-                        showAddSpecialtyDialog = true
-                    }) {
-                        Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة تخصص" else "Add specialty", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
-                    }
-                    TextButton(onClick = { showSpecialtiesManager = false }) { Text(if (isArabic) "إغلاق" else "Close") }
-                }
-            }
-        )
-    }
 
-    if (showAddSpecialtyDialog) {
-        AlertDialog(
-            onDismissRequest = { showAddSpecialtyDialog = false },
-            title = { Text(if (isArabic) "إضافة تخصص جديد" else "Add new specialty") },
-            text = {
-                OutlinedTextField(
-                    value = newSpecialtyName,
-                    onValueChange = { newSpecialtyName = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text(if (isArabic) "اسم التخصص" else "Specialty name") }
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val name = newSpecialtyName.trim()
-                    if (name.isNotBlank() && specialties.none { it.name.equals(name, true) }) {
-                        scope.launch {
-                            specialtyDao.insert(SpecialtyEntity(id = 0L, name = name, createdAt = System.currentTimeMillis()))
-                        }
-                        showAddSpecialtyDialog = false
-                    }
-                }) { Text(if (isArabic) "إضافة" else "Add") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showAddSpecialtyDialog = false }) { Text(if (isArabic) "إلغاء" else "Cancel") }
-            }
-        )
-    }
-
-    specialtyPendingDelete?.let { specialty ->
-        AlertDialog(
-            onDismissRequest = { specialtyPendingDelete = null },
-            title = { Text(if (isArabic) "حذف التخصص؟" else "Delete specialty?") },
-            text = {
-                Text(
-                    if (isArabic) "سيتم حذف «${specialty.name}» وفصل الأطباء المرتبطين به، دون حذف بياناتهم."
-                    else "This removes “${specialty.name}” and unlinks its doctors without deleting their records."
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    scope.launch {
-                        database.withTransaction {
-                            dao.detachSpecialty(specialty.id)
-                            specialtyDao.delete(specialty)
-                        }
-                    }
-                    specialtyPendingDelete = null
-                }) { Text(if (isArabic) "حذف" else "Delete", color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { specialtyPendingDelete = null }) { Text(if (isArabic) "إلغاء" else "Cancel") }
-            }
-        )
-    }
 
 }
 

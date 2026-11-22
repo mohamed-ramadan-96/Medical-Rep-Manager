@@ -253,6 +253,15 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     }
 }
 
+private data class CenterWorkingHoursDraft(
+    val groupId: String = java.util.UUID.randomUUID().toString(),
+    val days: Set<Int> = emptySet(),
+    val startTime: String = "09:00",
+    val endTime: String = "22:00",
+    val notes: String = "",
+    val existing: List<CenterAvailabilityEntity> = emptyList()
+)
+
 @Composable
 private fun CenterFormDialog(
     isArabic: Boolean,
@@ -266,10 +275,21 @@ private fun CenterFormDialog(
     var address by remember(initial) { mutableStateOf(initial?.address.orEmpty()) }
     var phone by remember(initial) { mutableStateOf(initial?.phone.orEmpty()) }
     var notes by remember(initial) { mutableStateOf(initial?.notes.orEmpty()) }
-    var workDays by remember(initial, initialAvailability) { mutableStateOf(initialAvailability.map { it.dayOfWeek }.toSet()) }
-    var workStart by remember(initial, initialAvailability) { mutableStateOf(initialAvailability.firstOrNull()?.startTime ?: "09:00") }
-    var workEnd by remember(initial, initialAvailability) { mutableStateOf(initialAvailability.firstOrNull()?.endTime ?: "22:00") }
-    var workNotes by remember(initial, initialAvailability) { mutableStateOf(initialAvailability.firstOrNull()?.notes.orEmpty()) }
+    var workSlots by remember(initial, initialAvailability) {
+        mutableStateOf(
+            initialAvailability.groupBy { it.slotGroupId.ifBlank { "legacy-" + it.id } }.values.map { group ->
+                val first = group.first()
+                CenterWorkingHoursDraft(
+                    groupId = first.slotGroupId.ifBlank { java.util.UUID.randomUUID().toString() },
+                    days = group.map { it.dayOfWeek }.toSet(),
+                    startTime = first.startTime,
+                    endTime = first.endTime,
+                    notes = first.notes,
+                    existing = group
+                )
+            }
+        )
+    }
     var unregisteredDoctorCount by remember(initial) { mutableStateOf(initial?.unregisteredDoctorCount?.toString() ?: "0") }
     var latitude by remember(initial) { mutableStateOf(initial?.latitude) }
     var longitude by remember(initial) { mutableStateOf(initial?.longitude) }
@@ -310,19 +330,41 @@ private fun CenterFormDialog(
                 }
 
                 item {
-                    Text(if (isArabic) "مواعيد عمل المركز" else "Center working hours", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                    Text(if (isArabic) "المواعيد دي تخص المركز نفسه، ومش محتاجة ملفات أطباء." else "These hours belong to the center itself and do not require doctor profiles.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    listOf(6 to "السبت", 7 to "الأحد", 1 to "الاثنين", 2 to "الثلاثاء", 3 to "الأربعاء", 4 to "الخميس", 5 to "الجمعة").forEach { (day, label) ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(checked = day in workDays, onCheckedChange = { checked -> workDays = if (checked) workDays + day else workDays - day })
-                            Text(if (isArabic) label else listOf("Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday").getOrNull(day - 1).orEmpty())
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(if (isArabic) "مواعيد عمل المركز" else "Center working hours", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        Text(if (isArabic) "المواعيد دي تخص المركز نفسه، ومش محتاجة ملفات أطباء. تقدر تضيف أكتر من فترة." else "These hours belong to the center itself; no doctor profiles are required. Add multiple time slots if needed.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        workSlots.forEachIndexed { index, slot ->
+                            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                                Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text((if (isArabic) "فترة عمل " else "Working slot ") + (index + 1), modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                                        TextButton(onClick = { workSlots = workSlots.filterIndexed { i, _ -> i != index } }) { Text(if (isArabic) "حذف" else "Remove") }
+                                    }
+                                    listOf(6 to "السبت", 7 to "الأحد", 1 to "الاثنين", 2 to "الثلاثاء", 3 to "الأربعاء", 4 to "الخميس", 5 to "الجمعة").chunked(2).forEach { pair ->
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            pair.forEach { (day, label) ->
+                                                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                                                    Checkbox(checked = day in slot.days, onCheckedChange = { checked ->
+                                                        val days = if (checked) slot.days + day else slot.days - day
+                                                        workSlots = workSlots.toMutableList().also { it[index] = slot.copy(days = days) }
+                                                    })
+                                                    Text(if (isArabic) label else listOf("Saturday","Sunday","Monday","Tuesday","Wednesday","Thursday","Friday")[listOf(6,7,1,2,3,4,5).indexOf(day)], style = MaterialTheme.typography.bodySmall)
+                                                }
+                                            }
+                                        }
+                                    }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        OutlinedTextField(value = slot.startTime, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(startTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, label = { Text(if (isArabic) "من HH:mm" else "From HH:mm") })
+                                        OutlinedTextField(value = slot.endTime, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(endTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, label = { Text(if (isArabic) "إلى HH:mm" else "To HH:mm") })
+                                    }
+                                    OutlinedTextField(value = slot.notes, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(notes = value) } }, modifier = Modifier.fillMaxWidth(), label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") })
+                                }
+                            }
+                        }
+                        OutlinedButton(onClick = { workSlots = workSlots + CenterWorkingHoursDraft() }, modifier = Modifier.fillMaxWidth()) {
+                            Text(if (isArabic) "+ إضافة فترة عمل" else "+ Add working-hours slot")
                         }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = workStart, onValueChange = { workStart = it }, modifier = Modifier.weight(1f), singleLine = true, label = { Text(if (isArabic) "من HH:mm" else "From HH:mm") })
-                        OutlinedTextField(value = workEnd, onValueChange = { workEnd = it }, modifier = Modifier.weight(1f), singleLine = true, label = { Text(if (isArabic) "إلى HH:mm" else "To HH:mm") })
-                    }
-                    OutlinedTextField(value = workNotes, onValueChange = { workNotes = it }, modifier = Modifier.fillMaxWidth(), label = { Text(if (isArabic) "ملاحظات مواعيد المركز" else "Working-hours notes") })
                 }
                 item {
                     OutlinedTextField(
@@ -426,18 +468,20 @@ private fun CenterFormDialog(
 
                         unregisteredDoctorCount = unregisteredDoctorCount.toIntOrNull() ?: 0
                     ),
-                    workDays.map { day ->
-                        val old = initialAvailability.firstOrNull { it.dayOfWeek == day }
-                        CenterAvailabilityEntity(
-                            id = old?.id ?: 0L,
-                            centerId = initial?.id ?: 0L,
-                            dayOfWeek = day,
-                            startTime = workStart,
-                            endTime = workEnd,
-                            notes = workNotes.trim(),
-                            createdAt = old?.createdAt ?: System.currentTimeMillis(),
-                            slotGroupId = initialAvailability.firstOrNull()?.slotGroupId?.takeIf { it.isNotBlank() } ?: java.util.UUID.randomUUID().toString()
-                        )
+                    workSlots.flatMap { slot ->
+                        slot.days.map { day ->
+                            val old = slot.existing.firstOrNull { it.dayOfWeek == day }
+                            CenterAvailabilityEntity(
+                                id = old?.id ?: 0L,
+                                centerId = initial?.id ?: 0L,
+                                dayOfWeek = day,
+                                startTime = slot.startTime,
+                                endTime = slot.endTime,
+                                notes = slot.notes.trim(),
+                                createdAt = old?.createdAt ?: System.currentTimeMillis(),
+                                slotGroupId = slot.groupId
+                            )
+                        }
                     }
                 )
             }) { Text(if (isArabic) "حفظ" else "Save") }

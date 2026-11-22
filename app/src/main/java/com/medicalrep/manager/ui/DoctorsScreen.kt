@@ -1003,6 +1003,7 @@ private fun DoctorFormDialog(
     var showSpecialtyPicker by remember { mutableStateOf(false) }
     var phones by remember(initial) { mutableStateOf(initial?.phoneNumbers.orEmpty()) }
     var selectedAreas by remember(initial) { mutableStateOf(doctorAreas(initial?.area.orEmpty()).toSet()) }
+    var areaOptions by remember(existingAreas) { mutableStateOf(existingAreas.distinct()) }
     var newArea by remember { mutableStateOf("") }
     var showAreaPicker by remember { mutableStateOf(false) }
     var selectedCenterIds by remember(initial, initialCenterIds, centers) { mutableStateOf(initialCenterIds.ifEmpty { setOfNotNull(initial?.centerId ?: centers.firstOrNull { it.name == initial?.medicalCenter }?.id) }) }
@@ -1134,27 +1135,23 @@ private fun DoctorFormDialog(
                         text = {
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 LazyColumn(modifier = Modifier.height(240.dp)) {
-                                    items(existingAreas, key = { it }) { areaOption ->
+                                    items(areaOptions, key = { it }) { areaOption ->
                                         Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                                             Checkbox(
                                                 checked = selectedAreas.any { it.equals(areaOption, true) },
                                                 onCheckedChange = { checked ->
-                                                    selectedAreas = if (checked) selectedAreas + areaOption else selectedAreas.filterNot { it.equals(areaOption, true) }.toSet()
+                                                    selectedAreas = if (checked) selectedAreas + areaOption
+                                                    else selectedAreas.filterNot { it.equals(areaOption, true) }.toSet()
                                                 }
                                             )
                                             Text(areaOption, modifier = Modifier.weight(1f))
                                             IconButton(onClick = {
+                                                areaOptions = areaOptions.filterNot { it.equals(areaOption, true) }
                                                 selectedAreas = selectedAreas.filterNot { it.equals(areaOption, true) }.toSet()
-                                                onDeleteArea(areaOption)
+                                                if (existingAreas.any { it.equals(areaOption, true) }) onDeleteArea(areaOption)
                                             }) {
                                                 Icon(Icons.Default.Close, contentDescription = if (isArabic) "حذف المنطقة" else "Delete area")
                                             }
-                                        }
-                                    }
-                                    items(selectedAreas.filter { selected -> existingAreas.none { it.equals(selected, true) } }) { pending ->
-                                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                                            Checkbox(checked = true, onCheckedChange = { selectedAreas = selectedAreas - pending })
-                                            Text(pending)
                                         }
                                     }
                                 }
@@ -1167,9 +1164,8 @@ private fun DoctorFormDialog(
                                     trailingIcon = {
                                         IconButton(onClick = {
                                             val value = newArea.trim()
-                                            if (value.isNotBlank()) {
-                                                val canonicalArea = existingAreas.firstOrNull { it.equals(value, true) } ?: value
-                                                if (selectedAreas.none { it.equals(canonicalArea, true) }) selectedAreas = selectedAreas + canonicalArea
+                                            if (value.isNotBlank() && areaOptions.none { it.equals(value, true) }) {
+                                                areaOptions = areaOptions + value
                                                 newArea = ""
                                             }
                                         }, enabled = newArea.isNotBlank()) {

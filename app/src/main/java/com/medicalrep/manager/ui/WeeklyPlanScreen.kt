@@ -179,10 +179,12 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                             planDays.forEach { (_, names) ->
                                 Text(
-                                    if (isArabic) when (names.second) { "السبت" -> "سبت"; "الأحد" -> "أحد"; "الاثنين" -> "اثن"; "الثلاثاء" -> "ثلا"; "الأربعاء" -> "أرب"; "الخميس" -> "خمي"; else -> "جمع" } else names.first.take(3),
+                                    if (isArabic) names.second else names.first,
                                     modifier = Modifier.weight(1f),
+                                    maxLines = 1,
+                                    softWrap = false,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.SemiBold),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, fontWeight = FontWeight.SemiBold),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }

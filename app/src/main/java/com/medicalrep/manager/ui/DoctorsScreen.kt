@@ -924,6 +924,7 @@ private fun DoctorFormDialog(
     var editDoctorLocation by remember { mutableStateOf(false) }
     var nameError by remember { mutableStateOf(false) }
     var availabilityError by remember { mutableStateOf<String?>(null) }
+    var showAreaRequiredDialog by remember { mutableStateOf(false) }
 
     val photoPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -1007,8 +1008,12 @@ private fun DoctorFormDialog(
                 }
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            Text(if (isArabic) "المنطقة" else "Area", style = MaterialTheme.typography.labelLarge)
+                            Text(" *", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelLarge)
+                        }
                         OutlinedSelectionField(
-                            label = if (isArabic) "المناطق" else "Areas",
+                            label = if (isArabic) "اختر منطقة أو أكثر" else "Choose one or more areas",
                             value = if (selectedAreas.isEmpty()) {
                                 if (isArabic) "اختر منطقة أو أكثر" else "Choose one or more areas"
                             } else selectedAreas.sorted().joinToString("، "),
@@ -1193,6 +1198,8 @@ private fun DoctorFormDialog(
             TextButton(onClick = {
                 if (name.isBlank()) {
                     nameError = true
+                } else if (selectedAreas.isEmpty()) {
+                    showAreaRequiredDialog = true
                 } else {
                     val validTime = Regex("(?:[01]\\d|2[0-3]):[0-5]\\d")
                     val invalidSlots = availabilityDrafts.any { it.days.isEmpty() || !validTime.matches(it.startTime) || !validTime.matches(it.endTime) || it.endTime <= it.startTime || (it.centerId != null && it.centerId !in selectedCenterIds) }
@@ -1288,6 +1295,23 @@ private fun DoctorFormDialog(
                 TextButton(onClick = { showCenterPicker = false }) {
                     Text(if (isArabic) "إغلاق" else "Close")
                 }
+            }
+        )
+    }
+
+    if (showAreaRequiredDialog) {
+        AlertDialog(
+            onDismissRequest = { showAreaRequiredDialog = false },
+            title = { Text(if (isArabic) "المنطقة مطلوبة" else "Area required") },
+            text = { Text(if (isArabic) "من فضلك اختار منطقة واحدة على الأقل للطبيب قبل الحفظ." else "Please select at least one area for this doctor before saving.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showAreaRequiredDialog = false
+                    showAreaPicker = true
+                }) { Text(if (isArabic) "اختيار المنطقة" else "Choose area") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAreaRequiredDialog = false }) { Text(if (isArabic) "حسنًا" else "OK") }
             }
         )
     }

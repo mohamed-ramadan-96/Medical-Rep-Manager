@@ -273,7 +273,15 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 item {
                     Row(Modifier.fillMaxWidth().padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(if (isArabic) "إدارة الأطباء" else "Doctors", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                        TextButton(onClick = onManageSpecialties) { Icon(Icons.Default.MedicalServices, contentDescription = null, modifier = Modifier.size(18.dp)); Text(if (isArabic) "التخصصات" else "Specialties") }
+                        OutlinedButton(
+                            onClick = onManageSpecialties,
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 7.dp)
+                        ) {
+                            Icon(Icons.Default.MedicalServices, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(if (isArabic) "إدارة التخصصات" else "Manage specialties", style = MaterialTheme.typography.labelLarge)
+                        }
                     }
                 }
                 stickyHeader {

@@ -92,6 +92,7 @@ import java.util.UUID
 
 @Composable
 private fun FilterActionButton(isArabic: Boolean, expanded: Boolean, onClick: () -> Unit) {
+    val iconColor = MaterialTheme.colorScheme.onSurface
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(22.dp),
@@ -107,7 +108,7 @@ private fun FilterActionButton(isArabic: Boolean, expanded: Boolean, onClick: ()
                 val y1 = size.height * 0.24f
                 val y2 = size.height * 0.50f
                 val y3 = size.height * 0.76f
-                val color = MaterialTheme.colorScheme.onSurface
+                val color = iconColor
                 drawLine(color, androidx.compose.ui.geometry.Offset(x1, y1), androidx.compose.ui.geometry.Offset(x2, y1), stroke, cap = StrokeCap.Round)
                 drawLine(color, androidx.compose.ui.geometry.Offset(x1, y2), androidx.compose.ui.geometry.Offset(x2, y2), stroke, cap = StrokeCap.Round)
                 drawLine(color, androidx.compose.ui.geometry.Offset(x1, y3), androidx.compose.ui.geometry.Offset(x2, y3), stroke, cap = StrokeCap.Round)

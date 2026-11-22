@@ -85,6 +85,23 @@ import java.util.Locale
 import java.util.UUID
 
 @Composable
+private fun FilterActionButton(isArabic: Boolean, expanded: Boolean, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        modifier = Modifier.size(48.dp)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                if (expanded) Icons.Default.ExpandLess else Icons.Default.FilterList,
+                contentDescription = if (isArabic) "فلترة" else "Filters"
+            )
+        }
+    }
+}
+
+@Composable
 fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.PaddingValues, onManageSpecialties: () -> Unit = {}) {
     val context = LocalContext.current
     val database = remember { MedicalRepDatabase.getInstance(context) }
@@ -138,9 +155,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             AnimatedVisibility(visible = compactHeaderVisible, enter = expandVertically(tween(180)) + fadeIn(tween(150)), exit = shrinkVertically(tween(150)) + fadeOut(tween(120))) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(value = searchText, onValueChange = { searchText = it }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(12.dp), textStyle = MaterialTheme.typography.bodyMedium, leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) }, placeholder = { Text(if (isArabic) "ابحث عن طبيب..." else "Search doctors...", style = MaterialTheme.typography.bodyMedium) })
-                    Surface(onClick = { showFilters = !showFilters }, shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.size(48.dp)) {
-                        Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.FilterList, contentDescription = if (isArabic) "فلترة" else "Filters") }
-                    }
+                    FilterActionButton(isArabic = isArabic, expanded = showFilters, onClick = { showFilters = !showFilters })
                 }
             }
             LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -149,11 +164,11 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                         Text(if (isArabic) "إدارة الأطباء" else "Doctors", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                         TextButton(onClick = onManageSpecialties) { Icon(Icons.Default.MedicalServices, contentDescription = null, modifier = Modifier.size(18.dp)); Text(if (isArabic) "التخصصات" else "Specialties") }
                     }
-                    OutlinedTextField(value = searchText, onValueChange = { searchText = it }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp), textStyle = MaterialTheme.typography.bodyMedium, leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) }, placeholder = { Text(if (isArabic) "ابحث بالاسم أو التخصص أو الهاتف أو المنطقة" else "Search name, specialty, phone or area", style = MaterialTheme.typography.bodyMedium) })
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                        TextButton(onClick = { showFilters = !showFilters }) { Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(20.dp)); Text(if (isArabic) "فلترة" else "Filters", modifier = Modifier.padding(horizontal = 8.dp)); Icon(if (showFilters) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null, modifier = Modifier.size(20.dp)) }
-                        Text(if (isArabic) "${filteredDoctors.size} من ${doctors.size} طبيب" else "${filteredDoctors.size} of ${doctors.size} doctors", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(value = searchText, onValueChange = { searchText = it }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(12.dp), textStyle = MaterialTheme.typography.bodyMedium, leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) }, placeholder = { Text(if (isArabic) "ابحث بالاسم أو التخصص أو الهاتف أو المنطقة" else "Search name, specialty, phone or area", style = MaterialTheme.typography.bodyMedium) })
+                        FilterActionButton(isArabic = isArabic, expanded = showFilters, onClick = { showFilters = !showFilters })
                     }
+                    Text(if (isArabic) "${filteredDoctors.size} من ${doctors.size} طبيب" else "${filteredDoctors.size} of ${doctors.size} doctors", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
                     AnimatedVisibility(visible = showFilters, enter = expandVertically(tween(220)) + fadeIn(tween(180)), exit = shrinkVertically(tween(180)) + fadeOut(tween(140))) {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {

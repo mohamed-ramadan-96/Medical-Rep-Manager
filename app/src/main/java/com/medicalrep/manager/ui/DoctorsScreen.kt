@@ -82,6 +82,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -152,8 +153,14 @@ private fun DoctorSearchField(
         Row(
             modifier = Modifier.padding(horizontal = if (compact) 10.dp else 18.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.End
+            horizontalArrangement = Arrangement.Start
         ) {
+            Icon(
+                Icons.Default.Search,
+                contentDescription = if (isArabic) "بحث" else "Search",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(if (compact) 20.dp else 24.dp)
+            )
             if (!compact) {
                 BasicTextField(
                     value = value,
@@ -175,12 +182,6 @@ private fun DoctorSearchField(
             } else {
                 Spacer(Modifier.weight(1f))
             }
-            Icon(
-                Icons.Default.Search,
-                contentDescription = if (isArabic) "بحث" else "Search",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(if (compact) 20.dp else 24.dp).alpha(textAlpha)
-            )
         }
     }
 }
@@ -271,6 +272,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 stickyHeader {
                     BoxWithConstraints(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(vertical = 4.dp)) {
                         val filterWidth by animateDpAsState(if (searchHeaderExpanded) 60.dp else 0.dp, tween(240), label = "filterWidth")
+                        val filterAlpha by animateFloatAsState(if (searchHeaderExpanded) 1f else 0f, tween(160), label = "filterAlpha")
                         val searchWidth by animateDpAsState(if (searchHeaderExpanded) maxWidth - 68.dp else 44.dp, tween(280), label = "searchWidth")
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                             Box(Modifier.width(searchWidth)) {
@@ -282,11 +284,12 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                     onExpand = { searchHeaderExpanded = true }
                                 )
                             }
-                            Box(Modifier.width(filterWidth).alpha(if (searchHeaderExpanded) 1f else 0f)) {
-                                if (searchHeaderExpanded) FilterActionButton(
+                            Box(Modifier.width(filterWidth).height(60.dp).clipToBounds()) {
+                                FilterActionButton(
                                     isArabic = isArabic,
                                     expanded = showFilters,
-                                    onClick = { showFilters = !showFilters }
+                                    onClick = { showFilters = !showFilters },
+                                    modifier = Modifier.alpha(filterAlpha)
                                 )
                             }
                         }

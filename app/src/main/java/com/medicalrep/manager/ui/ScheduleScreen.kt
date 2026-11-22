@@ -1,7 +1,6 @@
 package com.medicalrep.manager.ui
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -361,21 +360,15 @@ private fun AvailabilityFormDialog(
                                         Text(if (isArabic) names.second else names.first)
                                     }
                                 }
-                                OutlinedTextField(
+                                OutlinedSelectionField(
+                                    label = if (isArabic) "من — اختر الوقت (AM / PM)" else "From — choose time (AM / PM)",
                                     value = displayAvailabilityTime(draft.startTime),
-                                    onValueChange = {},
-                                    readOnly = true,
-                                    modifier = Modifier.fillMaxWidth().clickable { timePickerTarget = index to true },
-                                    singleLine = true,
-                                    label = { Text(if (isArabic) "من — اختر الوقت (AM / PM)" else "From — choose time (AM / PM)") }
+                                    onClick = { timePickerTarget = index to true }
                                 )
-                                OutlinedTextField(
+                                OutlinedSelectionField(
+                                    label = if (isArabic) "إلى — اختر الوقت (AM / PM)" else "To — choose time (AM / PM)",
                                     value = displayAvailabilityTime(draft.endTime),
-                                    onValueChange = {},
-                                    readOnly = true,
-                                    modifier = Modifier.fillMaxWidth().clickable { timePickerTarget = index to false },
-                                    singleLine = true,
-                                    label = { Text(if (isArabic) "إلى — اختر الوقت (AM / PM)" else "To — choose time (AM / PM)") }
+                                    onClick = { timePickerTarget = index to false }
                                 )
                                 OutlinedTextField(
                                     value = draft.notes,

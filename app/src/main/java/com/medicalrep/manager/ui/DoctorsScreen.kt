@@ -1,10 +1,6 @@
 package com.medicalrep.manager.ui
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,10 +8,16 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.collect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.draw.alpha
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateDpAsState
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -102,34 +104,28 @@ import java.util.Locale
 import java.util.UUID
 
 @Composable
-private fun FilterActionButton(isArabic: Boolean, expanded: Boolean, onClick: () -> Unit) {
+private fun FilterActionButton(isArabic: Boolean, expanded: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val iconColor = MaterialTheme.colorScheme.onSurface
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(22.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = Modifier.size(60.dp)
+        modifier = modifier.size(60.dp)
     ) {
         Box(contentAlignment = Alignment.Center) {
-            androidx.compose.foundation.Canvas(Modifier.size(36.dp)) {
-                val stroke = 2.6.dp.toPx()
-                val left = 3.dp.toPx()
-                val right = size.width - 3.dp.toPx()
-                val railYs = listOf(9.dp.toPx(), 18.dp.toPx(), 27.dp.toPx())
-                val knobXs = listOf(22.dp.toPx(), 11.dp.toPx(), 25.dp.toPx())
+            androidx.compose.foundation.Canvas(Modifier.size(28.dp)) {
+                val stroke = 2.dp.toPx()
+                val left = 2.dp.toPx()
+                val right = size.width - 2.dp.toPx()
+                val railYs = listOf(6.dp.toPx(), 14.dp.toPx(), 22.dp.toPx())
+                val knobXs = listOf(17.dp.toPx(), 9.dp.toPx(), 20.dp.toPx())
                 railYs.forEachIndexed { index, y ->
                     val knobX = knobXs[index]
-                    val gap = 3.4.dp.toPx()
+                    val gap = 2.4.dp.toPx()
                     drawLine(iconColor, androidx.compose.ui.geometry.Offset(left, y), androidx.compose.ui.geometry.Offset(knobX - gap, y), stroke, cap = StrokeCap.Round)
                     drawLine(iconColor, androidx.compose.ui.geometry.Offset(knobX + gap, y), androidx.compose.ui.geometry.Offset(right, y), stroke, cap = StrokeCap.Round)
-                    drawLine(
-                        iconColor,
-                        androidx.compose.ui.geometry.Offset(knobX, y - 4.2.dp.toPx()),
-                        androidx.compose.ui.geometry.Offset(knobX, y + 4.2.dp.toPx()),
-                        stroke,
-                        cap = StrokeCap.Round
-                    )
+                    drawLine(iconColor, androidx.compose.ui.geometry.Offset(knobX, y - 3.dp.toPx()), androidx.compose.ui.geometry.Offset(knobX, y + 3.dp.toPx()), stroke, cap = StrokeCap.Round)
                 }
             }
         }
@@ -141,38 +137,49 @@ private fun DoctorSearchField(
     value: String,
     onValueChange: (String) -> Unit,
     isArabic: Boolean,
-    compact: Boolean
+    compact: Boolean,
+    onExpand: () -> Unit = {}
 ) {
+    val height by animateDpAsState(if (compact) 44.dp else 60.dp, tween(240), label = "searchHeight")
+    val textAlpha by animateFloatAsState(if (compact) 0f else 1f, tween(120), label = "searchTextAlpha")
     Surface(
-        shape = RoundedCornerShape(24.dp),
+        onClick = if (compact) onExpand else ({ }),
+        shape = RoundedCornerShape(if (compact) 16.dp else 24.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = Modifier.fillMaxWidth().height(60.dp)
+        modifier = Modifier.fillMaxWidth().height(height)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 18.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(horizontal = if (compact) 10.dp else 18.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.End
         ) {
-            Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(24.dp))
-            BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
-                modifier = Modifier.weight(1f).padding(start = 12.dp),
-                singleLine = true,
-                textStyle = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.onSurface),
-                decorationBox = { innerTextField ->
-                    Box(contentAlignment = Alignment.CenterStart) {
-                        if (value.isEmpty()) {
-                            Text(
-                                if (compact) { if (isArabic) "ابحث عن طبيب..." else "Search doctors..." }
-                                else { if (isArabic) "ابحث عن طبيب..." else "Search doctors..." },
+            if (!compact) {
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier = Modifier.weight(1f).padding(start = 12.dp),
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.onSurface),
+                    decorationBox = { innerTextField ->
+                        Box(contentAlignment = Alignment.CenterStart) {
+                            if (value.isEmpty()) Text(
+                                if (isArabic) "ابحث عن طبيب..." else "Search doctors...",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            innerTextField()
                         }
-                        innerTextField()
                     }
-                }
+                )
+            } else {
+                Spacer(Modifier.weight(1f))
+            }
+            Icon(
+                Icons.Default.Search,
+                contentDescription = if (isArabic) "بحث" else "Search",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(if (compact) 20.dp else 24.dp).alpha(textAlpha)
             )
         }
     }
@@ -228,7 +235,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     ) { inner ->
         val listState = rememberLazyListState()
         var searchHeaderExpanded by remember { mutableStateOf(true) }
-        val scrollDirectionThreshold = with(androidx.compose.ui.platform.LocalDensity.current) { 8.dp.roundToPx() }
+        val scrollDirectionThreshold = with(LocalDensity.current) { 8.dp.roundToPx() }
         LaunchedEffect(listState) {
             var previousPosition = 0
             var accumulatedDelta = 0
@@ -254,66 +261,44 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 }
         }
         Column(modifier = Modifier.fillMaxSize().padding(inner)) {
-            AnimatedVisibility(
-                visible = listState.firstVisibleItemIndex > 0,
-                enter = fadeIn(tween(140)),
-                exit = fadeOut(tween(100))
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(72.dp).padding(horizontal = 16.dp, vertical = 6.dp),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    AnimatedContent(
-                        targetState = searchHeaderExpanded,
-                        transitionSpec = {
-                            (fadeIn(tween(170)) + scaleIn(initialScale = 0.94f, animationSpec = tween(170))) togetherWith
-                                (fadeOut(tween(110)) + scaleOut(targetScale = 0.96f, animationSpec = tween(110)))
-                        },
-                        label = "doctorSearchCollapse"
-                    ) { expanded ->
-                        if (expanded) {
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Box(Modifier.weight(1f)) {
-                                    DoctorSearchField(searchText, { searchText = it }, isArabic, compact = true)
-                                }
-                                FilterActionButton(isArabic = isArabic, expanded = showFilters, onClick = {
-                                    scope.launch {
-                                        listState.animateScrollToItem(0)
-                                        showFilters = !showFilters
-                                    }
-                                })
-                            }
-                        } else {
-                            Surface(
-                                onClick = { searchHeaderExpanded = true },
-                                shape = RoundedCornerShape(16.dp),
-                                color = MaterialTheme.colorScheme.surface,
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                                modifier = Modifier.size(44.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Search, contentDescription = if (isArabic) "بحث" else "Search", modifier = Modifier.size(20.dp))
-                                }
-                            }
-                        }
-                    }
-                }
-            }
             LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 item {
                     Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(if (isArabic) "إدارة الأطباء" else "Doctors", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                         TextButton(onClick = onManageSpecialties) { Icon(Icons.Default.MedicalServices, contentDescription = null, modifier = Modifier.size(18.dp)); Text(if (isArabic) "التخصصات" else "Specialties") }
                     }
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Box(Modifier.weight(1f)) { DoctorSearchField(searchText, { searchText = it }, isArabic, compact = false) }
-                        FilterActionButton(isArabic = isArabic, expanded = showFilters, onClick = { showFilters = !showFilters })
+                }
+                stickyHeader {
+                    BoxWithConstraints(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(vertical = 4.dp)) {
+                        val filterWidth by animateDpAsState(if (searchHeaderExpanded) 60.dp else 0.dp, tween(240), label = "filterWidth")
+                        val searchWidth by animateDpAsState(if (searchHeaderExpanded) maxWidth - 68.dp else 44.dp, tween(280), label = "searchWidth")
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.width(searchWidth)) {
+                                DoctorSearchField(
+                                    value = searchText,
+                                    onValueChange = { searchText = it },
+                                    isArabic = isArabic,
+                                    compact = !searchHeaderExpanded,
+                                    onExpand = { searchHeaderExpanded = true }
+                                )
+                            }
+                            Box(Modifier.width(filterWidth).alpha(if (searchHeaderExpanded) 1f else 0f)) {
+                                if (searchHeaderExpanded) FilterActionButton(
+                                    isArabic = isArabic,
+                                    expanded = showFilters,
+                                    onClick = { showFilters = !showFilters }
+                                )
+                            }
+                        }
                     }
-                    Text(if (isArabic) "${filteredDoctors.size} من ${doctors.size} طبيب" else "${filteredDoctors.size} of ${doctors.size} doctors", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
+                    Text(
+                        if (isArabic) "${filteredDoctors.size} من ${doctors.size} طبيب" else "${filteredDoctors.size} of ${doctors.size} doctors",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 4.dp)
+                    )
+                }
+                item {
                     AnimatedVisibility(visible = showFilters, enter = expandVertically(tween(220)) + fadeIn(tween(180)), exit = shrinkVertically(tween(180)) + fadeOut(tween(140))) {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {

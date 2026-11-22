@@ -3,8 +3,6 @@ package com.medicalrep.manager.ui
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,7 +17,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronLeft
@@ -35,7 +32,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -261,19 +257,17 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
             }
             item {
                 Box {
-                    OutlinedTextField(
-                        value = selectedRegion,
-                        onValueChange = {},
-                        readOnly = true,
-                        modifier = Modifier.fillMaxWidth().clickable { regionMenu = true },
-                        label = { Text(if (isArabic) "المنطقة الجغرافية" else "Geographic area") },
-                        placeholder = { Text(if (isArabic) "اختر المنطقة" else "Choose region") }
+                    OutlinedSelectionField(
+                        label = if (isArabic) "المنطقة الجغرافية" else "Geographic area",
+                        value = selectedRegion.ifBlank { if (isArabic) "اختر المنطقة" else "Choose area" },
+                        onClick = { regionMenu = true },
+                        enabled = regions.isNotEmpty()
                     )
                     DropdownMenu(expanded = regionMenu, onDismissRequest = { regionMenu = false }) {
                         regions.forEach { region ->
                             DropdownMenuItem(text = { Text(region) }, onClick = {
                                 selectedRegion = region
-                                selectedCenterId = null
+                                selectedDoctorIds = emptySet()
                                 regionMenu = false
                             })
                         }
@@ -282,94 +276,76 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
             }
             item {
                 Box {
-                    OutlinedTextField(
-                        value = selectedCenter?.name.orEmpty(),
-                        onValueChange = {},
-                        readOnly = true,
-                        enabled = selectedRegion.isNotBlank(),
-                        modifier = Modifier.fillMaxWidth().clickable { centerMenu = true },
-                        label = { Text(if (isArabic) "المركز الطبي" else "Medical center") },
-                        placeholder = { Text(if (isArabic) "اختر المركز" else "Choose center") }
+                    OutlinedSelectionField(
+                        label = if (isArabic) "الأطباء المتاحون" else "Available doctors",
+                        value = when {
+                            selectedDoctorIds.isEmpty() -> if (isArabic) "اضغط لاختيار الأطباء" else "Tap to choose doctors"
+                            else -> eligibleDoctors.filter { it.id in selectedDoctorIds }.joinToString("، ") { it.name }
+                        },
+                        onClick = { doctorMenu = true },
+                        enabled = selectedRegion.isNotBlank() && eligibleDoctors.isNotEmpty()
                     )
-                    DropdownMenu(expanded = centerMenu, onDismissRequest = { centerMenu = false }) {
-                        linkedCentersForRegion.forEach { center ->
-                            DropdownMenuItem(text = { Text(center.name) }, onClick = {
-                                selectedCenterId = center.id
-                                selectedDoctorIds = emptySet()
-                                centerMenu = false
-                            })
+                    DropdownMenu(expanded = doctorMenu, onDismissRequest = { doctorMenu = false }) {
+                        eligibleDoctors.forEach { doctor ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        androidx.compose.material3.Checkbox(
+                                            checked = doctor.id in selectedDoctorIds,
+                                            onCheckedChange = { checked ->
+                                                selectedDoctorIds = if (checked) selectedDoctorIds + doctor.id else selectedDoctorIds - doctor.id
+                                            }
+                                        )
+                                        Column {
+                                            Text(doctor.name)
+                                            if (doctor.specialty.isNotBlank()) {
+                                                Text(doctor.specialty, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    selectedDoctorIds = if (doctor.id in selectedDoctorIds) selectedDoctorIds - doctor.id else selectedDoctorIds + doctor.id
+                                }
+                            )
                         }
                     }
                 }
             }
-            if (selectedRegion.isNotBlank() && linkedCentersForRegion.isEmpty()) {
-                item { Text(if (isArabic) "لا توجد مراكز مرتبطة بأطباء في هذه المنطقة." else "No centers are linked to doctors in this region.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            }
-            if (selectedCenterId != null) {
+            if (selectedRegion.isNotBlank() && eligibleDoctors.isEmpty()) {
                 item {
-                    Text(if (isArabic) "الأطباء المتاحون في هذا اليوم" else "Doctors available on this day", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text(
-                        if (isArabic) "الطبيب الذي تمت إضافته في أي يوم من الأسبوع لن يظهر مرة أخرى حتى تحذفه من الخطة." else "A doctor added anywhere in this week is hidden from the other days until removed.",
-                        style = MaterialTheme.typography.bodySmall,
+                        if (isArabic) "لا يوجد أطباء متاحون في هذا اليوم داخل المنطقة المختارة، أو تمت إضافتهم بالفعل للخطة هذا الأسبوع." else "No doctors are available on this day in the selected area, or they have already been added to this week's plan.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                if (eligibleDoctors.isEmpty()) {
-                    item {
-                        Text(
-                            if (isArabic) "لا يوجد أطباء متاحون لهذا المركز في اليوم المحدد، أو تم اختيارهم بالفعل في يوم آخر من الأسبوع." else "No doctors are available for this center on this date, or all eligible doctors have already been assigned this week.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                } else {
-                    lazyItems(eligibleDoctors, key = { it.id }) { doctor ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-                                .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                                .clickable {
-                                    selectedDoctorIds = if (doctor.id in selectedDoctorIds) selectedDoctorIds - doctor.id else selectedDoctorIds + doctor.id
-                                }.padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            androidx.compose.material3.Checkbox(
-                                checked = doctor.id in selectedDoctorIds,
-                                onCheckedChange = { checked ->
-                                    selectedDoctorIds = if (checked) selectedDoctorIds + doctor.id else selectedDoctorIds - doctor.id
-                                }
-                            )
-                            Column(Modifier.weight(1f)) {
-                                Text(doctor.name, fontWeight = FontWeight.Medium)
-                                if (doctor.specialty.isNotBlank()) Text(doctor.specialty, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    }
-                }
-                if (selectedDoctorIds.isNotEmpty()) {
-                    item {
-                        Button(
-                            onClick = {
-                                val chosen = eligibleDoctors.filter { it.id in selectedDoctorIds }
-                                scope.launch {
-                                    chosen.forEach { doctor ->
-                                        database.weeklyPlanDao().insert(
-                                            WeeklyPlanEntryEntity(
-                                                weekStartDate = weekStartText,
-                                                visitDate = selectedDate.toString(),
-                                                doctorId = doctor.id,
-                                                centerId = selectedCenterId,
-                                                regionSnapshot = selectedRegion,
-                                                centerNameSnapshot = selectedCenter?.name.orEmpty(),
-                                                doctorNameSnapshot = doctor.name
-                                            )
+            }
+            if (selectedDoctorIds.isNotEmpty()) {
+                item {
+                    Button(
+                        onClick = {
+                            val chosen = eligibleDoctors.filter { it.id in selectedDoctorIds }
+                            scope.launch {
+                                chosen.forEach { doctor ->
+                                    database.weeklyPlanDao().insert(
+                                        WeeklyPlanEntryEntity(
+                                            weekStartDate = weekStartText,
+                                            visitDate = selectedDate.toString(),
+                                            doctorId = doctor.id,
+                                            centerId = null,
+                                            regionSnapshot = selectedRegion,
+                                            centerNameSnapshot = "",
+                                            doctorNameSnapshot = doctor.name
                                         )
-                                    }
+                                    )
                                 }
-                                selectedDoctorIds = emptySet()
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(if (isArabic) "إضافة ${selectedDoctorIds.size} طبيب للخطة" else "Add ${selectedDoctorIds.size} doctor(s) to plan")
-                        }
+                            }
+                            selectedDoctorIds = emptySet()
+                            doctorMenu = false
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(if (isArabic) "إضافة \${selectedDoctorIds.size} طبيب للخطة" else "Add \${selectedDoctorIds.size} doctor(s) to plan")
                     }
                 }
             }
@@ -387,7 +363,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                         ) {
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(entry.doctorNameSnapshot, fontWeight = FontWeight.Bold)
-                                Text(entry.centerNameSnapshot, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                                if (entry.centerNameSnapshot.isNotBlank()) Text(entry.centerNameSnapshot, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                                 Text(entry.regionSnapshot, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             IconButton(onClick = { scope.launch { database.weeklyPlanDao().delete(entry) } }) {

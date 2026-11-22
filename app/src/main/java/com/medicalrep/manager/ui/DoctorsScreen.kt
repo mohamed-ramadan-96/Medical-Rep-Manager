@@ -268,7 +268,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 }
         }
         Column(modifier = Modifier.fillMaxSize().padding(inner)) {
-            LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 item {
                     Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(if (isArabic) "إدارة الأطباء" else "Doctors", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
@@ -280,8 +280,13 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                         val filterWidth by animateDpAsState(if (searchHeaderExpanded) 60.dp else 0.dp, tween(240), label = "filterWidth")
                         val filterAlpha by animateFloatAsState(if (searchHeaderExpanded) 1f else 0f, tween(160), label = "filterAlpha")
                         val searchWidth by animateDpAsState(if (searchHeaderExpanded) maxWidth - 68.dp else 44.dp, tween(280), label = "searchWidth")
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.width(searchWidth)) {
+                        val controlHeight by animateDpAsState(if (searchHeaderExpanded) 60.dp else 44.dp, tween(240), label = "searchControlHeight")
+                        Row(
+                            Modifier.fillMaxWidth().height(controlHeight),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(Modifier.width(searchWidth).height(controlHeight)) {
                                 DoctorSearchField(
                                     value = searchText,
                                     onValueChange = { searchText = it },
@@ -290,8 +295,8 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                     onExpand = { searchHeaderExpanded = true }
                                 )
                             }
-                            Box(Modifier.width(filterWidth).height(60.dp).clipToBounds()) {
-                                FilterActionButton(
+                            Box(Modifier.width(filterWidth).height(controlHeight).clipToBounds()) {
+                                if (searchHeaderExpanded) FilterActionButton(
                                     isArabic = isArabic,
                                     expanded = showFilters,
                                     onClick = { showFilters = !showFilters },
@@ -300,11 +305,13 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                             }
                         }
                     }
+                }
+                item {
                     Text(
                         if (isArabic) "${filteredDoctors.size} من ${doctors.size} طبيب" else "${filteredDoctors.size} of ${doctors.size} doctors",
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 4.dp)
+                        modifier = Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 2.dp)
                     )
                 }
                 item {

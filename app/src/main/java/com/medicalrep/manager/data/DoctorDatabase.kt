@@ -29,9 +29,27 @@ data class MedicalCenterEntity(
     val createdAt: Long = System.currentTimeMillis(),
     val latitude: Double? = null,
     val longitude: Double? = null,
-    val mapUrl: String? = null
+    val mapUrl: String? = null,
+    val unregisteredDoctorCount: Int = 0
 )
 
+
+
+@Entity(
+    tableName = "center_availability",
+    foreignKeys = [ForeignKey(entity = MedicalCenterEntity::class, parentColumns = ["id"], childColumns = ["centerId"], onDelete = ForeignKey.CASCADE)],
+    indices = [Index("centerId"), Index(value = ["centerId", "dayOfWeek"])]
+)
+data class CenterAvailabilityEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val centerId: Long,
+    val dayOfWeek: Int,
+    val startTime: String,
+    val endTime: String,
+    val notes: String = "",
+    val createdAt: Long = System.currentTimeMillis(),
+    @ColumnInfo(defaultValue = "''") val slotGroupId: String = ""
+)
 
 @Entity(tableName = "specialties")
 data class SpecialtyEntity(
@@ -336,6 +354,22 @@ interface MedicalCenterDao {
 }
 
 
+
+@Dao
+interface CenterAvailabilityDao {
+    @Query("SELECT * FROM center_availability ORDER BY centerId ASC, dayOfWeek ASC, startTime ASC")
+    fun observeAll(): Flow<List<CenterAvailabilityEntity>>
+
+    @Query("SELECT * FROM center_availability WHERE centerId = :centerId ORDER BY dayOfWeek ASC, startTime ASC")
+    suspend fun getForCenter(centerId: Long): List<CenterAvailabilityEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(slot: CenterAvailabilityEntity): Long
+
+    @Delete
+    suspend fun delete(slot: CenterAvailabilityEntity)
+}
+
 @Dao
 interface SpecialtyDao {
     @Query("SELECT * FROM specialties ORDER BY name COLLATE NOCASE ASC")
@@ -355,13 +389,14 @@ interface SpecialtyDao {
 }
 
 @Database(
-    entities = [DoctorEntity::class, MedicalCenterEntity::class, SpecialtyEntity::class, DoctorAttachmentEntity::class, CenterAttachmentEntity::class, DoctorAvailabilityEntity::class, DoctorVisitEntity::class, DoctorCenterLinkEntity::class, WeeklyPlanEntryEntity::class],
-    version = 14,
+    entities = [DoctorEntity::class, MedicalCenterEntity::class, SpecialtyEntity::class, DoctorAttachmentEntity::class, CenterAttachmentEntity::class, DoctorAvailabilityEntity::class, DoctorVisitEntity::class, DoctorCenterLinkEntity::class, WeeklyPlanEntryEntity::class, CenterAvailabilityEntity::class],
+    version = 15,
     exportSchema = false
 )
 abstract class MedicalRepDatabase : RoomDatabase() {
     abstract fun doctorDao(): DoctorDao
     abstract fun medicalCenterDao(): MedicalCenterDao
+    abstract fun centerAvailabilityDao(): CenterAvailabilityDao
     abstract fun specialtyDao(): SpecialtyDao
     abstract fun doctorAttachmentDao(): DoctorAttachmentDao
     abstract fun centerAttachmentDao(): CenterAttachmentDao
@@ -630,6 +665,28 @@ abstract class MedicalRepDatabase : RoomDatabase() {
             }
         }
 
+
+        private val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE medical_centers ADD COLUMN unregisteredDoctorCount INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS center_availability (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        centerId INTEGER NOT NULL,
+                        dayOfWeek INTEGER NOT NULL,
+                        startTime TEXT NOT NULL,
+                        endTime TEXT NOT NULL,
+                        notes TEXT NOT NULL,
+                        createdAt INTEGER NOT NULL,
+                        slotGroupId TEXT NOT NULL DEFAULT '',
+                        FOREIGN KEY(centerId) REFERENCES medical_centers(id) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_center_availability_centerId ON center_availability(centerId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_center_availability_centerId_dayOfWeek ON center_availability(centerId, dayOfWeek)")
+            }
+        }
+
         fun closeInstance() {
             synchronized(this) {
                 INSTANCE?.close()
@@ -643,7 +700,7 @@ abstract class MedicalRepDatabase : RoomDatabase() {
                     context.applicationContext,
                     MedicalRepDatabase::class.java,
                     "medical_rep_manager.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
                     .build().also { INSTANCE = it }
             }
     }

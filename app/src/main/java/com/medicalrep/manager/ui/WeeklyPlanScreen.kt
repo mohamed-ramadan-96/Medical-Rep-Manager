@@ -359,7 +359,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                                             visitDate = selectedDate.toString(),
                                             doctorId = doctor.id,
                                             centerId = null,
-                                            regionSnapshot = if (selectedRegion == ALL_REGIONS) doctor.area else selectedRegion,
+                                            regionSnapshot = if (selectedRegion == ALL_REGIONS) weeklyDoctorAreas(doctor.area).joinToString("، ") else selectedRegion,
                                             centerNameSnapshot = "",
                                             doctorNameSnapshot = doctor.name
                                         )

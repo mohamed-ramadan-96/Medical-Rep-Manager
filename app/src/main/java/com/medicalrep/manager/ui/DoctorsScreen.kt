@@ -39,6 +39,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -75,6 +76,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.room.withTransaction
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -228,6 +230,10 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     var pendingDelete by remember { mutableStateOf<DoctorEntity?>(null) }
     var attachmentsDoctor by remember { mutableStateOf<DoctorEntity?>(null) }
     var detailsDoctor by remember { mutableStateOf<DoctorEntity?>(null) }
+    var showSpecialtiesManager by remember { mutableStateOf(false) }
+    var showAddSpecialtyDialog by remember { mutableStateOf(false) }
+    var newSpecialtyName by remember { mutableStateOf("") }
+    var specialtyPendingDelete by remember { mutableStateOf<SpecialtyEntity?>(null) }
 
     Scaffold(
         modifier = Modifier.padding(padding),
@@ -279,7 +285,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     Row(Modifier.fillMaxWidth().padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(if (isArabic) "إدارة الأطباء" else "Doctors", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                         OutlinedButton(
-                            onClick = onManageSpecialties,
+                            onClick = { showSpecialtiesManager = true },
                             shape = RoundedCornerShape(12.dp),
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 7.dp)
                         ) {
@@ -856,6 +862,111 @@ private fun DoctorDetailsDialog(
                 doctorMapUrl = mapUrl
                 onUpdateDoctorLocation(doctor.copy(latitude = latitude, longitude = longitude, mapUrl = mapUrl))
                 mapPickerDoctor = false
+            }
+        )
+    }
+
+    if (showSpecialtiesManager) {
+        AlertDialog(
+            onDismissRequest = { showSpecialtiesManager = false },
+            title = { Text(if (isArabic) "إدارة التخصصات" else "Manage specialties") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (specialties.isEmpty()) {
+                        Text(
+                            if (isArabic) "لا توجد تخصصات مضافة حتى الآن." else "No specialties added yet.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 12.dp)
+                        )
+                    } else {
+                        LazyColumn(modifier = Modifier.heightIn(max = 360.dp)) {
+                            items(specialties, key = { it.id }) { specialty ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(specialty.name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                                    IconButton(onClick = { specialtyPendingDelete = specialty }) {
+                                        Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف التخصص" else "Delete specialty", tint = MaterialTheme.colorScheme.error)
+                                    }
+                                }
+                                androidx.compose.material3.HorizontalDivider()
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = {
+                        newSpecialtyName = ""
+                        showAddSpecialtyDialog = true
+                    }) {
+                        Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة تخصص" else "Add specialty", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
+                    }
+                    TextButton(onClick = { showSpecialtiesManager = false }) { Text(if (isArabic) "إغلاق" else "Close") }
+                }
+            }
+        )
+    }
+
+    if (showAddSpecialtyDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddSpecialtyDialog = false },
+            title = { Text(if (isArabic) "إضافة تخصص جديد" else "Add new specialty") },
+            text = {
+                OutlinedTextField(
+                    value = newSpecialtyName,
+                    onValueChange = { newSpecialtyName = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text(if (isArabic) "اسم التخصص" else "Specialty name") }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val name = newSpecialtyName.trim()
+                    if (name.isNotBlank() && specialties.none { it.name.equals(name, true) }) {
+                        scope.launch {
+                            specialtyDao.insert(SpecialtyEntity(id = 0L, name = name, createdAt = System.currentTimeMillis()))
+                        }
+                        showAddSpecialtyDialog = false
+                    }
+                }) { Text(if (isArabic) "إضافة" else "Add") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddSpecialtyDialog = false }) { Text(if (isArabic) "إلغاء" else "Cancel") }
+            }
+        )
+    }
+
+    specialtyPendingDelete?.let { specialty ->
+        AlertDialog(
+            onDismissRequest = { specialtyPendingDelete = null },
+            title = { Text(if (isArabic) "حذف التخصص؟" else "Delete specialty?") },
+            text = {
+                Text(
+                    if (isArabic) "سيتم حذف «${specialty.name}» وفصل الأطباء المرتبطين به، دون حذف بياناتهم."
+                    else "This removes “${specialty.name}” and unlinks its doctors without deleting their records."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    scope.launch {
+                        database.withTransaction {
+                            dao.detachSpecialty(specialty.id)
+                            specialtyDao.delete(specialty)
+                        }
+                    }
+                    specialtyPendingDelete = null
+                }) { Text(if (isArabic) "حذف" else "Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { specialtyPendingDelete = null }) { Text(if (isArabic) "إلغاء" else "Cancel") }
             }
         )
     }

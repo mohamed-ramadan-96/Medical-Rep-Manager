@@ -49,6 +49,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.ExpandLess
@@ -103,6 +104,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+
+private fun doctorAreas(value: String): List<String> =
+    value.split("|").map { it.trim() }.filter { it.isNotBlank() }.distinctBy { it.lowercase(Locale.ROOT) }
 
 @Composable
 private fun FilterActionButton(isArabic: Boolean, expanded: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
@@ -211,9 +215,9 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val doctors by remember(searchText) {
         if (searchText.isBlank()) dao.observeAll() else dao.search(searchText.trim())
     }.collectAsState(initial = emptyList())
-    val availableAreas = doctors.map { it.area.trim() }.filter { it.isNotBlank() }.distinct().sorted()
+    val availableAreas = doctors.flatMap { doctorAreas(it.area) }.distinctBy { it.lowercase(Locale.ROOT) }.sorted()
     val filteredDoctors = doctors.filter { doctor ->
-        (selectedArea == "all" || doctor.area.trim().equals(selectedArea, ignoreCase = true)) &&
+        (selectedArea == "all" || doctorAreas(doctor.area).any { it.equals(selectedArea, ignoreCase = true) }) &&
         (selectedSpecialty == "all" || doctor.specialty.equals(selectedSpecialty, ignoreCase = true)) &&
         (selectedCenter == "all" || doctorCenterLinks.any { it.doctorId == doctor.id && it.centerId.toString() == selectedCenter } ||
             (doctorCenterLinks.none { it.doctorId == doctor.id } && doctor.centerId?.toString() == selectedCenter))
@@ -364,9 +368,17 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             initial = editingDoctor,
             centers = centers,
             specialties = specialties,
+            existingAreas = availableAreas,
             initialCenterIds = editingDoctor?.let { doctor -> doctorCenterLinks.filter { it.doctorId == doctor.id }.map { it.centerId }.toSet() }.orEmpty(),
             initialAvailability = editingDoctor?.let { doctor -> availability.filter { it.doctorId == doctor.id } }.orEmpty(),
             onDismiss = { showForm = false },
+            onDeleteArea = { areaToDelete ->
+                scope.launch {
+                    doctors.filter { d -> doctorAreas(d.area).any { it.equals(areaToDelete, ignoreCase = true) } }.forEach { d ->
+                        dao.update(d.copy(area = doctorAreas(d.area).filterNot { it.equals(areaToDelete, ignoreCase = true) }.joinToString("|")))
+                    }
+                }
+            },
             onSave = { doctor, selectedCenterIds, updatedAvailability ->
                 scope.launch {
                     val doctorId = if (doctor.id == 0L) dao.insert(doctor) else { dao.update(doctor); doctor.id }
@@ -488,7 +500,7 @@ private fun DoctorCard(
                             Text(doctor.specialty, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium)
                         }
                         if (doctor.area.isNotBlank()) {
-                            Text((if (isArabic) "المنطقة: " else "Area: ") + doctor.area, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text((if (isArabic) "المنطقة: " else "Area: ") + doctorAreas(doctor.area).joinToString("، "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -865,6 +877,8 @@ private fun DoctorFormDialog(
     initial: DoctorEntity?,
     centers: List<MedicalCenterEntity>,
     specialties: List<SpecialtyEntity>,
+    existingAreas: List<String>,
+    onDeleteArea: (String) -> Unit,
     initialCenterIds: Set<Long>,
     initialAvailability: List<DoctorAvailabilityEntity>,
     onDismiss: () -> Unit,
@@ -875,7 +889,9 @@ private fun DoctorFormDialog(
     var selectedSpecialtyId by remember(initial, specialties) { mutableStateOf(initial?.specialtyId ?: specialties.firstOrNull { it.name == initial?.specialty }?.id) }
     var showSpecialtyPicker by remember { mutableStateOf(false) }
     var phones by remember(initial) { mutableStateOf(initial?.phoneNumbers.orEmpty()) }
-    var area by remember(initial) { mutableStateOf(initial?.area.orEmpty()) }
+    var selectedAreas by remember(initial) { mutableStateOf(doctorAreas(initial?.area.orEmpty()).toSet()) }
+    var newArea by remember { mutableStateOf("") }
+    var showAreaPicker by remember { mutableStateOf(false) }
     var selectedCenterIds by remember(initial, initialCenterIds, centers) { mutableStateOf(initialCenterIds.ifEmpty { setOfNotNull(initial?.centerId ?: centers.firstOrNull { it.name == initial?.medicalCenter }?.id) }) }
     var showCenterPicker by remember { mutableStateOf(false) }
     var centersExpanded by remember { mutableStateOf(true) }
@@ -989,7 +1005,69 @@ private fun DoctorFormDialog(
                     )
                 }
                 item {
-                    OutlinedTextField(value = area, onValueChange = { area = it }, modifier = Modifier.fillMaxWidth(), singleLine = true, label = { Text(if (isArabic) "المنطقة / المدينة (مثال: الزقازيق)" else "Area / City (e.g. Zagazig)") })
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedSelectionField(
+                            label = if (isArabic) "المناطق" else "Areas",
+                            value = if (selectedAreas.isEmpty()) {
+                                if (isArabic) "اختر منطقة أو أكثر" else "Choose one or more areas"
+                            } else selectedAreas.sorted().joinToString("، "),
+                            onClick = { showAreaPicker = true }
+                        )
+                        OutlinedTextField(
+                            value = newArea,
+                            onValueChange = { newArea = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            label = { Text(if (isArabic) "إضافة منطقة جديدة" else "Add a new area") },
+                            trailingIcon = {
+                                IconButton(onClick = {
+                                    val value = newArea.trim()
+                                    if (value.isNotBlank() && existingAreas.none { it.equals(value, true) }) {
+                                        selectedAreas = selectedAreas + value
+                                        newArea = ""
+                                    }
+                                }, enabled = newArea.isNotBlank()) {
+                                    Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة منطقة" else "Add area")
+                                }
+                            }
+                        )
+                    }
+                }
+                item {
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { showAreaPicker = false },
+                        title = { Text(if (isArabic) "اختيار المناطق" else "Choose areas") },
+                        text = {
+                            LazyColumn(modifier = Modifier.height(320.dp)) {
+                                items(existingAreas, key = { it }) { areaOption ->
+                                    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                        Checkbox(
+                                            checked = areaOption in selectedAreas,
+                                            onCheckedChange = { checked ->
+                                                selectedAreas = if (checked) selectedAreas + areaOption else selectedAreas - areaOption
+                                            }
+                                        )
+                                        Text(areaOption, modifier = Modifier.weight(1f))
+                                        IconButton(onClick = {
+                                            selectedAreas = selectedAreas - areaOption
+                                            onDeleteArea(areaOption)
+                                        }) {
+                                            Icon(Icons.Default.Close, contentDescription = if (isArabic) "حذف المنطقة" else "Delete area")
+                                        }
+                                    }
+                                }
+                                items(selectedAreas.filter { selected -> existingAreas.none { it.equals(selected, true) } }) { pending ->
+                                    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                        Checkbox(checked = true, onCheckedChange = { selectedAreas = selectedAreas - pending })
+                                        Text(pending)
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { showAreaPicker = false }) { Text(if (isArabic) "تم" else "Done") }
+                        }
+                    )
                 }
                 item {
                     TextButton(onClick = { centersExpanded = !centersExpanded }, modifier = Modifier.fillMaxWidth()) {
@@ -1123,7 +1201,7 @@ private fun DoctorFormDialog(
                             specialty = specialties.firstOrNull { it.id == selectedSpecialtyId }?.name.orEmpty(),
                             specialtyId = selectedSpecialtyId,
                             phoneNumbers = phones.trim(),
-                            area = area.trim(),
+                            area = selectedAreas.joinToString("|"),
                             medicalCenter = centers.firstOrNull { it.id == selectedCenterIds.firstOrNull() }?.name.orEmpty(),
                             centerId = selectedCenterIds.firstOrNull(),
                             notes = notes.trim(),

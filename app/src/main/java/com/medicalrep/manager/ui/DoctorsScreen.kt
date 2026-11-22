@@ -1023,8 +1023,9 @@ private fun DoctorFormDialog(
                             trailingIcon = {
                                 IconButton(onClick = {
                                     val value = newArea.trim()
-                                    if (value.isNotBlank() && existingAreas.none { it.equals(value, true) }) {
-                                        selectedAreas = selectedAreas + value
+                                    if (value.isNotBlank()) {
+                                        val canonicalArea = existingAreas.firstOrNull { it.equals(value, true) } ?: value
+                                        selectedAreas = selectedAreas + canonicalArea
                                         newArea = ""
                                     }
                                 }, enabled = newArea.isNotBlank()) {

@@ -261,7 +261,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             ) {
                 Box(
                     modifier = Modifier.fillMaxWidth().height(72.dp).padding(horizontal = 16.dp, vertical = 6.dp),
-                    contentAlignment = Alignment.CenterEnd
+                    contentAlignment = Alignment.CenterStart
                 ) {
                     AnimatedContent(
                         targetState = searchHeaderExpanded,

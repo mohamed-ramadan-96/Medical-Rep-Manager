@@ -196,6 +196,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val context = LocalContext.current
     val database = remember { MedicalRepDatabase.getInstance(context) }
     val dao = database.doctorDao()
+    val allDoctors by dao.observeAll().collectAsState(initial = emptyList())
     val centerDao = database.medicalCenterDao()
     val specialtyDao = database.specialtyDao()
     val availability by database.doctorAvailabilityDao().observeAll().collectAsState(initial = emptyList())
@@ -215,7 +216,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val doctors by remember(searchText) {
         if (searchText.isBlank()) dao.observeAll() else dao.search(searchText.trim())
     }.collectAsState(initial = emptyList())
-    val availableAreas = doctors.flatMap { doctorAreas(it.area) }.distinctBy { it.lowercase(Locale.ROOT) }.sorted()
+    val availableAreas = allDoctors.flatMap { doctorAreas(it.area) }.distinctBy { it.lowercase(Locale.ROOT) }.sorted()
     val filteredDoctors = doctors.filter { doctor ->
         (selectedArea == "all" || doctorAreas(doctor.area).any { it.equals(selectedArea, ignoreCase = true) }) &&
         (selectedSpecialty == "all" || doctor.specialty.equals(selectedSpecialty, ignoreCase = true)) &&
@@ -374,7 +375,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             onDismiss = { showForm = false },
             onDeleteArea = { areaToDelete ->
                 scope.launch {
-                    doctors.filter { d -> doctorAreas(d.area).any { it.equals(areaToDelete, ignoreCase = true) } }.forEach { d ->
+                    allDoctors.filter { d -> doctorAreas(d.area).any { it.equals(areaToDelete, ignoreCase = true) } }.forEach { d ->
                         dao.update(d.copy(area = doctorAreas(d.area).filterNot { it.equals(areaToDelete, ignoreCase = true) }.joinToString("|")))
                     }
                 }

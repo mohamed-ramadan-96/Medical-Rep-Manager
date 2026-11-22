@@ -30,7 +30,7 @@ data class MedicalCenterEntity(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val mapUrl: String? = null,
-    val unregisteredDoctorCount: Int = 0
+    @ColumnInfo(defaultValue = "0") val unregisteredDoctorCount: Int = 0
 )
 
 

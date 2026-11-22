@@ -55,7 +55,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -111,7 +110,7 @@ private fun ReferenceNavigationIcon(name: String) {
                     drawPath(p, color, style = stroke)
                 }
                 "centers" -> {
-                    drawRoundRect(color, androidx.compose.ui.geometry.Offset(15f, 4f), androidx.compose.ui.Size(19f, 40f), androidx.compose.ui.geometry.CornerRadius(3f), style = stroke)
+                    drawPath(Path().apply { moveTo(18f, 4f); lineTo(31f, 4f); quadraticTo(34f, 4f, 34f, 7f); lineTo(34f, 41f); quadraticTo(34f, 44f, 31f, 44f); lineTo(18f, 44f); quadraticTo(15f, 44f, 15f, 41f); lineTo(15f, 7f); quadraticTo(15f, 4f, 18f, 4f); close() }, color, style = stroke)
                     val wings = Path().apply {
                         moveTo(15f, 16f); lineTo(10f, 16f); quadraticTo(6f, 16f, 6f, 20f)
                         lineTo(6f, 39f); quadraticTo(6f, 43f, 10f, 43f); lineTo(15f, 43f)
@@ -125,15 +124,15 @@ private fun ReferenceNavigationIcon(name: String) {
                     drawLine(color, androidx.compose.ui.geometry.Offset(20f, 35f), androidx.compose.ui.geometry.Offset(29f, 35f), 2.8f, cap = StrokeCap.Round)
                 }
                 "calendar" -> {
-                    drawRoundRect(color, androidx.compose.ui.geometry.Offset(6f, 9f), androidx.compose.ui.Size(36f, 34f), androidx.compose.ui.geometry.CornerRadius(4f), style = stroke)
+                    drawPath(Path().apply { moveTo(10f, 9f); lineTo(38f, 9f); quadraticTo(42f, 9f, 42f, 13f); lineTo(42f, 39f); quadraticTo(42f, 43f, 38f, 43f); lineTo(10f, 43f); quadraticTo(6f, 43f, 6f, 39f); lineTo(6f, 13f); quadraticTo(6f, 9f, 10f, 9f); close() }, color, style = stroke)
                     drawLine(color, androidx.compose.ui.geometry.Offset(6f, 19f), androidx.compose.ui.geometry.Offset(42f, 19f), 2.8f, cap = StrokeCap.Round)
                     drawLine(color, androidx.compose.ui.geometry.Offset(16f, 5f), androidx.compose.ui.geometry.Offset(16f, 14f), 2.8f, cap = StrokeCap.Round)
                     drawLine(color, androidx.compose.ui.geometry.Offset(32f, 5f), androidx.compose.ui.geometry.Offset(32f, 14f), 2.8f, cap = StrokeCap.Round)
                     listOf(14f, 24f, 34f).forEach { x -> listOf(25f, 34f).forEach { y -> drawCircle(color, 1.8f, androidx.compose.ui.geometry.Offset(x, y)) } }
                 }
                 "followup" -> {
-                    drawRoundRect(color, androidx.compose.ui.geometry.Offset(9f, 8f), androidx.compose.ui.Size(30f, 36f), androidx.compose.ui.geometry.CornerRadius(4f), style = stroke)
-                    drawRoundRect(color, androidx.compose.ui.geometry.Offset(17f, 5f), androidx.compose.ui.Size(14f, 7f), androidx.compose.ui.geometry.CornerRadius(2f), style = stroke)
+                    drawPath(Path().apply { moveTo(13f, 8f); lineTo(35f, 8f); quadraticTo(39f, 8f, 39f, 12f); lineTo(39f, 40f); quadraticTo(39f, 44f, 35f, 44f); lineTo(13f, 44f); quadraticTo(9f, 44f, 9f, 40f); lineTo(9f, 12f); quadraticTo(9f, 8f, 13f, 8f); close() }, color, style = stroke)
+                    drawPath(Path().apply { moveTo(19f, 5f); lineTo(29f, 5f); quadraticTo(31f, 5f, 31f, 7f); lineTo(31f, 10f); quadraticTo(31f, 12f, 29f, 12f); lineTo(19f, 12f); quadraticTo(17f, 12f, 17f, 10f); lineTo(17f, 7f); quadraticTo(17f, 5f, 19f, 5f); close() }, color, style = stroke)
                     listOf(18f, 28f).forEach { y ->
                         drawCircle(color, 1.5f, androidx.compose.ui.geometry.Offset(16f, y))
                         drawLine(color, androidx.compose.ui.geometry.Offset(22f, y), androidx.compose.ui.geometry.Offset(33f, y), 2.8f, cap = StrokeCap.Round)

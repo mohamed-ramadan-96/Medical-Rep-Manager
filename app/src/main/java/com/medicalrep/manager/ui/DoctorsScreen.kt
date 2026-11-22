@@ -77,6 +77,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 
 @Composable
 fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.PaddingValues) {
@@ -216,12 +217,15 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             centers = centers,
             specialties = specialties,
             initialCenterIds = editingDoctor?.let { doctor -> doctorCenterLinks.filter { it.doctorId == doctor.id }.map { it.centerId }.toSet() }.orEmpty(),
+            initialAvailability = editingDoctor?.let { doctor -> availability.filter { it.doctorId == doctor.id } }.orEmpty(),
             onDismiss = { showForm = false },
-            onSave = { doctor, selectedCenterIds ->
+            onSave = { doctor, selectedCenterIds, updatedAvailability ->
                 scope.launch {
                     val doctorId = if (doctor.id == 0L) dao.insert(doctor) else { dao.update(doctor); doctor.id }
                     database.doctorCenterLinkDao().deleteForDoctor(doctorId)
                     if (selectedCenterIds.isNotEmpty()) database.doctorCenterLinkDao().insertAll(selectedCenterIds.map { DoctorCenterLinkEntity(doctorId, it) })
+                    availability.filter { it.doctorId == doctorId }.forEach { database.doctorAvailabilityDao().delete(it) }
+                    updatedAvailability.forEach { slot -> database.doctorAvailabilityDao().insert(slot.copy(doctorId = doctorId)) }
                 }
                 showForm = false
             }
@@ -677,6 +681,16 @@ private fun DoctorDetailsDialog(
 
 }
 
+private data class DoctorAvailabilityDraft(
+    val groupId: String = UUID.randomUUID().toString(),
+    val days: Set<Int> = setOf(6),
+    val startTime: String = "09:00",
+    val endTime: String = "17:00",
+    val notes: String = "",
+    val centerId: Long? = null,
+    val existing: List<DoctorAvailabilityEntity> = emptyList()
+)
+
 @Composable
 private fun DoctorFormDialog(
     isArabic: Boolean,
@@ -684,8 +698,9 @@ private fun DoctorFormDialog(
     centers: List<MedicalCenterEntity>,
     specialties: List<SpecialtyEntity>,
     initialCenterIds: Set<Long>,
+    initialAvailability: List<DoctorAvailabilityEntity>,
     onDismiss: () -> Unit,
-    onSave: (DoctorEntity, Set<Long>) -> Unit
+    onSave: (DoctorEntity, Set<Long>, List<DoctorAvailabilityEntity>) -> Unit
 ) {
     val context = LocalContext.current
     var name by remember(initial) { mutableStateOf(initial?.name.orEmpty()) }
@@ -695,6 +710,26 @@ private fun DoctorFormDialog(
     var area by remember(initial) { mutableStateOf(initial?.area.orEmpty()) }
     var selectedCenterIds by remember(initial, initialCenterIds, centers) { mutableStateOf(initialCenterIds.ifEmpty { setOfNotNull(initial?.centerId ?: centers.firstOrNull { it.name == initial?.medicalCenter }?.id) }) }
     var showCenterPicker by remember { mutableStateOf(false) }
+    var centersExpanded by remember { mutableStateOf(true) }
+    var availabilityExpanded by remember(initial, initialAvailability) { mutableStateOf(initialAvailability.isNotEmpty()) }
+    var availabilityDrafts by remember(initial, initialAvailability) {
+        mutableStateOf(
+            initialAvailability.groupBy { it.slotGroupId.ifBlank { "legacy-" + it.id } + "|" + (it.centerId?.toString() ?: "general") }
+                .values.map { group ->
+                    val first = group.first()
+                    DoctorAvailabilityDraft(
+                        groupId = first.slotGroupId.ifBlank { UUID.randomUUID().toString() },
+                        days = group.map { it.dayOfWeek }.toSet(),
+                        startTime = first.startTime,
+                        endTime = first.endTime,
+                        notes = first.notes,
+                        centerId = first.centerId,
+                        existing = group
+                    )
+                }
+        )
+    }
+    var centerMenuForIndex by remember { mutableStateOf<Int?>(null) }
     var notes by remember(initial) { mutableStateOf(initial?.notes.orEmpty()) }
     var photoUri by remember(initial) { mutableStateOf(initial?.photoUri) }
     var latitude by remember(initial) { mutableStateOf(initial?.latitude) }
@@ -788,15 +823,79 @@ private fun DoctorFormDialog(
                     OutlinedTextField(value = area, onValueChange = { area = it }, modifier = Modifier.fillMaxWidth(), singleLine = true, label = { Text(if (isArabic) "المنطقة / المدينة (مثال: الزقازيق)" else "Area / City (e.g. Zagazig)") })
                 }
                 item {
-                    OutlinedSelectionField(
-                        label = if (isArabic) "المركز أو العيادة" else "Medical center / clinic",
-                        value = if (selectedCenterIds.isEmpty()) {
-                            if (isArabic) "اختر المراكز" else "Choose centers"
-                        } else {
-                            centers.filter { it.id in selectedCenterIds }.joinToString("، ") { it.name }
-                        },
-                        onClick = { showCenterPicker = true }
-                    )
+                    TextButton(onClick = { centersExpanded = !centersExpanded }, modifier = Modifier.fillMaxWidth()) {
+                        Text(if (isArabic) "مراكز عمل الطبيب" else "Doctor's centers", modifier = Modifier.weight(1f))
+                        Icon(if (centersExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null)
+                    }
+                    AnimatedVisibility(visible = centersExpanded) {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            OutlinedSelectionField(
+                                label = if (isArabic) "المراكز المرتبط بها" else "Linked centers",
+                                value = if (selectedCenterIds.isEmpty()) if (isArabic) "بدون مركز مسجل" else "No linked center"
+                                    else centers.filter { it.id in selectedCenterIds }.joinToString("، ") { it.name },
+                                onClick = { showCenterPicker = true }
+                            )
+                            Text(if (isArabic) "يمكن إضافة مواعيد عامة حتى لو الطبيب غير مرتبط بمركز." else "General availability is allowed even when no center is linked.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                item {
+                    TextButton(onClick = { availabilityExpanded = !availabilityExpanded }, modifier = Modifier.fillMaxWidth()) {
+                        Text(if (isArabic) "مواعيد تواجد الطبيب" else "Doctor availability", modifier = Modifier.weight(1f))
+                        Icon(if (availabilityExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null)
+                    }
+                    AnimatedVisibility(visible = availabilityExpanded) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(if (isArabic) "كل فترة مستقلة: عامة أو مرتبطة بمركز من المراكز المختارة." else "Each slot is independent: general or linked to one of the selected centers.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            availabilityDrafts.forEachIndexed { index, draft ->
+                                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                                    Column(Modifier.fillMaxWidth().padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                            Text((if (isArabic) "الفترة " else "Slot ") + (index + 1), modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                                            if (availabilityDrafts.size > 1) TextButton(onClick = { availabilityDrafts = availabilityDrafts.filterIndexed { i, _ -> i != index } }) { Text(if (isArabic) "حذف" else "Remove") }
+                                        }
+                                        OutlinedSelectionField(
+                                            label = if (isArabic) "نوع الموعد / المركز" else "Availability type / center",
+                                            value = draft.centerId?.let { id -> centers.firstOrNull { it.id == id }?.name } ?: if (isArabic) "موعد عام — بدون مركز" else "General — no center",
+                                            onClick = { centerMenuForIndex = index }
+                                        )
+                                        DropdownMenu(expanded = centerMenuForIndex == index, onDismissRequest = { centerMenuForIndex = null }) {
+                                            DropdownMenuItem(text = { Text(if (isArabic) "موعد عام — بدون مركز" else "General — no center") }, onClick = {
+                                                availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(centerId = null) }
+                                                centerMenuForIndex = null
+                                            })
+                                            centers.filter { it.id in selectedCenterIds }.forEach { center ->
+                                                DropdownMenuItem(text = { Text(center.name) }, onClick = {
+                                                    availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(centerId = center.id) }
+                                                    centerMenuForIndex = null
+                                                })
+                                            }
+                                        }
+                                        Text(if (isArabic) "أيام التواجد" else "Available days", style = MaterialTheme.typography.labelMedium)
+                                        listOf(6 to "السبت", 7 to "الأحد", 1 to "الاثنين", 2 to "الثلاثاء", 3 to "الأربعاء", 4 to "الخميس", 5 to "الجمعة").chunked(2).forEach { pair ->
+                                            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                                pair.forEach { (day, label) ->
+                                                    Row(Modifier.weight(1f), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                                        Checkbox(checked = day in draft.days, onCheckedChange = { checked ->
+                                                            val next = if (checked) draft.days + day else draft.days - day
+                                                            availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(days = next) }
+                                                        })
+                                                        Text(if (isArabic) label else listOf("Saturday","Sunday","Monday","Tuesday","Wednesday","Thursday","Friday")[listOf(6,7,1,2,3,4,5).indexOf(day)], style = MaterialTheme.typography.bodySmall)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            OutlinedTextField(value = draft.startTime, onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(startTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, label = { Text(if (isArabic) "من HH:mm" else "From HH:mm") })
+                                            OutlinedTextField(value = draft.endTime, onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(endTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, label = { Text(if (isArabic) "إلى HH:mm" else "To HH:mm") })
+                                        }
+                                        OutlinedTextField(value = draft.notes, onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(notes = value) } }, modifier = Modifier.fillMaxWidth(), label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") })
+                                    }
+                                }
+                            }
+                            OutlinedButton(onClick = { availabilityDrafts = availabilityDrafts + DoctorAvailabilityDraft() }, modifier = Modifier.fillMaxWidth()) { Text(if (isArabic) "+ إضافة فترة" else "+ Add slot") }
+                        }
+                    }
                 }
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -845,7 +944,9 @@ private fun DoctorFormDialog(
                 if (name.isBlank()) {
                     nameError = true
                 } else {
-                    onSave(
+                    val validTime = Regex("(?:[01]\\\\d|2[0-3]):[0-5]\\\\d")
+                    val invalidSlots = availabilityDrafts.any { it.days.isEmpty() || !validTime.matches(it.startTime) || !validTime.matches(it.endTime) || it.endTime <= it.startTime || (it.centerId != null && it.centerId !in selectedCenterIds) }
+                    if (invalidSlots) { nameError = true } else onSave(
                         DoctorEntity(
                             id = initial?.id ?: 0L,
                             name = name.trim(),
@@ -862,7 +963,23 @@ private fun DoctorFormDialog(
                             longitude = longitude,
                             mapUrl = mapUrl
                         ),
-                        selectedCenterIds
+                        selectedCenterIds,
+                        availabilityDrafts.flatMap { draft ->
+                            draft.days.map { day ->
+                                val old = draft.existing.firstOrNull { it.dayOfWeek == day }
+                                DoctorAvailabilityEntity(
+                                    id = old?.id ?: 0L,
+                                    doctorId = initial?.id ?: 0L,
+                                    dayOfWeek = day,
+                                    startTime = draft.startTime,
+                                    endTime = draft.endTime,
+                                    notes = draft.notes.trim(),
+                                    createdAt = old?.createdAt ?: System.currentTimeMillis(),
+                                    slotGroupId = draft.groupId,
+                                    centerId = draft.centerId
+                                )
+                            }
+                        }
                     )
                 }
             }) { Text(if (isArabic) "حفظ" else "Save") }

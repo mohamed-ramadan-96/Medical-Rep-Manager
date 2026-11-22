@@ -738,6 +738,7 @@ private fun DoctorFormDialog(
     var showDoctorMapPicker by remember { mutableStateOf(false) }
     var editDoctorLocation by remember { mutableStateOf(false) }
     var nameError by remember { mutableStateOf(false) }
+    var availabilityError by remember { mutableStateOf<String?>(null) }
 
     val photoPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -897,6 +898,7 @@ private fun DoctorFormDialog(
                         }
                     }
                 }
+                availabilityError?.let { message -> item { Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) } }
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(if (isArabic) "موقع الطبيب" else "Doctor location", style = MaterialTheme.typography.labelLarge)
@@ -944,9 +946,9 @@ private fun DoctorFormDialog(
                 if (name.isBlank()) {
                     nameError = true
                 } else {
-                    val validTime = Regex("(?:[01]\\\\d|2[0-3]):[0-5]\\\\d")
+                    val validTime = Regex("(?:[01]\\d|2[0-3]):[0-5]\\d")
                     val invalidSlots = availabilityDrafts.any { it.days.isEmpty() || !validTime.matches(it.startTime) || !validTime.matches(it.endTime) || it.endTime <= it.startTime || (it.centerId != null && it.centerId !in selectedCenterIds) }
-                    if (invalidSlots) { nameError = true } else onSave(
+                    if (invalidSlots) { availabilityError = if (isArabic) "راجع أيام وساعات كل فترة، وتأكد أن المركز المختار مرتبط بالطبيب." else "Check each slot day and time, and make sure its center is linked to the doctor." } else { availabilityError = null; onSave(
                         DoctorEntity(
                             id = initial?.id ?: 0L,
                             name = name.trim(),
@@ -980,7 +982,7 @@ private fun DoctorFormDialog(
                                 )
                             }
                         }
-                    )
+                    ) }
                 }
             }) { Text(if (isArabic) "حفظ" else "Save") }
         },

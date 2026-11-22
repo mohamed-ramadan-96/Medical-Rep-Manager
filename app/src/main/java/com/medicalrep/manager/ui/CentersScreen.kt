@@ -246,6 +246,7 @@ private fun CenterFormDialog(
     var address by remember(initial) { mutableStateOf(initial?.address.orEmpty()) }
     var phone by remember(initial) { mutableStateOf(initial?.phone.orEmpty()) }
     var notes by remember(initial) { mutableStateOf(initial?.notes.orEmpty()) }
+    var unregisteredDoctorCount by remember(initial) { mutableStateOf(initial?.unregisteredDoctorCount?.toString() ?: "0") }
     var latitude by remember(initial) { mutableStateOf(initial?.latitude) }
     var longitude by remember(initial) { mutableStateOf(initial?.longitude) }
     var mapUrl by remember(initial) { mutableStateOf(initial?.mapUrl) }
@@ -279,6 +280,9 @@ private fun CenterFormDialog(
                         modifier = Modifier.fillMaxWidth(), singleLine = true,
                         label = { Text(if (isArabic) "رقم الهاتف" else "Phone") }
                     )
+                }
+                item {
+                    OutlinedTextField(value = unregisteredDoctorCount, onValueChange = { value -> unregisteredDoctorCount = value.filter { it.isDigit() } }, modifier = Modifier.fillMaxWidth(), singleLine = true, label = { Text(if (isArabic) "عدد الدكاترة غير المسجلين" else "Unregistered doctors count") })
                 }
                 item {
                     OutlinedTextField(
@@ -378,7 +382,8 @@ private fun CenterFormDialog(
                         createdAt = initial?.createdAt ?: System.currentTimeMillis(),
                         latitude = latitude,
                         longitude = longitude,
-                        mapUrl = mapUrl
+                        mapUrl = mapUrl,
+                        unregisteredDoctorCount = unregisteredDoctorCount.toIntOrNull() ?: 0
                     )
                 )
             }) { Text(if (isArabic) "حفظ" else "Save") }

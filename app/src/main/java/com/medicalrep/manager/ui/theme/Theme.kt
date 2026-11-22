@@ -48,11 +48,11 @@ private fun appColorScheme(base: androidx.compose.material3.ColorScheme, darkThe
 
 // One consistent semi-rounded language for cards, dialogs, menus, fields and buttons.
 private val AppShapes = Shapes(
-    extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(10.dp),
-    medium = RoundedCornerShape(12.dp),
-    large = RoundedCornerShape(14.dp),
-    extraLarge = RoundedCornerShape(16.dp)
+    extraSmall = RoundedCornerShape(12.dp),
+    small = RoundedCornerShape(14.dp),
+    medium = RoundedCornerShape(14.dp),
+    large = RoundedCornerShape(16.dp),
+    extraLarge = RoundedCornerShape(20.dp)
 )
 
 @Composable

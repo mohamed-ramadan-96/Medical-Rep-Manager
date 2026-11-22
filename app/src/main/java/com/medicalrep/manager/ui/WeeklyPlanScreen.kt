@@ -99,7 +99,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
     var month by remember { mutableStateOf(YearMonth.now()) }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     val regions = remember(doctors) {
-        doctors.map { it.area.trim() }.filter { it.isNotBlank() }
+        doctors.flatMap { weeklyDoctorAreas(it.area) }.filter { it.isNotBlank() }
             .distinctBy { it.lowercase(Locale.ROOT) }.sortedBy { it.lowercase(Locale.ROOT) }
     }
     var selectedRegion by remember { mutableStateOf("") }
@@ -137,7 +137,8 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
         .toSet()
     val eligibleDoctors = doctors.filter { doctor ->
         doctor.id in eligibleDoctorIds &&
-            doctor.area.trim().equals(selectedRegion, ignoreCase = true) &&
+            selectedRegion.isNotBlank() &&
+            (selectedRegion == ALL_REGIONS || weeklyDoctorAreas(doctor.area).any { it.equals(selectedRegion, ignoreCase = true) }) &&
             doctor.id !in assignedDoctorIdsThisWeek
     }.sortedBy { it.name.lowercase(Locale.ROOT) }
 

@@ -70,7 +70,8 @@ object DriveBackupEngine {
             try {
                 val requiredTables = listOf(
                     "doctors", "medical_centers", "specialties", "doctor_attachments",
-                    "center_attachments", "doctor_availability", "doctor_visits", "doctor_center_links"
+                    "center_attachments", "doctor_availability", "doctor_visits", "doctor_center_links",
+                    "center_availability"
                 )
                 requiredTables.forEach { table ->
                     checkDb.rawQuery(
@@ -364,8 +365,14 @@ object DriveBackupEngine {
                     check(hasTable(table)) { "Backup database is missing required table: $table" }
                 }
                 writable.rawQuery("PRAGMA user_version", null).use { cursor ->
-                    check(cursor.moveToFirst() && cursor.getInt(0) in 12..13) {
-                        "Unsupported database schema version; expected version 12 or 13"
+                    check(cursor.moveToFirst() && cursor.getInt(0) in 12..15) {
+                        "Unsupported database schema version; expected version 12 through 15"
+                    }
+                }
+                writable.rawQuery("PRAGMA user_version", null).use { cursor ->
+                    check(cursor.moveToFirst())
+                    if (cursor.getInt(0) >= 15) {
+                        check(hasTable("center_availability")) { "Backup database is missing center availability" }
                     }
                 }
                 writable.rawQuery("PRAGMA integrity_check", null).use { cursor ->

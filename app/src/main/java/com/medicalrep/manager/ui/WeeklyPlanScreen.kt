@@ -50,6 +50,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.medicalrep.manager.data.MedicalRepDatabase
 import com.medicalrep.manager.data.WeeklyPlanEntryEntity
 import com.medicalrep.manager.data.WeeklyPlanExcelExporter
@@ -138,6 +139,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
         mutableStateOf(emptySet<Long>())
     }
     var doctorMenu by remember { mutableStateOf(false) }
+    var showAllDoctorsDialog by remember { mutableStateOf(false) }
 
     Scaffold(modifier = Modifier.padding(padding)) { inner ->
         LazyColumn(
@@ -177,10 +179,10 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                             planDays.forEach { (_, names) ->
                                 Text(
-                                    if (isArabic) names.second.take(1) else names.first.take(1),
+                                    if (isArabic) listOf("سبت", "أحد", "اثن", "ثلا", "أرب", "خمي", "جمع")[planDays.indexOf(names)] else names.first.take(3),
                                     modifier = Modifier.weight(1f),
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                    style = MaterialTheme.typography.labelSmall,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.SemiBold),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
@@ -270,7 +272,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                         label = if (isArabic) "الأطباء المتاحون" else "Available doctors",
                         value = when {
                             selectedDoctorIds.isEmpty() -> if (isArabic) "اضغط لاختيار الأطباء" else "Tap to choose doctors"
-                            else -> eligibleDoctors.filter { it.id in selectedDoctorIds }.joinToString("، ") { it.name }
+                            else -> doctors.filter { it.id in selectedDoctorIds }.joinToString("، ") { it.name }
                         },
                         onClick = { doctorMenu = true },
                         enabled = selectedRegion.isNotBlank() && eligibleDoctors.isNotEmpty()
@@ -297,6 +299,13 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                                 }
                             )
                         }
+                        DropdownMenuItem(
+                            text = { Text(if (isArabic) "دكتور آخر — من كل الأطباء" else "Other doctor — browse all doctors") },
+                            onClick = {
+                                doctorMenu = false
+                                showAllDoctorsDialog = true
+                            }
+                        )
                     }
                 }
             }
@@ -312,7 +321,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                 item {
                     Button(
                         onClick = {
-                            val chosen = eligibleDoctors.filter { it.id in selectedDoctorIds }
+                            val chosen = doctors.filter { it.id in selectedDoctorIds && it.id !in assignedDoctorIdsThisWeek }
                             scope.launch {
                                 chosen.forEach { doctor ->
                                     database.weeklyPlanDao().insert(
@@ -333,7 +342,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(if (isArabic) "إضافة \${selectedDoctorIds.size} طبيب للخطة" else "Add \${selectedDoctorIds.size} doctor(s) to plan")
+                        Text(if (isArabic) "إضافة ${selectedDoctorIds.size} طبيب للخطة" else "Add ${selectedDoctorIds.size} doctor(s) to plan")
                     }
                 }
             }
@@ -393,6 +402,46 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                 }
             }
         }
+    }
+
+    if (showAllDoctorsDialog) {
+        val otherDoctors = doctors
+            .filter { it.id !in assignedDoctorIdsThisWeek }
+            .sortedBy { it.name.lowercase(Locale.ROOT) }
+        AlertDialog(
+            onDismissRequest = { showAllDoctorsDialog = false },
+            title = { Text(if (isArabic) "اختيار دكتور آخر" else "Choose another doctor") },
+            text = {
+                if (otherDoctors.isEmpty()) {
+                    Text(if (isArabic) "لا يوجد أطباء آخرون متاحون للإضافة؛ تم إضافة باقي الأطباء بالفعل إلى خطة هذا الأسبوع." else "There are no other doctors to add; the remaining doctors are already assigned this week.")
+                } else {
+                    LazyColumn(modifier = Modifier.height(360.dp)) {
+                        lazyItems(otherDoctors, key = { it.id }) { doctor ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        androidx.compose.material3.Checkbox(
+                                            checked = doctor.id in selectedDoctorIds,
+                                            onCheckedChange = null
+                                        )
+                                        Column {
+                                            Text(doctor.name)
+                                            if (doctor.area.isNotBlank()) Text(doctor.area, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            if (doctor.specialty.isNotBlank()) Text(doctor.specialty, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    selectedDoctorIds = if (doctor.id in selectedDoctorIds) selectedDoctorIds - doctor.id else selectedDoctorIds + doctor.id
+                                }
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showAllDoctorsDialog = false }) { Text(if (isArabic) "تم" else "Done") } },
+            dismissButton = { TextButton(onClick = { showAllDoctorsDialog = false }) { Text(if (isArabic) "إلغاء" else "Cancel") } }
+        )
     }
 
     showExportError?.let { message ->

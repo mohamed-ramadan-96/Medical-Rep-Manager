@@ -131,8 +131,11 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                     val centerSlots = centerAvailability.filter { it.centerId == center.id }
                                     if (centerSlots.isNotEmpty()) {
                                         Text(if (isArabic) "مواعيد عمل المركز" else "Center working hours", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                                        val daysText = centerSlots.map { slot -> mapOf(6 to "السبت", 7 to "الأحد", 1 to "الاثنين", 2 to "الثلاثاء", 3 to "الأربعاء", 4 to "الخميس", 5 to "الجمعة")[slot.dayOfWeek].orEmpty() }.joinToString("، ")
-                                        Text(daysText + " • " + centerSlots.first().startTime + " – " + centerSlots.first().endTime, style = MaterialTheme.typography.bodySmall)
+                                        centerSlots.groupBy { it.slotGroupId }.values.forEach { group ->
+                                            val first = group.first()
+                                            val daysText = group.map { slot -> mapOf(6 to "السبت", 7 to "الأحد", 1 to "الاثنين", 2 to "الثلاثاء", 3 to "الأربعاء", 4 to "الخميس", 5 to "الجمعة")[slot.dayOfWeek].orEmpty() }.joinToString("، ")
+                                            Text(daysText + " • " + first.startTime + " – " + first.endTime, style = MaterialTheme.typography.bodySmall)
+                                        }
                                     }
                                 }
                                 if ((center.latitude != null && center.longitude != null) || !center.mapUrl.isNullOrBlank()) {

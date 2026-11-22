@@ -67,6 +67,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val doctorDao = database.doctorDao()
     val centerAvailabilityDao = database.centerAvailabilityDao()
     val centerAvailability by centerAvailabilityDao.observeAll().collectAsState(initial = emptyList())
+    val doctorCenterLinks by database.doctorCenterLinkDao().observeAll().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     val centers by dao.observeAll().collectAsState(initial = emptyList())
     var editing by remember { mutableStateOf<MedicalCenterEntity?>(null) }
@@ -126,6 +127,13 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                     if (center.phone.isNotBlank()) Text(center.phone, style = MaterialTheme.typography.bodyMedium)
                                     if (center.notes.isNotBlank()) Text(center.notes, style = MaterialTheme.typography.bodySmall)
                                     Text((if (isArabic) "عدد الأطباء غير المسجلين: " else "Unregistered doctors: ") + center.unregisteredDoctorCount, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text((if (isArabic) "أطباء بملفات مسجلة: " else "Registered doctor profiles: ") + doctorCenterLinks.count { it.centerId == center.id }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    val centerSlots = centerAvailability.filter { it.centerId == center.id }
+                                    if (centerSlots.isNotEmpty()) {
+                                        Text(if (isArabic) "مواعيد عمل المركز" else "Center working hours", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                        val daysText = centerSlots.map { slot -> listOf("الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت").getOrNull(slot.dayOfWeek - 1).orEmpty() }.joinToString("، ")
+                                        Text(daysText + " • " + centerSlots.first().startTime + " – " + centerSlots.first().endTime, style = MaterialTheme.typography.bodySmall)
+                                    }
                                 }
                                 if ((center.latitude != null && center.longitude != null) || !center.mapUrl.isNullOrBlank()) {
                                     IconButton(

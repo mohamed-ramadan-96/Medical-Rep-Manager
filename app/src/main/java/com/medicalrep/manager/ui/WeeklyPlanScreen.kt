@@ -292,9 +292,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         androidx.compose.material3.Checkbox(
                                             checked = doctor.id in selectedDoctorIds,
-                                            onCheckedChange = { checked ->
-                                                selectedDoctorIds = if (checked) selectedDoctorIds + doctor.id else selectedDoctorIds - doctor.id
-                                            }
+                                            onCheckedChange = null
                                         )
                                         Column {
                                             Text(doctor.name)

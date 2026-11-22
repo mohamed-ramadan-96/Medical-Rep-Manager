@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 @Composable
 fun OutlinedSelectionField(
@@ -33,7 +34,8 @@ fun OutlinedSelectionField(
         OutlinedButton(
             onClick = onClick,
             enabled = enabled,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
+            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+            shape = RoundedCornerShape(14.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

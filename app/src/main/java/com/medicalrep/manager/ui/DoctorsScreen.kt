@@ -10,6 +10,12 @@ import androidx.compose.animation.core.tween
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -88,14 +94,68 @@ import java.util.UUID
 private fun FilterActionButton(isArabic: Boolean, expanded: Boolean, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        modifier = Modifier.size(48.dp)
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier.size(68.dp)
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Icon(
-                if (expanded) Icons.Default.ExpandLess else Icons.Default.FilterList,
-                contentDescription = if (isArabic) "فلترة" else "Filters"
+            androidx.compose.foundation.Canvas(Modifier.size(34.dp)) {
+                val stroke = 2.8.dp.toPx()
+                val x1 = size.width * 0.18f
+                val x2 = size.width * 0.82f
+                val y1 = size.height * 0.24f
+                val y2 = size.height * 0.50f
+                val y3 = size.height * 0.76f
+                val color = MaterialTheme.colorScheme.onSurface
+                drawLine(color, androidx.compose.ui.geometry.Offset(x1, y1), androidx.compose.ui.geometry.Offset(x2, y1), stroke, cap = StrokeCap.Round)
+                drawLine(color, androidx.compose.ui.geometry.Offset(x1, y2), androidx.compose.ui.geometry.Offset(x2, y2), stroke, cap = StrokeCap.Round)
+                drawLine(color, androidx.compose.ui.geometry.Offset(x1, y3), androidx.compose.ui.geometry.Offset(x2, y3), stroke, cap = StrokeCap.Round)
+                drawLine(color, androidx.compose.ui.geometry.Offset(size.width * 0.42f, y1 - 4.dp.toPx()), androidx.compose.ui.geometry.Offset(size.width * 0.42f, y1 + 4.dp.toPx()), stroke + 1.dp.toPx(), cap = StrokeCap.Round)
+                drawLine(color, androidx.compose.ui.geometry.Offset(size.width * 0.66f, y2 - 4.dp.toPx()), androidx.compose.ui.geometry.Offset(size.width * 0.66f, y2 + 4.dp.toPx()), stroke + 1.dp.toPx(), cap = StrokeCap.Round)
+                drawLine(color, androidx.compose.ui.geometry.Offset(size.width * 0.30f, y3 - 4.dp.toPx()), androidx.compose.ui.geometry.Offset(size.width * 0.30f, y3 + 4.dp.toPx()), stroke + 1.dp.toPx(), cap = StrokeCap.Round)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DoctorSearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    isArabic: Boolean,
+    compact: Boolean
+) {
+    Surface(
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier.fillMaxWidth().height(68.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(28.dp))
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier = Modifier.weight(1f).padding(start = 12.dp),
+                singleLine = true,
+                textStyle = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.onSurface),
+                decorationBox = { innerTextField ->
+                    Box(contentAlignment = Alignment.CenterStart) {
+                        if (value.isEmpty()) {
+                            Text(
+                                if (compact) { if (isArabic) "ابحث عن طبيب..." else "Search doctors..." }
+                                else { if (isArabic) "ابحث عن طبيب..." else "Search doctors..." },
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        innerTextField()
+                    }
+                }
             )
         }
     }
@@ -154,7 +214,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
         Column(modifier = Modifier.fillMaxSize().padding(inner)) {
             AnimatedVisibility(visible = compactHeaderVisible, enter = expandVertically(tween(180)) + fadeIn(tween(150)), exit = shrinkVertically(tween(150)) + fadeOut(tween(120))) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = searchText, onValueChange = { searchText = it }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(12.dp), textStyle = MaterialTheme.typography.bodyMedium, leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) }, placeholder = { Text(if (isArabic) "ابحث عن طبيب..." else "Search doctors...", style = MaterialTheme.typography.bodyMedium) })
+                    Box(Modifier.weight(1f)) { DoctorSearchField(searchText, { searchText = it }, isArabic, compact = true) }
                     FilterActionButton(isArabic = isArabic, expanded = showFilters, onClick = { showFilters = !showFilters })
                 }
             }
@@ -165,7 +225,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                         TextButton(onClick = onManageSpecialties) { Icon(Icons.Default.MedicalServices, contentDescription = null, modifier = Modifier.size(18.dp)); Text(if (isArabic) "التخصصات" else "Specialties") }
                     }
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = searchText, onValueChange = { searchText = it }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(12.dp), textStyle = MaterialTheme.typography.bodyMedium, leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) }, placeholder = { Text(if (isArabic) "ابحث بالاسم أو التخصص أو الهاتف أو المنطقة" else "Search name, specialty, phone or area", style = MaterialTheme.typography.bodyMedium) })
+                        Box(Modifier.weight(1f)) { DoctorSearchField(searchText, { searchText = it }, isArabic, compact = false) }
                         FilterActionButton(isArabic = isArabic, expanded = showFilters, onClick = { showFilters = !showFilters })
                     }
                     Text(if (isArabic) "${filteredDoctors.size} من ${doctors.size} طبيب" else "${filteredDoctors.size} of ${doctors.size} doctors", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))

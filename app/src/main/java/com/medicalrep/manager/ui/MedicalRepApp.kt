@@ -83,7 +83,7 @@ private val tabs = listOf(
 @Composable
 private fun ReferenceNavigationIcon(name: String) {
     val color = MaterialTheme.colorScheme.onSurface
-    Canvas(Modifier.size(34.dp)) {
+    Canvas(Modifier.size(24.dp)) {
         val unit = size.minDimension / 48f
         scale(unit, pivot = androidx.compose.ui.geometry.Offset.Zero) {
             val stroke = Stroke(width = 2.8f, cap = StrokeCap.Round, join = StrokeJoin.Round)

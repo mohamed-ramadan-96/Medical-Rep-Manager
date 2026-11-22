@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
@@ -140,30 +141,42 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
     }
     var doctorMenu by remember { mutableStateOf(false) }
     var showAllDoctorsDialog by remember { mutableStateOf(false) }
+    var showPlanDescription by remember { mutableStateOf(false) }
 
-    Scaffold(modifier = Modifier.padding(padding)) { inner ->
+    Scaffold(
+        modifier = Modifier.padding(padding),
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0)
+    ) { inner ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(inner).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
-                Text(
-                    if (isArabic) "خطة الزيارات الأسبوعية" else "Weekly visit plan",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-                Text(
-                    if (isArabic) "اختر التاريخ والمنطقة، ثم اختر الأطباء المتاحين في هذا اليوم." else "Choose a date and area, then select doctors available on that day.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        if (isArabic) "خطة الزيارات الأسبوعية" else "Weekly visit plan",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    IconButton(onClick = { showPlanDescription = true }, modifier = Modifier.padding(0.dp)) {
+                        Icon(
+                            Icons.Outlined.HelpOutline,
+                            contentDescription = if (isArabic) "عن الخطة الأسبوعية" else "About weekly plan",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
             item {
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                     Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = { month = month.minusMonths(1); selectedDate = month.atDay(1) }) {
-                                Icon(Icons.Default.ChevronLeft, contentDescription = if (isArabic) "الشهر السابق" else "Previous month")
+                                Icon(if (isArabic) Icons.Default.ChevronRight else Icons.Default.ChevronLeft, contentDescription = if (isArabic) "الشهر السابق" else "Previous month")
                             }
                             Text(
                                 month.format(DateTimeFormatter.ofPattern(if (isArabic) "MMMM yyyy" else "MMMM yyyy", if (isArabic) Locale("ar") else Locale.ENGLISH)),
@@ -173,7 +186,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
                             )
                             IconButton(onClick = { month = month.plusMonths(1); selectedDate = month.atDay(1) }) {
-                                Icon(Icons.Default.ChevronRight, contentDescription = if (isArabic) "الشهر التالي" else "Next month")
+                                Icon(if (isArabic) Icons.Default.ChevronLeft else Icons.Default.ChevronRight, contentDescription = if (isArabic) "الشهر التالي" else "Next month")
                             }
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -404,6 +417,19 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                 }
             }
         }
+    }
+
+    if (showPlanDescription) {
+        AlertDialog(
+            onDismissRequest = { showPlanDescription = false },
+            title = { Text(if (isArabic) "خطة الزيارات الأسبوعية" else "Weekly visit plan") },
+            text = { Text(if (isArabic) "اختر التاريخ والمنطقة، ثم اختر الأطباء المتاحين في هذا اليوم." else "Choose a date and area, then select doctors available on that day.") },
+            confirmButton = {
+                TextButton(onClick = { showPlanDescription = false }) {
+                    Text(if (isArabic) "حسناً" else "Got it")
+                }
+            }
+        )
     }
 
     if (showAllDoctorsDialog) {

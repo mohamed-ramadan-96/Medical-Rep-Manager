@@ -11,6 +11,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -128,93 +132,57 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             }
         }
     ) { inner ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(inner).padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    if (isArabic) "إدارة الأطباء" else "Doctors",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                TextButton(onClick = onManageSpecialties) {
-                    Icon(Icons.Default.MedicalServices, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Text(if (isArabic) "التخصصات" else "Specialties")
-                }
-            }
-            OutlinedTextField(
-                value = searchText,
-                onValueChange = { searchText = it },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                label = { Text(if (isArabic) "ابحث بالاسم أو التخصص أو الهاتف أو المنطقة" else "Search name, specialty, phone or area") }
-            )
-            TextButton(onClick = { showFilters = !showFilters }, modifier = Modifier.fillMaxWidth()) {
-                Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(20.dp))
-                Text(if (isArabic) "فلترة" else "Filters", modifier = Modifier.padding(horizontal = 8.dp))
-                Icon(if (showFilters) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null, modifier = Modifier.size(20.dp))
-            }
-            AnimatedVisibility(
-                visible = showFilters,
-                enter = expandVertically(animationSpec = tween(220)) + fadeIn(animationSpec = tween(180)),
-                exit = shrinkVertically(animationSpec = tween(180)) + fadeOut(animationSpec = tween(140))
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.weight(1f)) {
-                    OutlinedSelectionField(label = if (isArabic) "المنطقة" else "Area", value = if (selectedArea == "all") { if (isArabic) "كل المناطق" else "All areas" } else selectedArea, onClick = { areaMenu = true })
-                    DropdownMenu(expanded = areaMenu, onDismissRequest = { areaMenu = false }) {
-                        DropdownMenuItem(text = { Text(if (isArabic) "كل المناطق" else "All areas") }, onClick = { selectedArea = "all"; areaMenu = false })
-                        availableAreas.forEach { area -> DropdownMenuItem(text = { Text(area) }, onClick = { selectedArea = area; areaMenu = false }) }
-                    }
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    OutlinedSelectionField(label = if (isArabic) "التخصص" else "Specialty", value = if (selectedSpecialty == "all") { if (isArabic) "كل التخصصات" else "All specialties" } else selectedSpecialty, onClick = { specialtyMenu = true })
-                    DropdownMenu(expanded = specialtyMenu, onDismissRequest = { specialtyMenu = false }) {
-                        DropdownMenuItem(text = { Text(if (isArabic) "كل التخصصات" else "All specialties") }, onClick = { selectedSpecialty = "all"; specialtyMenu = false })
-                        specialties.map { it.name }.plus(doctors.map { it.specialty }).filter { it.isNotBlank() }.distinct().sorted().forEach { name -> DropdownMenuItem(text = { Text(name) }, onClick = { selectedSpecialty = name; specialtyMenu = false }) }
+        val listState = rememberLazyListState()
+        val compactHeaderVisible = listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 110
+        Column(modifier = Modifier.fillMaxSize().padding(inner)) {
+            AnimatedVisibility(visible = compactHeaderVisible, enter = expandVertically(tween(180)) + fadeIn(tween(150)), exit = shrinkVertically(tween(150)) + fadeOut(tween(120))) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = searchText, onValueChange = { searchText = it }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(28.dp), leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) }, placeholder = { Text(if (isArabic) "ابحث عن طبيب..." else "Search doctors...") })
+                    Surface(onClick = { showFilters = !showFilters }, shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.size(48.dp)) {
+                        Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.FilterList, contentDescription = if (isArabic) "فلترة" else "Filters") }
                     }
                 }
             }
-            OutlinedSelectionField(label = if (isArabic) "المركز" else "Center", value = if (selectedCenter == "all") { if (isArabic) "كل المراكز" else "All centers" } else centers.firstOrNull { it.id.toString() == selectedCenter }?.name.orEmpty(), onClick = { centerMenu = true })
-            DropdownMenu(expanded = centerMenu, onDismissRequest = { centerMenu = false }) {
-                DropdownMenuItem(text = { Text(if (isArabic) "كل المراكز" else "All centers") }, onClick = { selectedCenter = "all"; centerMenu = false })
-                centers.forEach { center -> DropdownMenuItem(text = { Text(center.name) }, onClick = { selectedCenter = center.id.toString(); centerMenu = false }) }
-            }
-
-                }
-            }
-            Text(if (isArabic) "عدد الأطباء: ${filteredDoctors.size} من ${doctors.size}" else "Doctors: ${filteredDoctors.size} of ${doctors.size}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (filteredDoctors.isEmpty()) {
-                Text(
-                    if (doctors.isEmpty()) { if (isArabic) "لا يوجد أطباء حتى الآن. اضغط + لإضافة أول طبيب." else "No doctors yet. Tap + to add your first doctor." } else { if (isArabic) "لا توجد نتائج مطابقة للفلاتر المحددة." else "No doctors match the selected filters." },
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 24.dp)
-                )
-            } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(filteredDoctors, key = { it.id }) { doctor ->
-                        DoctorCard(
-                            doctor = doctor,
-                            centerName = centers.filter { center -> doctorCenterLinks.any { it.doctorId == doctor.id && it.centerId == center.id } }.joinToString("، ") { it.name }.ifBlank { centers.firstOrNull { it.id == doctor.centerId }?.name ?: doctor.medicalCenter },
-                            isArabic = isArabic,
-                            onEdit = {
-                                editingDoctor = doctor
-                                showForm = true
-                            },
-                            onDelete = { pendingDelete = doctor },
-                            onAttachments = { attachmentsDoctor = doctor },
-                            onOpen = { detailsDoctor = doctor }
-                        )
+            LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                item {
+                    Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(if (isArabic) "إدارة الأطباء" else "Doctors", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                        TextButton(onClick = onManageSpecialties) { Icon(Icons.Default.MedicalServices, contentDescription = null, modifier = Modifier.size(18.dp)); Text(if (isArabic) "التخصصات" else "Specialties") }
                     }
+                    OutlinedTextField(value = searchText, onValueChange = { searchText = it }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(28.dp), leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) }, label = { Text(if (isArabic) "ابحث بالاسم أو التخصص أو الهاتف أو المنطقة" else "Search name, specialty, phone or area") })
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                        TextButton(onClick = { showFilters = !showFilters }) { Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(20.dp)); Text(if (isArabic) "فلترة" else "Filters", modifier = Modifier.padding(horizontal = 8.dp)); Icon(if (showFilters) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null, modifier = Modifier.size(20.dp)) }
+                        Text(if (isArabic) "${filteredDoctors.size} من ${doctors.size} طبيب" else "${filteredDoctors.size} of ${doctors.size} doctors", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    AnimatedVisibility(visible = showFilters, enter = expandVertically(tween(220)) + fadeIn(tween(180)), exit = shrinkVertically(tween(180)) + fadeOut(tween(140))) {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                                Column(Modifier.weight(1f)) {
+                                    OutlinedSelectionField(label = if (isArabic) "المنطقة" else "Area", value = if (selectedArea == "all") { if (isArabic) "كل المناطق" else "All areas" } else selectedArea, onClick = { areaMenu = true })
+                                    DropdownMenu(expanded = areaMenu, onDismissRequest = { areaMenu = false }) {
+                                        DropdownMenuItem(text = { Text(if (isArabic) "كل المناطق" else "All areas") }, onClick = { selectedArea = "all"; areaMenu = false })
+                                        availableAreas.forEach { area -> DropdownMenuItem(text = { Text(area) }, onClick = { selectedArea = area; areaMenu = false }) }
+                                    }
+                                }
+                                Column(Modifier.weight(1f)) {
+                                    OutlinedSelectionField(label = if (isArabic) "التخصص" else "Specialty", value = if (selectedSpecialty == "all") { if (isArabic) "كل التخصصات" else "All specialties" } else selectedSpecialty, onClick = { specialtyMenu = true })
+                                    DropdownMenu(expanded = specialtyMenu, onDismissRequest = { specialtyMenu = false }) {
+                                        DropdownMenuItem(text = { Text(if (isArabic) "كل التخصصات" else "All specialties") }, onClick = { selectedSpecialty = "all"; specialtyMenu = false })
+                                        specialties.map { it.name }.plus(doctors.map { it.specialty }).filter { it.isNotBlank() }.distinct().sorted().forEach { name -> DropdownMenuItem(text = { Text(name) }, onClick = { selectedSpecialty = name; specialtyMenu = false }) }
+                                    }
+                                }
+                            }
+                            OutlinedSelectionField(label = if (isArabic) "المركز" else "Center", value = if (selectedCenter == "all") { if (isArabic) "كل المراكز" else "All centers" } else centers.firstOrNull { it.id.toString() == selectedCenter }?.name.orEmpty(), onClick = { centerMenu = true })
+                            DropdownMenu(expanded = centerMenu, onDismissRequest = { centerMenu = false }) {
+                                DropdownMenuItem(text = { Text(if (isArabic) "كل المراكز" else "All centers") }, onClick = { selectedCenter = "all"; centerMenu = false })
+                                centers.forEach { center -> DropdownMenuItem(text = { Text(center.name) }, onClick = { selectedCenter = center.id.toString(); centerMenu = false }) }
+                            }
+                        }
+                    }
+                }
+                if (filteredDoctors.isEmpty()) item { Text(if (doctors.isEmpty()) { if (isArabic) "لا يوجد أطباء حتى الآن. اضغط + لإضافة أول طبيب." else "No doctors yet. Tap + to add your first doctor." } else { if (isArabic) "لا توجد نتائج مطابقة للفلاتر المحددة." else "No doctors match the selected filters." }, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 24.dp)) }
+                else items(filteredDoctors, key = { it.id }) { doctor ->
+                    DoctorCard(doctor = doctor, centerName = centers.filter { center -> doctorCenterLinks.any { it.doctorId == doctor.id && it.centerId == center.id } }.joinToString("، ") { it.name }.ifBlank { centers.firstOrNull { it.id == doctor.centerId }?.name ?: doctor.medicalCenter }, isArabic = isArabic, onEdit = { editingDoctor = doctor; showForm = true }, onDelete = { pendingDelete = doctor }, onAttachments = { attachmentsDoctor = doctor }, onOpen = { detailsDoctor = doctor })
                 }
             }
         }

@@ -83,8 +83,6 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
     val context = LocalContext.current
     val database = remember { MedicalRepDatabase.getInstance(context) }
     val doctors by database.doctorDao().observeAll().collectAsState(initial = emptyList())
-    val centers by database.medicalCenterDao().observeAll().collectAsState(initial = emptyList())
-    val links by database.doctorCenterLinkDao().observeAll().collectAsState(initial = emptyList())
     val availability by database.doctorAvailabilityDao().observeAll().collectAsState(initial = emptyList())
     val entries by database.weeklyPlanDao().observeAll().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
@@ -96,9 +94,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
             .distinctBy { it.lowercase(Locale.ROOT) }.sortedBy { it.lowercase(Locale.ROOT) }
     }
     var selectedRegion by remember(regions) { mutableStateOf(regions.firstOrNull().orEmpty()) }
-    var selectedCenterId by remember(selectedDate, selectedRegion) { mutableStateOf<Long?>(null) }
     var regionMenu by remember { mutableStateOf(false) }
-    var centerMenu by remember { mutableStateOf(false) }
     var exportRows by remember { mutableStateOf<List<WeeklyPlanExportRow>>(emptyList()) }
     var exportFileName by remember { mutableStateOf("weekly-plan.xlsx") }
     var showExportError by remember { mutableStateOf<String?>(null) }
@@ -125,29 +121,21 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
         .sortedWith(compareBy({ it.centerNameSnapshot }, { it.doctorNameSnapshot }))
     val assignedDoctorIdsThisWeek = weekEntries.map { it.doctorId }.toSet()
 
-    val linkedCentersForRegion = centers.filter { center ->
-        doctors.any { doctor ->
-            doctor.area.trim().equals(selectedRegion, ignoreCase = true) &&
-                (links.any { it.doctorId == doctor.id && it.centerId == center.id } ||
-                    (links.none { it.doctorId == doctor.id } && doctor.centerId == center.id))
-        }
-    }
-    val selectedCenter = centers.firstOrNull { it.id == selectedCenterId }
     val selectedDayCode = selectedDate.dayOfWeek.value
-    val eligibleDoctorIds = availability.filter {
-        it.dayOfWeek == selectedDayCode && (it.centerId == selectedCenterId || it.centerId == null)
-    }.map { it.doctorId }.toSet()
+    val eligibleDoctorIds = availability.asSequence()
+        .filter { it.dayOfWeek == selectedDayCode }
+        .map { it.doctorId }
+        .toSet()
     val eligibleDoctors = doctors.filter { doctor ->
         doctor.id in eligibleDoctorIds &&
             doctor.area.trim().equals(selectedRegion, ignoreCase = true) &&
-            (links.any { it.doctorId == doctor.id && it.centerId == selectedCenterId } ||
-                (links.none { it.doctorId == doctor.id } && doctor.centerId == selectedCenterId)) &&
             doctor.id !in assignedDoctorIdsThisWeek
     }.sortedBy { it.name.lowercase(Locale.ROOT) }
 
-    var selectedDoctorIds by remember(selectedDate, selectedRegion, selectedCenterId, eligibleDoctors) {
+    var selectedDoctorIds by remember(selectedDate, selectedRegion, eligibleDoctors) {
         mutableStateOf(emptySet<Long>())
     }
+    var doctorMenu by remember { mutableStateOf(false) }
 
     Scaffold(modifier = Modifier.padding(padding)) { inner ->
         LazyColumn(
@@ -162,7 +150,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                     modifier = Modifier.padding(top = 8.dp)
                 )
                 Text(
-                    if (isArabic) "اختر تاريخًا، ثم المنطقة والمركز، وبعدها أضف أكثر من طبيب متاح في اليوم نفسه." else "Choose a date, region and center, then add multiple doctors available on that day.",
+                    if (isArabic) "اختر التاريخ والمنطقة، ثم اختر الأطباء المتاحين في هذا اليوم." else "Choose a date and area, then select doctors available on that day.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }

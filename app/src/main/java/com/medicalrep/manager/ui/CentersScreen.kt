@@ -131,7 +131,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                     val centerSlots = centerAvailability.filter { it.centerId == center.id }
                                     if (centerSlots.isNotEmpty()) {
                                         Text(if (isArabic) "مواعيد عمل المركز" else "Center working hours", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                                        val daysText = centerSlots.map { slot -> listOf("الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت").getOrNull(slot.dayOfWeek - 1).orEmpty() }.joinToString("، ")
+                                        val daysText = centerSlots.map { slot -> mapOf(6 to "السبت", 7 to "الأحد", 1 to "الاثنين", 2 to "الثلاثاء", 3 to "الأربعاء", 4 to "الخميس", 5 to "الجمعة")[slot.dayOfWeek].orEmpty() }.joinToString("، ")
                                         Text(daysText + " • " + centerSlots.first().startTime + " – " + centerSlots.first().endTime, style = MaterialTheme.typography.bodySmall)
                                     }
                                 }
@@ -174,8 +174,10 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             onSave = { center, slots ->
                 scope.launch {
                     if (center.id == 0L) {
-                        val centerId = dao.insert(center)
-                        slots.forEach { centerAvailabilityDao.insert(it.copy(centerId = centerId)) }
+                        database.withTransaction {
+                            val centerId = dao.insert(center)
+                            slots.forEach { centerAvailabilityDao.insert(it.copy(centerId = centerId)) }
+                        }
                     } else {
                         database.withTransaction {
                             dao.update(center)
@@ -264,7 +266,7 @@ private fun CenterFormDialog(
     var address by remember(initial) { mutableStateOf(initial?.address.orEmpty()) }
     var phone by remember(initial) { mutableStateOf(initial?.phone.orEmpty()) }
     var notes by remember(initial) { mutableStateOf(initial?.notes.orEmpty()) }
-    var workDays by remember(initial, initialAvailability) { mutableStateOf(initialAvailability.map { it.dayOfWeek }.toSet().ifEmpty { setOf(6, 7, 1, 2, 3, 4, 5) }) }
+    var workDays by remember(initial, initialAvailability) { mutableStateOf(initialAvailability.map { it.dayOfWeek }.toSet()) }
     var workStart by remember(initial, initialAvailability) { mutableStateOf(initialAvailability.firstOrNull()?.startTime ?: "09:00") }
     var workEnd by remember(initial, initialAvailability) { mutableStateOf(initialAvailability.firstOrNull()?.endTime ?: "22:00") }
     var workNotes by remember(initial, initialAvailability) { mutableStateOf(initialAvailability.firstOrNull()?.notes.orEmpty()) }

@@ -275,7 +275,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                             else -> doctors.filter { it.id in selectedDoctorIds }.joinToString("، ") { it.name }
                         },
                         onClick = { doctorMenu = true },
-                        enabled = selectedRegion.isNotBlank() && eligibleDoctors.isNotEmpty()
+                        enabled = selectedRegion.isNotBlank() && doctors.any { it.id !in assignedDoctorIdsThisWeek }
                     )
                     DropdownMenu(expanded = doctorMenu, onDismissRequest = { doctorMenu = false }) {
                         eligibleDoctors.forEach { doctor ->

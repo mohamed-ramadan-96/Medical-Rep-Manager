@@ -1007,68 +1007,64 @@ private fun DoctorFormDialog(
                     )
                 }
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                            Text(if (isArabic) "المنطقة" else "Area", style = MaterialTheme.typography.labelLarge)
-                            Text(" *", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelLarge)
-                        }
-                        OutlinedSelectionField(
-                            label = if (isArabic) "اختر منطقة أو أكثر" else "Choose one or more areas",
-                            value = if (selectedAreas.isEmpty()) {
-                                if (isArabic) "اختر منطقة أو أكثر" else "Choose one or more areas"
-                            } else selectedAreas.sorted().joinToString("، "),
-                            onClick = { showAreaPicker = true }
-                        )
-                        OutlinedTextField(
-                            value = newArea,
-                            onValueChange = { newArea = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            label = { Text(if (isArabic) "إضافة منطقة جديدة" else "Add a new area") },
-                            trailingIcon = {
-                                IconButton(onClick = {
-                                    val value = newArea.trim()
-                                    if (value.isNotBlank()) {
-                                        val canonicalArea = existingAreas.firstOrNull { it.equals(value, true) } ?: value
-                                        selectedAreas = selectedAreas + canonicalArea
-                                        newArea = ""
-                                    }
-                                }, enabled = newArea.isNotBlank()) {
-                                    Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة منطقة" else "Add area")
-                                }
-                            }
-                        )
-                    }
+                    OutlinedSelectionField(
+                        label = if (isArabic) "المنطقة *" else "Area *",
+                        value = if (selectedAreas.isEmpty()) {
+                            if (isArabic) "اختر منطقة أو أكثر" else "Choose one or more areas"
+                        } else selectedAreas.sorted().joinToString("، "),
+                        onClick = { showAreaPicker = true }
+                    )
                 }
                 if (showAreaPicker) item {
                     androidx.compose.material3.AlertDialog(
                         onDismissRequest = { showAreaPicker = false },
                         title = { Text(if (isArabic) "اختيار المناطق" else "Choose areas") },
                         text = {
-                            LazyColumn(modifier = Modifier.height(320.dp)) {
-                                items(existingAreas, key = { it }) { areaOption ->
-                                    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                                        Checkbox(
-                                            checked = areaOption in selectedAreas,
-                                            onCheckedChange = { checked ->
-                                                selectedAreas = if (checked) selectedAreas + areaOption else selectedAreas - areaOption
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                LazyColumn(modifier = Modifier.height(240.dp)) {
+                                    items(existingAreas, key = { it }) { areaOption ->
+                                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                            Checkbox(
+                                                checked = selectedAreas.any { it.equals(areaOption, true) },
+                                                onCheckedChange = { checked ->
+                                                    selectedAreas = if (checked) selectedAreas + areaOption else selectedAreas.filterNot { it.equals(areaOption, true) }.toSet()
+                                                }
+                                            )
+                                            Text(areaOption, modifier = Modifier.weight(1f))
+                                            IconButton(onClick = {
+                                                selectedAreas = selectedAreas.filterNot { it.equals(areaOption, true) }.toSet()
+                                                onDeleteArea(areaOption)
+                                            }) {
+                                                Icon(Icons.Default.Close, contentDescription = if (isArabic) "حذف المنطقة" else "Delete area")
                                             }
-                                        )
-                                        Text(areaOption, modifier = Modifier.weight(1f))
-                                        IconButton(onClick = {
-                                            selectedAreas = selectedAreas - areaOption
-                                            onDeleteArea(areaOption)
-                                        }) {
-                                            Icon(Icons.Default.Close, contentDescription = if (isArabic) "حذف المنطقة" else "Delete area")
+                                        }
+                                    }
+                                    items(selectedAreas.filter { selected -> existingAreas.none { it.equals(selected, true) } }) { pending ->
+                                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                            Checkbox(checked = true, onCheckedChange = { selectedAreas = selectedAreas - pending })
+                                            Text(pending)
                                         }
                                     }
                                 }
-                                items(selectedAreas.filter { selected -> existingAreas.none { it.equals(selected, true) } }) { pending ->
-                                    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                                        Checkbox(checked = true, onCheckedChange = { selectedAreas = selectedAreas - pending })
-                                        Text(pending)
+                                OutlinedTextField(
+                                    value = newArea,
+                                    onValueChange = { newArea = it },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    label = { Text(if (isArabic) "إضافة منطقة جديدة" else "Add a new area") },
+                                    trailingIcon = {
+                                        IconButton(onClick = {
+                                            val value = newArea.trim()
+                                            if (value.isNotBlank()) {
+                                                val canonicalArea = existingAreas.firstOrNull { it.equals(value, true) } ?: value
+                                                if (selectedAreas.none { it.equals(canonicalArea, true) }) selectedAreas = selectedAreas + canonicalArea
+                                                newArea = ""
+                                            }
+                                        }, enabled = newArea.isNotBlank()) {
+                                            Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة منطقة" else "Add area")
+                                        }
                                     }
-                                }
+                                )
                             }
                         },
                         confirmButton = {

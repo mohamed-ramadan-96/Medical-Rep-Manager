@@ -1033,7 +1033,7 @@ private fun DoctorFormDialog(
                         )
                     }
                 }
-                item {
+                if (showAreaPicker) item {
                     androidx.compose.material3.AlertDialog(
                         onDismissRequest = { showAreaPicker = false },
                         title = { Text(if (isArabic) "اختيار المناطق" else "Choose areas") },

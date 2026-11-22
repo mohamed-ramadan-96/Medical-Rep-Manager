@@ -186,6 +186,7 @@ private fun DoctorSearchField(
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.PaddingValues, onManageSpecialties: () -> Unit = {}) {
     val context = LocalContext.current
@@ -240,7 +241,12 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
         LaunchedEffect(listState) {
             var previousPosition = 0
             var accumulatedDelta = 0
-            snapshotFlow { listState.firstVisibleItemIndex * 100000 + listState.firstVisibleItemScrollOffset }
+            snapshotFlow {
+                listState.layoutInfo.visibleItemsInfo
+                    .firstOrNull { it.index > 1 }
+                    ?.let { it.index * 100000 - it.offset }
+                    ?: 0
+            }
                 .distinctUntilChanged()
                 .collect { position ->
                     val delta = position - previousPosition

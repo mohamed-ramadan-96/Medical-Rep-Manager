@@ -78,6 +78,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
 
     Scaffold(
         modifier = Modifier.padding(padding),
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
             FloatingActionButton(onClick = { editing = null; showForm = true }) {
                 Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة مركز" else "Add center")

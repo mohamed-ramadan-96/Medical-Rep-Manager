@@ -20,16 +20,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Assignment
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LocalHospital
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Assignment
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.LocalHospital
 import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.PeopleAlt
-import androidx.compose.material.icons.filled.MedicalServices
-import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.outlined.PeopleAlt
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -68,11 +64,11 @@ private data class Tab(
 )
 
 private val tabs = listOf(
-    Tab("Home", "الرئيسية", Icons.Filled.Home),
-    Tab("Doctors", "الأطباء", Icons.Filled.PeopleAlt),
-    Tab("Centers", "المراكز", Icons.Filled.LocalHospital),
-    Tab("Hours", "المواعيد", Icons.Filled.CalendarMonth),
-    Tab("Follow-up", "المتابعة", Icons.Filled.Assignment)
+    Tab("Home", "الرئيسية", Icons.Outlined.Home),
+    Tab("Doctors", "الأطباء", Icons.Outlined.PeopleAlt),
+    Tab("Centers", "المراكز", Icons.Outlined.LocalHospital),
+    Tab("Hours", "المواعيد", Icons.Outlined.CalendarMonth),
+    Tab("Follow-up", "المتابعة", Icons.Outlined.Assignment)
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -176,7 +172,7 @@ private fun FollowUpScreen(isArabic: Boolean, padding: PaddingValues) {
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                FilterChip(selected = showPlan, onClick = { showPlan = true }, label = { Text(if (isArabic) "الخطة" else "Plan") }, leadingIcon = { Icon(Icons.Filled.CalendarMonth, contentDescription = null) }, modifier = Modifier.weight(1f))
+                FilterChip(selected = showPlan, onClick = { showPlan = true }, label = { Text(if (isArabic) "الخطة" else "Plan") }, leadingIcon = { Icon(Icons.Outlined.CalendarMonth, contentDescription = null) }, modifier = Modifier.weight(1f))
                 FilterChip(selected = !showPlan, onClick = { showPlan = false }, label = { Text(if (isArabic) "الزيارات" else "Visits") }, leadingIcon = { Icon(Icons.Filled.History, contentDescription = null) }, modifier = Modifier.weight(1f))
             }
         }

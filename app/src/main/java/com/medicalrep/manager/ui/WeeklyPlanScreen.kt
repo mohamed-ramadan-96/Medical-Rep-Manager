@@ -72,6 +72,11 @@ private val planDays = listOf(
     5 to ("Friday" to "الجمعة")
 )
 
+private const val ALL_REGIONS = "__all__"
+
+private fun weeklyDoctorAreas(value: String): List<String> =
+    value.split("|").map { it.trim() }.filter { it.isNotBlank() }
+
 private fun planWeekStart(date: LocalDate): LocalDate {
     val offset = if (date.dayOfWeek.value >= 6) date.dayOfWeek.value - 6 else date.dayOfWeek.value + 1
     return date.minusDays(offset.toLong())
@@ -97,7 +102,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
         doctors.map { it.area.trim() }.filter { it.isNotBlank() }
             .distinctBy { it.lowercase(Locale.ROOT) }.sortedBy { it.lowercase(Locale.ROOT) }
     }
-    var selectedRegion by remember(regions) { mutableStateOf(regions.firstOrNull().orEmpty()) }
+    var selectedRegion by remember { mutableStateOf("") }
     var regionMenu by remember { mutableStateOf(false) }
     var exportRows by remember { mutableStateOf<List<WeeklyPlanExportRow>>(emptyList()) }
     var exportFileName by remember { mutableStateOf("weekly-plan.xlsx") }
@@ -226,7 +231,6 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                                             )
                                             .clickable {
                                                 selectedDate = date
-                                                selectedRegion = selectedRegion.ifBlank { regions.firstOrNull().orEmpty() }
                                             },
                                         contentAlignment = Alignment.Center
                                     ) {
@@ -266,11 +270,20 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                 Box {
                     OutlinedSelectionField(
                         label = if (isArabic) "المنطقة الجغرافية" else "Geographic area",
-                        value = selectedRegion.ifBlank { if (isArabic) "اختر المنطقة" else "Choose area" },
+                        value = when (selectedRegion) {
+                            ALL_REGIONS -> if (isArabic) "كل المناطق" else "All areas"
+                            "" -> if (isArabic) "اختر المنطقة" else "Choose area"
+                            else -> selectedRegion
+                        },
                         onClick = { regionMenu = true },
                         enabled = regions.isNotEmpty()
                     )
                     DropdownMenu(expanded = regionMenu, onDismissRequest = { regionMenu = false }) {
+                        DropdownMenuItem(text = { Text(if (isArabic) "كل المناطق" else "All areas") }, onClick = {
+                            selectedRegion = ALL_REGIONS
+                            selectedDoctorIds = emptySet()
+                            regionMenu = false
+                        })
                         regions.forEach { region ->
                             DropdownMenuItem(text = { Text(region) }, onClick = {
                                 selectedRegion = region
@@ -345,7 +358,7 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                                             visitDate = selectedDate.toString(),
                                             doctorId = doctor.id,
                                             centerId = null,
-                                            regionSnapshot = selectedRegion,
+                                            regionSnapshot = if (selectedRegion == ALL_REGIONS) doctor.area else selectedRegion,
                                             centerNameSnapshot = "",
                                             doctorNameSnapshot = doctor.name
                                         )

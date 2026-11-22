@@ -1,6 +1,10 @@
 package com.medicalrep.manager.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -108,20 +112,25 @@ private fun FilterActionButton(isArabic: Boolean, expanded: Boolean, onClick: ()
         modifier = Modifier.size(60.dp)
     ) {
         Box(contentAlignment = Alignment.Center) {
-            androidx.compose.foundation.Canvas(Modifier.size(24.dp)) {
-                val stroke = 2.8.dp.toPx()
-                val x1 = size.width * 0.18f
-                val x2 = size.width * 0.82f
-                val y1 = size.height * 0.24f
-                val y2 = size.height * 0.50f
-                val y3 = size.height * 0.76f
-                val color = iconColor
-                drawLine(color, androidx.compose.ui.geometry.Offset(x1, y1), androidx.compose.ui.geometry.Offset(x2, y1), stroke, cap = StrokeCap.Round)
-                drawLine(color, androidx.compose.ui.geometry.Offset(x1, y2), androidx.compose.ui.geometry.Offset(x2, y2), stroke, cap = StrokeCap.Round)
-                drawLine(color, androidx.compose.ui.geometry.Offset(x1, y3), androidx.compose.ui.geometry.Offset(x2, y3), stroke, cap = StrokeCap.Round)
-                drawLine(color, androidx.compose.ui.geometry.Offset(size.width * 0.42f, y1 - 4.dp.toPx()), androidx.compose.ui.geometry.Offset(size.width * 0.42f, y1 + 4.dp.toPx()), stroke + 1.dp.toPx(), cap = StrokeCap.Round)
-                drawLine(color, androidx.compose.ui.geometry.Offset(size.width * 0.66f, y2 - 4.dp.toPx()), androidx.compose.ui.geometry.Offset(size.width * 0.66f, y2 + 4.dp.toPx()), stroke + 1.dp.toPx(), cap = StrokeCap.Round)
-                drawLine(color, androidx.compose.ui.geometry.Offset(size.width * 0.30f, y3 - 4.dp.toPx()), androidx.compose.ui.geometry.Offset(size.width * 0.30f, y3 + 4.dp.toPx()), stroke + 1.dp.toPx(), cap = StrokeCap.Round)
+            androidx.compose.foundation.Canvas(Modifier.size(36.dp)) {
+                val stroke = 2.6.dp.toPx()
+                val left = 3.dp.toPx()
+                val right = size.width - 3.dp.toPx()
+                val railYs = listOf(9.dp.toPx(), 18.dp.toPx(), 27.dp.toPx())
+                val knobXs = listOf(22.dp.toPx(), 11.dp.toPx(), 25.dp.toPx())
+                railYs.forEachIndexed { index, y ->
+                    val knobX = knobXs[index]
+                    val gap = 3.4.dp.toPx()
+                    drawLine(iconColor, androidx.compose.ui.geometry.Offset(left, y), androidx.compose.ui.geometry.Offset(knobX - gap, y), stroke, cap = StrokeCap.Round)
+                    drawLine(iconColor, androidx.compose.ui.geometry.Offset(knobX + gap, y), androidx.compose.ui.geometry.Offset(right, y), stroke, cap = StrokeCap.Round)
+                    drawLine(
+                        iconColor,
+                        androidx.compose.ui.geometry.Offset(knobX, y - 4.2.dp.toPx()),
+                        androidx.compose.ui.geometry.Offset(knobX, y + 4.2.dp.toPx()),
+                        stroke,
+                        cap = StrokeCap.Round
+                    )
+                }
             }
         }
     }
@@ -219,57 +228,79 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     ) { inner ->
         val listState = rememberLazyListState()
         var searchHeaderExpanded by remember { mutableStateOf(true) }
+        val scrollDirectionThreshold = with(androidx.compose.ui.platform.LocalDensity.current) { 8.dp.roundToPx() }
         LaunchedEffect(listState) {
-            var previousIndex = 0
-            var previousOffset = 0
-            snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+            var previousPosition = 0
+            var accumulatedDelta = 0
+            snapshotFlow { listState.firstVisibleItemIndex * 100000 + listState.firstVisibleItemScrollOffset }
                 .distinctUntilChanged()
-                .collect { (index, offset) ->
-                    if (index == 0 && offset == 0) {
-                        searchHeaderExpanded = true
-                    } else if (index > 0 || offset > 0) {
-                        val movingTowardTop = index < previousIndex || (index == previousIndex && offset < previousOffset)
-                        val movingDownList = index > previousIndex || (index == previousIndex && offset > previousOffset)
-                        if (movingTowardTop) searchHeaderExpanded = true
-                        else if (movingDownList) searchHeaderExpanded = false
+                .collect { position ->
+                    val delta = position - previousPosition
+                    if (previousPosition != 0 || position != 0) {
+                        accumulatedDelta += delta
+                        if (accumulatedDelta >= scrollDirectionThreshold) {
+                            searchHeaderExpanded = false
+                            accumulatedDelta = 0
+                        } else if (accumulatedDelta <= -scrollDirectionThreshold) {
+                            searchHeaderExpanded = true
+                            accumulatedDelta = 0
+                        }
                     }
-                    previousIndex = index
-                    previousOffset = offset
+                    if (position == 0) {
+                        searchHeaderExpanded = true
+                        accumulatedDelta = 0
+                    }
+                    previousPosition = position
                 }
         }
         Column(modifier = Modifier.fillMaxSize().padding(inner)) {
             AnimatedVisibility(
-                visible = listState.firstVisibleItemIndex > 0 && !searchHeaderExpanded,
-                enter = slideInVertically(animationSpec = tween(160), initialOffsetY = { -it / 2 }) + fadeIn(tween(140)),
-                exit = slideOutVertically(animationSpec = tween(140), targetOffsetY = { -it / 2 }) + fadeOut(tween(120))
+                visible = listState.firstVisibleItemIndex > 0,
+                enter = fadeIn(tween(140)),
+                exit = fadeOut(tween(100))
             ) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.End) {
-                    Surface(
-                        onClick = { searchHeaderExpanded = true },
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surface,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                        modifier = Modifier.size(44.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Search, contentDescription = if (isArabic) "بحث" else "Search", modifier = Modifier.size(24.dp))
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(72.dp).padding(horizontal = 16.dp, vertical = 6.dp),
+                    contentAlignment = Alignment.CenterEnd
+                ) {
+                    AnimatedContent(
+                        targetState = searchHeaderExpanded,
+                        transitionSpec = {
+                            (fadeIn(tween(170)) + scaleIn(initialScale = 0.94f, animationSpec = tween(170))) togetherWith
+                                (fadeOut(tween(110)) + scaleOut(targetScale = 0.96f, animationSpec = tween(110)))
+                        },
+                        label = "doctorSearchCollapse"
+                    ) { expanded ->
+                        if (expanded) {
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Box(Modifier.weight(1f)) {
+                                    DoctorSearchField(searchText, { searchText = it }, isArabic, compact = true)
+                                }
+                                FilterActionButton(isArabic = isArabic, expanded = showFilters, onClick = {
+                                    scope.launch {
+                                        listState.animateScrollToItem(0)
+                                        showFilters = !showFilters
+                                    }
+                                })
+                            }
+                        } else {
+                            Surface(
+                                onClick = { searchHeaderExpanded = true },
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surface,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.size(44.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Search, contentDescription = if (isArabic) "بحث" else "Search", modifier = Modifier.size(20.dp))
+                                }
+                            }
                         }
                     }
-                }
-            }
-            AnimatedVisibility(
-                visible = listState.firstVisibleItemIndex > 0 && searchHeaderExpanded,
-                enter = slideInVertically(animationSpec = tween(170), initialOffsetY = { -it / 3 }) + fadeIn(tween(150)),
-                exit = slideOutVertically(animationSpec = tween(150), targetOffsetY = { -it / 3 }) + fadeOut(tween(130))
-            ) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(Modifier.weight(1f)) { DoctorSearchField(searchText, { searchText = it }, isArabic, compact = true) }
-                    FilterActionButton(isArabic = isArabic, expanded = showFilters, onClick = {
-                        scope.launch {
-                            listState.animateScrollToItem(0)
-                            showFilters = !showFilters
-                        }
-                    })
                 }
             }
             LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {

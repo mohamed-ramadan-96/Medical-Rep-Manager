@@ -1,5 +1,9 @@
 package com.medicalrep.manager.ui
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material3.Surface
+import androidx.compose.material.icons.outlined.HelpOutline
+import androidx.compose.material3.Divider
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -103,6 +107,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
     var centerFilterMenu by remember { mutableStateOf(false) }
     var specialtyFilterMenu by remember { mutableStateOf(false) }
     var showFilters by remember { mutableStateOf(false) }
+    var showPageDescription by remember { mutableStateOf(false) }
 
     val groupedSlots = slots.groupBy { it.slotGroupId.ifBlank { "legacy-${it.id}" } }
         .values.sortedWith(compareBy(
@@ -121,6 +126,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
 
     Scaffold(
         modifier = Modifier.padding(padding),
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
             if (doctors.isNotEmpty()) {
                 FloatingActionButton(onClick = { editingGroup = emptyList(); showForm = true }) {
@@ -133,25 +139,41 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
             modifier = Modifier.fillMaxSize().padding(inner).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                if (isArabic) "جدول المواعيد المتاحة" else "Weekly availability",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-            Text(
-                if (isArabic) "استعرض الأطباء حسب اليوم أو المركز أو التخصص، ويمكنك إضافة وتعديل مواعيد التواجد." else "Browse doctors by day, center or specialty, and add or edit their availability.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            TextButton(onClick = { showFilters = !showFilters }, modifier = Modifier.fillMaxWidth()) {
-                Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(20.dp))
-                Text(if (isArabic) "فلترة" else "Filters", modifier = Modifier.padding(horizontal = 8.dp))
-                Icon(if (showFilters) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null, modifier = Modifier.size(20.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    if (isArabic) "جدول المواعيد المتاحة" else "Weekly availability",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                IconButton(onClick = { showPageDescription = true }, modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.Outlined.HelpOutline, contentDescription = if (isArabic) "عن جدول المواعيد" else "About availability", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Surface(
+                onClick = { showFilters = !showFilters },
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Text(if (isArabic) "الفلاتر" else "Filters", modifier = Modifier.padding(horizontal = 10.dp), style = MaterialTheme.typography.labelLarge)
+                    Icon(if (showFilters) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null, modifier = Modifier.size(20.dp))
+                }
             }
             AnimatedVisibility(
                 visible = showFilters,
-                enter = expandVertically(animationSpec = tween(220)) + fadeIn(animationSpec = tween(180)),
-                exit = shrinkVertically(animationSpec = tween(180)) + fadeOut(animationSpec = tween(140))
+                enter = expandVertically(animationSpec = tween(320)) + fadeIn(animationSpec = tween(260)),
+                exit = shrinkVertically(animationSpec = tween(280)) + fadeOut(animationSpec = tween(200))
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -222,6 +244,15 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                 }
             }
         }
+    }
+
+    if (showPageDescription) {
+        AlertDialog(
+            onDismissRequest = { showPageDescription = false },
+            title = { Text(if (isArabic) "جدول المواعيد المتاحة" else "Weekly availability") },
+            text = { Text(if (isArabic) "استعرض الأطباء حسب اليوم أو المركز أو التخصص، ويمكنك إضافة وتعديل مواعيد التواجد." else "Browse doctors by day, center or specialty, and add or edit their availability.") },
+            confirmButton = { TextButton(onClick = { showPageDescription = false }) { Text(if (isArabic) "حسناً" else "Got it") } }
+        )
     }
 
     if (showForm) {

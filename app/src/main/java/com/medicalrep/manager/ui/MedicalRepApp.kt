@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
@@ -36,6 +37,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -44,8 +46,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,10 +73,8 @@ private val tabs = listOf(
     Tab("Home", "الرئيسية", Icons.Filled.Home),
     Tab("Doctors", "الأطباء", Icons.Filled.PeopleAlt),
     Tab("Centers", "المراكز", Icons.Filled.LocalHospital),
-    Tab("Specialties", "التخصصات", Icons.Filled.MedicalServices),
     Tab("Hours", "المواعيد", Icons.Filled.CalendarMonth),
-    Tab("Visits", "الزيارات", Icons.Filled.History),
-    Tab("Plan", "الخطة", Icons.Filled.Groups)
+    Tab("Follow-up", "المتابعة", Icons.Filled.Assignment)
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -85,6 +88,7 @@ fun MedicalRepApp() {
         mutableStateOf(if (preferences.getBoolean("arabic_language", true)) AppLanguage.Arabic else AppLanguage.English)
     }
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    var showSpecialtiesManagement by rememberSaveable { mutableStateOf(false) }
     val isArabic = language == AppLanguage.Arabic
 
     androidx.compose.runtime.CompositionLocalProvider(
@@ -122,7 +126,7 @@ fun MedicalRepApp() {
                     tabs.forEachIndexed { index, tab ->
                         NavigationBarItem(
                             selected = selectedTab == index,
-                            onClick = { selectedTab = index },
+                            onClick = { selectedTab = index; showSpecialtiesManagement = false },
                             icon = { Icon(tab.icon, contentDescription = null) },
                             label = { Text(if (isArabic) tab.titleAr else tab.titleEn, maxLines = 1, softWrap = false) }
                         )
@@ -151,16 +155,35 @@ fun MedicalRepApp() {
             ) { tab ->
                 when (tab) {
                     0 -> DashboardScreen(isArabic, innerPadding)
-                    1 -> DoctorsScreen(isArabic = isArabic, padding = innerPadding)
+                    1 -> if (showSpecialtiesManagement) SpecialtiesScreen(isArabic = isArabic, padding = innerPadding) else DoctorsScreen(isArabic = isArabic, padding = innerPadding, onManageSpecialties = { showSpecialtiesManagement = true })
                     2 -> CentersScreen(isArabic = isArabic, padding = innerPadding)
-                    3 -> SpecialtiesScreen(isArabic = isArabic, padding = innerPadding)
-                    4 -> ScheduleScreen(isArabic = isArabic, padding = innerPadding)
-                    5 -> VisitsScreen(isArabic = isArabic, padding = innerPadding)
-                    6 -> WeeklyPlanScreen(isArabic = isArabic, padding = innerPadding)
+                    3 -> ScheduleScreen(isArabic = isArabic, padding = innerPadding)
+                    4 -> FollowUpScreen(isArabic = isArabic, padding = innerPadding)
                     else -> DashboardScreen(isArabic, innerPadding)
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun FollowUpScreen(isArabic: Boolean, padding: PaddingValues) {
+    var showPlan by rememberSaveable { mutableStateOf(true) }
+    Scaffold(
+        modifier = Modifier.padding(padding),
+        topBar = {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FilterChip(selected = showPlan, onClick = { showPlan = true }, label = { Text(if (isArabic) "الخطة" else "Plan") }, leadingIcon = { Icon(Icons.Filled.CalendarMonth, contentDescription = null) }, modifier = Modifier.weight(1f))
+                FilterChip(selected = !showPlan, onClick = { showPlan = false }, label = { Text(if (isArabic) "الزيارات" else "Visits") }, leadingIcon = { Icon(Icons.Filled.History, contentDescription = null) }, modifier = Modifier.weight(1f))
+            }
+        }
+    ) { innerPadding ->
+        if (showPlan) WeeklyPlanScreen(isArabic = isArabic, padding = innerPadding)
+        else VisitsScreen(isArabic = isArabic, padding = innerPadding)
     }
 }
 

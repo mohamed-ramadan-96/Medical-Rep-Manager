@@ -43,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -86,6 +87,7 @@ fun MedicalRepApp() {
     }
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var showSpecialtiesManagement by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(Unit) { if (selectedTab !in tabs.indices) selectedTab = 0 }
     val isArabic = language == AppLanguage.Arabic
 
     androidx.compose.runtime.CompositionLocalProvider(

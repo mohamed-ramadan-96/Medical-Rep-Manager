@@ -226,6 +226,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
 
     Scaffold(
         modifier = Modifier.padding(padding),
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
             FloatingActionButton(onClick = {
                 editingDoctor = null
@@ -270,7 +271,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
         Column(modifier = Modifier.fillMaxSize().padding(inner)) {
             LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 item {
-                    Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                    Row(Modifier.fillMaxWidth().padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(if (isArabic) "إدارة الأطباء" else "Doctors", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                         TextButton(onClick = onManageSpecialties) { Icon(Icons.Default.MedicalServices, contentDescription = null, modifier = Modifier.size(18.dp)); Text(if (isArabic) "التخصصات" else "Specialties") }
                     }
@@ -311,7 +312,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                         if (isArabic) "${filteredDoctors.size} من ${doctors.size} طبيب" else "${filteredDoctors.size} of ${doctors.size} doctors",
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 2.dp)
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp)
                     )
                 }
                 item {

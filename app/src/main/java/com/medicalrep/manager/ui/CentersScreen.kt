@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,6 +51,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.medicalrep.manager.data.MedicalCenterEntity
+import com.medicalrep.manager.data.CenterAvailabilityEntity
 import androidx.room.withTransaction
 import com.medicalrep.manager.data.MedicalRepDatabase
 import kotlinx.coroutines.launch
@@ -63,6 +65,8 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val database = remember { MedicalRepDatabase.getInstance(context) }
     val dao = database.medicalCenterDao()
     val doctorDao = database.doctorDao()
+    val centerAvailabilityDao = database.centerAvailabilityDao()
+    val centerAvailability by centerAvailabilityDao.observeAll().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     val centers by dao.observeAll().collectAsState(initial = emptyList())
     var editing by remember { mutableStateOf<MedicalCenterEntity?>(null) }
@@ -157,15 +161,19 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
         CenterFormDialog(
             isArabic = isArabic,
             initial = editing,
+            initialAvailability = editing?.let { item -> centerAvailability.filter { it.centerId == item.id } }.orEmpty(),
             onDismiss = { showForm = false },
-            onSave = { center ->
+            onSave = { center, slots ->
                 scope.launch {
                     if (center.id == 0L) {
-                        dao.insert(center)
+                        val centerId = dao.insert(center)
+                        slots.forEach { centerAvailabilityDao.insert(it.copy(centerId = centerId)) }
                     } else {
                         database.withTransaction {
                             dao.update(center)
                             doctorDao.renameLegacyCenter(center.id, center.name)
+                            centerAvailability.filter { it.centerId == center.id }.forEach { centerAvailabilityDao.delete(it) }
+                            slots.forEach { centerAvailabilityDao.insert(it.copy(centerId = center.id)) }
                         }
                     }
                 }
@@ -239,14 +247,19 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
 private fun CenterFormDialog(
     isArabic: Boolean,
     initial: MedicalCenterEntity?,
+    initialAvailability: List<CenterAvailabilityEntity>,
     onDismiss: () -> Unit,
-    onSave: (MedicalCenterEntity) -> Unit
+    onSave: (MedicalCenterEntity, List<CenterAvailabilityEntity>) -> Unit
 ) {
     val context = LocalContext.current
     var name by remember(initial) { mutableStateOf(initial?.name.orEmpty()) }
     var address by remember(initial) { mutableStateOf(initial?.address.orEmpty()) }
     var phone by remember(initial) { mutableStateOf(initial?.phone.orEmpty()) }
     var notes by remember(initial) { mutableStateOf(initial?.notes.orEmpty()) }
+    var workDays by remember(initial, initialAvailability) { mutableStateOf(initialAvailability.map { it.dayOfWeek }.toSet().ifEmpty { setOf(6, 7, 1, 2, 3, 4, 5) }) }
+    var workStart by remember(initial, initialAvailability) { mutableStateOf(initialAvailability.firstOrNull()?.startTime ?: "09:00") }
+    var workEnd by remember(initial, initialAvailability) { mutableStateOf(initialAvailability.firstOrNull()?.endTime ?: "22:00") }
+    var workNotes by remember(initial, initialAvailability) { mutableStateOf(initialAvailability.firstOrNull()?.notes.orEmpty()) }
     var unregisteredDoctorCount by remember(initial) { mutableStateOf(initial?.unregisteredDoctorCount?.toString() ?: "0") }
     var latitude by remember(initial) { mutableStateOf(initial?.latitude) }
     var longitude by remember(initial) { mutableStateOf(initial?.longitude) }
@@ -284,6 +297,22 @@ private fun CenterFormDialog(
                 }
                 item {
                     OutlinedTextField(value = unregisteredDoctorCount, onValueChange = { value -> unregisteredDoctorCount = value.filter { it.isDigit() } }, modifier = Modifier.fillMaxWidth(), singleLine = true, label = { Text(if (isArabic) "عدد الدكاترة غير المسجلين" else "Unregistered doctors count") })
+                }
+
+                item {
+                    Text(if (isArabic) "مواعيد عمل المركز" else "Center working hours", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text(if (isArabic) "المواعيد دي تخص المركز نفسه، ومش محتاجة ملفات أطباء." else "These hours belong to the center itself and do not require doctor profiles.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    listOf(6 to "السبت", 7 to "الأحد", 1 to "الاثنين", 2 to "الثلاثاء", 3 to "الأربعاء", 4 to "الخميس", 5 to "الجمعة").forEach { (day, label) ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = day in workDays, onCheckedChange = { checked -> workDays = if (checked) workDays + day else workDays - day })
+                            Text(if (isArabic) label else listOf("Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday").getOrNull(day - 1).orEmpty())
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(value = workStart, onValueChange = { workStart = it }, modifier = Modifier.weight(1f), singleLine = true, label = { Text(if (isArabic) "من HH:mm" else "From HH:mm") })
+                        OutlinedTextField(value = workEnd, onValueChange = { workEnd = it }, modifier = Modifier.weight(1f), singleLine = true, label = { Text(if (isArabic) "إلى HH:mm" else "To HH:mm") })
+                    }
+                    OutlinedTextField(value = workNotes, onValueChange = { workNotes = it }, modifier = Modifier.fillMaxWidth(), label = { Text(if (isArabic) "ملاحظات مواعيد المركز" else "Working-hours notes") })
                 }
                 item {
                     OutlinedTextField(
@@ -384,8 +413,22 @@ private fun CenterFormDialog(
                         latitude = latitude,
                         longitude = longitude,
                         mapUrl = mapUrl,
+
                         unregisteredDoctorCount = unregisteredDoctorCount.toIntOrNull() ?: 0
-                    )
+                    ),
+                    workDays.map { day ->
+                        val old = initialAvailability.firstOrNull { it.dayOfWeek == day }
+                        CenterAvailabilityEntity(
+                            id = old?.id ?: 0L,
+                            centerId = initial?.id ?: 0L,
+                            dayOfWeek = day,
+                            startTime = workStart,
+                            endTime = workEnd,
+                            notes = workNotes.trim(),
+                            createdAt = old?.createdAt ?: System.currentTimeMillis(),
+                            slotGroupId = initialAvailability.firstOrNull()?.slotGroupId?.takeIf { it.isNotBlank() } ?: java.util.UUID.randomUUID().toString()
+                        )
+                    }
                 )
             }) { Text(if (isArabic) "حفظ" else "Save") }
         },

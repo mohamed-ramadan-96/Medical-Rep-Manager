@@ -1098,6 +1098,7 @@ private fun DoctorFormDialog(
                 }
                 item {
                     OutlinedTextField(
+                        shape = RoundedCornerShape(14.dp),
                         value = name, onValueChange = { name = it; nameError = false },
                         modifier = Modifier.fillMaxWidth(), singleLine = true,
                         label = { Text(if (isArabic) "اسم الطبيب *" else "Doctor name *") },
@@ -1114,6 +1115,7 @@ private fun DoctorFormDialog(
                 }
                 item {
                     OutlinedTextField(
+                        shape = RoundedCornerShape(14.dp),
                         value = phones, onValueChange = { phones = it },
                         modifier = Modifier.fillMaxWidth(), minLines = 2,
                         label = { Text(if (isArabic) "أرقام الهاتف (كل رقم في سطر)" else "Phone numbers (one per line)") }
@@ -1156,6 +1158,7 @@ private fun DoctorFormDialog(
                                     }
                                 }
                                 OutlinedTextField(
+                        shape = RoundedCornerShape(14.dp),
                                     value = newArea,
                                     onValueChange = { newArea = it },
                                     modifier = Modifier.fillMaxWidth(),
@@ -1206,7 +1209,7 @@ private fun DoctorFormDialog(
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(if (isArabic) "كل فترة مستقلة: عامة أو مرتبطة بمركز من المراكز المختارة." else "Each slot is independent: general or linked to one of the selected centers.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             availabilityDrafts.forEachIndexed { index, draft ->
-                                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                                Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
                                     Column(Modifier.fillMaxWidth().padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                         Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                                             Text((if (isArabic) "الفترة " else "Slot ") + (index + 1), modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
@@ -1244,14 +1247,14 @@ private fun DoctorFormDialog(
                                             }
                                         }
                                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            OutlinedTextField(value = draft.startTime, onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(startTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, label = { Text(if (isArabic) "من HH:mm" else "From HH:mm") })
-                                            OutlinedTextField(value = draft.endTime, onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(endTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, label = { Text(if (isArabic) "إلى HH:mm" else "To HH:mm") })
+                                            OutlinedTextField(shape = RoundedCornerShape(14.dp), value = draft.startTime, onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(startTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, label = { Text(if (isArabic) "من HH:mm" else "From HH:mm") })
+                                            OutlinedTextField(shape = RoundedCornerShape(14.dp), value = draft.endTime, onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(endTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, label = { Text(if (isArabic) "إلى HH:mm" else "To HH:mm") })
                                         }
-                                        OutlinedTextField(value = draft.notes, onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(notes = value) } }, modifier = Modifier.fillMaxWidth(), label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") })
+                                        OutlinedTextField(shape = RoundedCornerShape(14.dp), value = draft.notes, onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(notes = value) } }, modifier = Modifier.fillMaxWidth(), label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") })
                                     }
                                 }
                             }
-                            OutlinedButton(onClick = { availabilityDrafts = availabilityDrafts + DoctorAvailabilityDraft() }, modifier = Modifier.fillMaxWidth()) { Text(if (isArabic) "+ إضافة فترة" else "+ Add slot") }
+                            OutlinedButton(shape = RoundedCornerShape(14.dp), onClick = { availabilityDrafts = availabilityDrafts + DoctorAvailabilityDraft() }, modifier = Modifier.fillMaxWidth()) { Text(if (isArabic) "+ إضافة فترة" else "+ Add slot") }
                         }
                     }
                 }
@@ -1262,10 +1265,10 @@ private fun DoctorFormDialog(
                         val hasDoctorLocation = (latitude != null && longitude != null) || !mapUrl.isNullOrBlank()
                         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             if (hasDoctorLocation) {
-                                OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = {
+                                OutlinedButton(shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth(), onClick = {
                                     latitude = null; longitude = null; mapUrl = null; editDoctorLocation = false
                                 }) { Text(if (isArabic) "مسح الموقع" else "Remove location") }
-                                OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = { editDoctorLocation = !editDoctorLocation }) {
+                                OutlinedButton(shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth(), onClick = { editDoctorLocation = !editDoctorLocation }) {
                                     Text(if (isArabic) "تعديل الموقع" else "Edit location")
                                 }
                             }
@@ -1274,7 +1277,7 @@ private fun DoctorFormDialog(
                                 CurrentLocationButton(isArabic = isArabic) { lat, lon ->
                                     latitude = lat; longitude = lon; mapUrl = null; editDoctorLocation = false
                                 }
-                                OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = { showDoctorMapPicker = true }) {
+                                OutlinedButton(shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth(), onClick = { showDoctorMapPicker = true }) {
                                     Text(if (isArabic) "اختيار من الخريطة" else "Choose on map")
                                 }
                                 }
@@ -1291,6 +1294,7 @@ private fun DoctorFormDialog(
                 }
                 item {
                     OutlinedTextField(
+                        shape = RoundedCornerShape(14.dp),
                         value = notes, onValueChange = { notes = it },
                         modifier = Modifier.fillMaxWidth(), minLines = 2,
                         label = { Text(if (isArabic) "ملاحظات" else "Notes") }

@@ -129,8 +129,6 @@ private fun ReferenceNavigationIcon(name: String) {
                         lineTo(42f, 39f); quadraticTo(42f, 43f, 38f, 43f); lineTo(34f, 43f)
                     }
                     drawPath(wings, color, style = stroke)
-                    drawLine(color, androidx.compose.ui.geometry.Offset(24.5f, 11f), androidx.compose.ui.geometry.Offset(24.5f, 21f), 2.8f, cap = StrokeCap.Round)
-                    drawLine(color, androidx.compose.ui.geometry.Offset(20f, 16f), androidx.compose.ui.geometry.Offset(29f, 16f), 2.8f, cap = StrokeCap.Round)
                     drawLine(color, androidx.compose.ui.geometry.Offset(20f, 28f), androidx.compose.ui.geometry.Offset(29f, 28f), 2.8f, cap = StrokeCap.Round)
                     drawLine(color, androidx.compose.ui.geometry.Offset(20f, 35f), androidx.compose.ui.geometry.Offset(29f, 35f), 2.8f, cap = StrokeCap.Round)
                 }
@@ -227,7 +225,13 @@ fun MedicalRepApp() {
                             onClick = { selectedTab = index; showSpecialtiesManagement = false },
                             icon = { ReferenceNavigationIcon(tab.icon) },
                             label = { Text(if (isArabic) tab.titleAr else tab.titleEn, maxLines = 1, softWrap = false) },
-                            colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent)
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                indicatorColor = MaterialTheme.colorScheme.secondaryContainer
+                            )
                         )
                     }
                 }

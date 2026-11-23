@@ -1287,9 +1287,7 @@ private fun DoctorFormDialog(
                             focusedContainerColor = MaterialTheme.colorScheme.surface,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                             focusedBorderColor = MaterialTheme.colorScheme.outline,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                            focusedBorderThickness = 1.dp,
-                            unfocusedBorderThickness = 1.dp
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
                         ),
                         value = name, onValueChange = { name = it; nameError = false },
                         modifier = Modifier.fillMaxWidth(), singleLine = true,
@@ -1318,9 +1316,7 @@ private fun DoctorFormDialog(
                             focusedContainerColor = MaterialTheme.colorScheme.surface,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                             focusedBorderColor = MaterialTheme.colorScheme.outline,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                            focusedBorderThickness = 1.dp,
-                            unfocusedBorderThickness = 1.dp
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
                         ),
                                 value = phone,
                                 onValueChange = { value ->
@@ -1392,9 +1388,7 @@ private fun DoctorFormDialog(
                             focusedContainerColor = MaterialTheme.colorScheme.surface,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                             focusedBorderColor = MaterialTheme.colorScheme.outline,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                            focusedBorderThickness = 1.dp,
-                            unfocusedBorderThickness = 1.dp
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
                         ),
                                     value = newArea,
                                     onValueChange = { newArea = it },
@@ -1501,22 +1495,12 @@ private fun DoctorFormDialog(
                             focusedContainerColor = MaterialTheme.colorScheme.surface,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                             focusedBorderColor = MaterialTheme.colorScheme.outline,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                            focusedBorderThickness = 1.dp,
-                            unfocusedBorderThickness = 1.dp
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
                         ),
                                     }
                                 }
                             }
                         OutlinedButton(shape = RoundedCornerShape(14.dp), onClick = { availabilityDrafts = availabilityDrafts + DoctorAvailabilityDraft() }, modifier = Modifier.fillMaxWidth()) { Text(if (isArabic) "+ إضافة فترة" else "+ Add slot") }
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                            focusedBorderColor = MaterialTheme.colorScheme.outline,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                            focusedBorderThickness = 1.dp,
-                            unfocusedBorderThickness = 1.dp
-                        ),
                     }
                 }
                 availabilityError?.let { message -> item { Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) } }
@@ -1573,9 +1557,7 @@ private fun DoctorFormDialog(
                             focusedContainerColor = MaterialTheme.colorScheme.surface,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                             focusedBorderColor = MaterialTheme.colorScheme.outline,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                            focusedBorderThickness = 1.dp,
-                            unfocusedBorderThickness = 1.dp
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
                         ),
                         value = notes, onValueChange = { notes = it },
                         modifier = Modifier.fillMaxWidth(), minLines = 2,

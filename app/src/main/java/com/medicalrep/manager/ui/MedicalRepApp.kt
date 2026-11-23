@@ -34,6 +34,12 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.outlined.PeopleAlt
 import androidx.compose.material3.Card
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
+import com.medicalrep.manager.AppUpdateInfo
+import com.medicalrep.manager.checkForAppUpdate
+import com.medicalrep.manager.downloadAppUpdate
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -147,6 +153,10 @@ private fun ReferenceNavigationIcon(name: String) {
 @Composable
 fun MedicalRepApp() {
     val context = LocalContext.current
+    var availableUpdate by remember { mutableStateOf<AppUpdateInfo?>(null) }
+    LaunchedEffect(Unit) {
+        availableUpdate = checkForAppUpdate(context)
+    }
     val preferences = remember(context) {
         context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
     }
@@ -230,6 +240,41 @@ fun MedicalRepApp() {
                     else -> DashboardScreen(isArabic, innerPadding)
                 }
             }
+        }
+        availableUpdate?.let { update ->
+            AlertDialog(
+                onDismissRequest = { availableUpdate = null },
+                title = { Text(if (isArabic) "تحديث جديد متاح" else "Update available") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            if (isArabic) "الإصدار الجديد: ${update.versionName}" else "New version: ${update.versionName}",
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        if (update.releaseNotes.isNotBlank()) {
+                            Text(update.releaseNotes, style = MaterialTheme.typography.bodyMedium)
+                        }
+                        Text(
+                            if (isArabic) "سيتم تنزيل ملف التحديث، وبعدها سيطلب Android تأكيد التثبيت." else "The update APK will download, then Android will ask you to confirm installation.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(onClick = {
+                        downloadAppUpdate(context, update)
+                        availableUpdate = null
+                    }) {
+                        Text(if (isArabic) "تحميل التحديث" else "Download update")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { availableUpdate = null }) {
+                        Text(if (isArabic) "لاحقًا" else "Later")
+                    }
+                }
+            )
         }
     }
 }

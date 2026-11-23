@@ -76,6 +76,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.room.withTransaction
 import androidx.compose.runtime.collectAsState
@@ -1000,6 +1003,49 @@ private fun DoctorDetailsDialog(
 
 }
 
+
+private fun doctorDisplayTime(value: String): String {
+    val parts = value.split(":")
+    val hour = parts.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 23) ?: 9
+    val minute = parts.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 59) ?: 0
+    val suffix = if (hour < 12) "AM" else "PM"
+    val displayHour = when (hour % 12) { 0 -> 12; else -> hour % 12 }
+    return String.format(Locale.US, "%02d:%02d %s", displayHour, minute, suffix)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DoctorAvailabilityTimePickerDialog(
+    isArabic: Boolean,
+    initialValue: String,
+    onDismiss: () -> Unit,
+    onConfirm: (Int, Int) -> Unit
+) {
+    val parts = initialValue.split(":")
+    val initialHour = parts.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 23) ?: 9
+    val initialMinute = parts.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 59) ?: 0
+    val state = rememberTimePickerState(
+        initialHour = initialHour,
+        initialMinute = initialMinute,
+        is24Hour = false
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (isArabic) "اختيار الوقت" else "Choose time") },
+        text = { TimePicker(state = state) },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(state.hour, state.minute) }) {
+                Text(if (isArabic) "تأكيد" else "Confirm")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(if (isArabic) "إلغاء" else "Cancel")
+            }
+        }
+    )
+}
+
 private data class DoctorAvailabilityDraft(
     val groupId: String = UUID.randomUUID().toString(),
     val days: Set<Int> = setOf(6),
@@ -1064,6 +1110,7 @@ private fun DoctorFormDialog(
     var editDoctorLocation by remember { mutableStateOf(false) }
     var nameError by remember { mutableStateOf(false) }
     var availabilityError by remember { mutableStateOf<String?>(null) }
+    var availabilityTimePickerTarget by remember { mutableStateOf<Pair<Int, Boolean>?>(null) }
     var showAreaRequiredDialog by remember { mutableStateOf(false) }
 
     val photoPicker = rememberLauncherForActivityResult(
@@ -1311,8 +1358,20 @@ private fun DoctorFormDialog(
                                             }
                                         }
                                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            OutlinedTextField(shape = RoundedCornerShape(14.dp), value = draft.startTime, onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(startTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, label = { Text(if (isArabic) "من HH:mm" else "From HH:mm") })
-                                            OutlinedTextField(shape = RoundedCornerShape(14.dp), value = draft.endTime, onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(endTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, label = { Text(if (isArabic) "إلى HH:mm" else "To HH:mm") })
+                                            Box(modifier = Modifier.weight(1f)) {
+                                                OutlinedSelectionField(
+                                                    label = if (isArabic) "من — AM / PM" else "From — AM / PM",
+                                                    value = doctorDisplayTime(draft.startTime),
+                                                    onClick = { availabilityTimePickerTarget = index to true }
+                                                )
+                                            }
+                                            Box(modifier = Modifier.weight(1f)) {
+                                                OutlinedSelectionField(
+                                                    label = if (isArabic) "إلى — AM / PM" else "To — AM / PM",
+                                                    value = doctorDisplayTime(draft.endTime),
+                                                    onClick = { availabilityTimePickerTarget = index to false }
+                                                )
+                                            }
                                         }
                                         OutlinedTextField(shape = RoundedCornerShape(14.dp), value = draft.notes, onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(notes = value) } }, modifier = Modifier.fillMaxWidth(), label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") })
                                     }
@@ -1417,6 +1476,26 @@ private fun DoctorFormDialog(
             TextButton(onClick = onDismiss) { Text(if (isArabic) "إلغاء" else "Cancel") }
         }
     )
+
+    availabilityTimePickerTarget?.let { (draftIndex, isStart) ->
+        val currentDraft = availabilityDrafts.getOrNull(draftIndex)
+        if (currentDraft != null) {
+            DoctorAvailabilityTimePickerDialog(
+                isArabic = isArabic,
+                initialValue = if (isStart) currentDraft.startTime else currentDraft.endTime,
+                onDismiss = { availabilityTimePickerTarget = null },
+                onConfirm = { hour, minute ->
+                    val value = String.format(Locale.US, "%02d:%02d", hour, minute)
+                    availabilityDrafts = availabilityDrafts.toMutableList().also { list ->
+                        val current = list[draftIndex]
+                        list[draftIndex] = if (isStart) current.copy(startTime = value) else current.copy(endTime = value)
+                    }
+                    availabilityError = null
+                    availabilityTimePickerTarget = null
+                }
+            )
+        }
+    }
 
     if (showSpecialtyPicker) {
         AlertDialog(

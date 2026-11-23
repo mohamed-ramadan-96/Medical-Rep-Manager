@@ -1490,13 +1490,19 @@ private fun DoctorFormDialog(
                                                 )
                                             }
                                         }
-                                        OutlinedTextField(shape = RoundedCornerShape(14.dp), value = draft.notes, onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(notes = value) } }, modifier = Modifier.fillMaxWidth(), label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") })
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                            focusedBorderColor = MaterialTheme.colorScheme.outline,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                        ),
+                                        OutlinedTextField(
+                                            value = draft.notes,
+                                            onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(notes = value) } },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(14.dp),
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                                focusedBorderColor = MaterialTheme.colorScheme.outline,
+                                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                            ),
+                                            label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") }
+                                        )
                                     }
                                 }
                             }

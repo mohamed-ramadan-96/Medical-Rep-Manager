@@ -80,8 +80,7 @@ jobs:
             exit 1
           fi
           TAG="v$VERSION_NAME"
-          RELEASES_REPOSITORY="mohamed-ramadan-96/Medical-Rep-Manager-Releases"
-          if git ls-remote --exit-code "https://github.com/$RELEASES_REPOSITORY.git" "refs/tags/$TAG" >/dev/null 2>&1; then
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
             echo "::error::Tag $TAG already exists. Use a new version name."
             exit 1
           fi
@@ -146,7 +145,7 @@ jobs:
           VERSION_NAME: ${{ inputs.version_name }}
           VERSION_CODE: ${{ github.run_number }}
           RELEASE_NOTES: ${{ inputs.release_notes }}
-          REPOSITORY: mohamed-ramadan-96/Medical-Rep-Manager-Releases
+          REPOSITORY: ${{ github.repository }}
         run: |
           TAG="v$VERSION_NAME"
           APK_NAME="$(basename "$APK_PATH")"
@@ -159,12 +158,10 @@ jobs:
             '{versionName:$versionName,versionCode:$versionCode,apkUrl:$apkUrl,releaseNotes:$notes}' \
             > dist/latest.json
 
-      - name: Publish GitHub Release to public updates repository
+      - name: Publish GitHub Release
         if: inputs.build_type == 'final'
         uses: softprops/action-gh-release@v2
         with:
-          repository: mohamed-ramadan-96/Medical-Rep-Manager-Releases
-          token: ${{ secrets.RELEASES_REPO_TOKEN }}
           tag_name: v${{ inputs.version_name }}
           name: Medical Rep Manager v${{ inputs.version_name }}
           body: ${{ inputs.release_notes }}

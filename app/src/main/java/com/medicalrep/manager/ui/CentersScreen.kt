@@ -22,6 +22,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
@@ -75,6 +77,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     var pendingDelete by remember { mutableStateOf<MedicalCenterEntity?>(null) }
     var attachmentsCenter by remember { mutableStateOf<MedicalCenterEntity?>(null) }
     var directionsCenter by remember { mutableStateOf<MedicalCenterEntity?>(null) }
+    var expandedCenterIds by remember { mutableStateOf(emptySet<Long>()) }
 
     Scaffold(
         modifier = Modifier.padding(padding),
@@ -111,55 +114,96 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(centers, key = { it.id }) { center ->
+                        val expanded = center.id in expandedCenterIds
+                        val centerSlots = centerAvailability.filter { it.centerId == center.id }
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Icon(Icons.Default.LocalHospital, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text(center.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                    if (center.address.isNotBlank()) Text(center.address, style = MaterialTheme.typography.bodyMedium)
-                                    if (center.phone.isNotBlank()) Text(center.phone, style = MaterialTheme.typography.bodyMedium)
-                                    if (center.notes.isNotBlank()) Text(center.notes, style = MaterialTheme.typography.bodySmall)
-                                    Text((if (isArabic) "عدد الأطباء غير المسجلين: " else "Unregistered doctors: ") + center.unregisteredDoctorCount, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text((if (isArabic) "أطباء بملفات مسجلة: " else "Registered doctor profiles: ") + doctorCenterLinks.count { it.centerId == center.id }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    val centerSlots = centerAvailability.filter { it.centerId == center.id }
-                                    if (centerSlots.isNotEmpty()) {
-                                        Text(if (isArabic) "مواعيد عمل المركز" else "Center working hours", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                                        centerSlots.groupBy { it.slotGroupId }.values.forEach { group ->
-                                            val first = group.first()
-                                            val daysText = group.map { slot -> mapOf(6 to "السبت", 7 to "الأحد", 1 to "الاثنين", 2 to "الثلاثاء", 3 to "الأربعاء", 4 to "الخميس", 5 to "الجمعة")[slot.dayOfWeek].orEmpty() }.joinToString("، ")
-                                            Text(daysText + " • " + first.startTime + " – " + first.endTime, style = MaterialTheme.typography.bodySmall)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Default.LocalHospital, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+                                    Column(
+                                        modifier = Modifier.weight(1f),
+                                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                                    ) {
+                                        Text(center.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, maxLines = 1)
+                                        if (center.address.isNotBlank()) {
+                                            Text(center.address, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                                        }
+                                        if (center.phone.isNotBlank()) {
+                                            Text(center.phone, style = MaterialTheme.typography.bodySmall, maxLines = 1)
                                         }
                                     }
-                                }
-                                if ((center.latitude != null && center.longitude != null) || !center.mapUrl.isNullOrBlank()) {
                                     IconButton(
-                                        modifier = Modifier.size(40.dp),
-                                        onClick = { directionsCenter = center }
+                                        modifier = Modifier.size(34.dp),
+                                        onClick = { expandedCenterIds = if (expanded) expandedCenterIds - center.id else expandedCenterIds + center.id }
                                     ) {
                                         Icon(
-                                            Icons.Default.LocationOn,
-                                            contentDescription = if (isArabic) "الاتجاهات إلى المركز" else "Directions to center",
-                                            tint = MaterialTheme.colorScheme.primary,
+                                            if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                            contentDescription = if (isArabic) {
+                                                if (expanded) "إخفاء التفاصيل" else "عرض التفاصيل"
+                                            } else {
+                                                if (expanded) "Hide details" else "Show details"
+                                            },
                                             modifier = Modifier.size(20.dp)
                                         )
                                     }
+                                    if ((center.latitude != null && center.longitude != null) || !center.mapUrl.isNullOrBlank()) {
+                                        IconButton(modifier = Modifier.size(34.dp), onClick = { directionsCenter = center }) {
+                                            Icon(Icons.Default.LocationOn, contentDescription = if (isArabic) "الاتجاهات إلى المركز" else "Directions to center", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                        }
+                                    }
+                                    IconButton(modifier = Modifier.size(34.dp), onClick = { attachmentsCenter = center }) {
+                                        Icon(Icons.Default.AttachFile, contentDescription = if (isArabic) "المرفقات" else "Attachments", modifier = Modifier.size(18.dp))
+                                    }
+                                    IconButton(modifier = Modifier.size(34.dp), onClick = { editing = center; showForm = true }) {
+                                        Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit", modifier = Modifier.size(18.dp))
+                                    }
+                                    IconButton(modifier = Modifier.size(34.dp), onClick = { pendingDelete = center }) {
+                                        Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete", modifier = Modifier.size(18.dp))
+                                    }
                                 }
-                                IconButton(modifier = Modifier.size(40.dp), onClick = { attachmentsCenter = center }) {
-                                    Icon(Icons.Default.AttachFile, contentDescription = if (isArabic) "المرفقات" else "Attachments", modifier = Modifier.size(20.dp))
-                                }
-                                IconButton(modifier = Modifier.size(40.dp), onClick = { editing = center; showForm = true }) {
-                                    Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit", modifier = Modifier.size(20.dp))
-                                }
-                                IconButton(modifier = Modifier.size(40.dp), onClick = { pendingDelete = center }) {
-                                    Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete", modifier = Modifier.size(20.dp))
+                                AnimatedVisibility(
+                                    visible = expanded,
+                                    enter = expandVertically(animationSpec = tween(220)) + fadeIn(animationSpec = tween(180)),
+                                    exit = shrinkVertically(animationSpec = tween(180)) + fadeOut(animationSpec = tween(120))
+                                ) {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth().padding(start = 28.dp, top = 4.dp, bottom = 4.dp),
+                                        verticalArrangement = Arrangement.spacedBy(5.dp)
+                                    ) {
+                                        if (center.notes.isNotBlank()) Text(center.notes, style = MaterialTheme.typography.bodySmall)
+                                        Text(
+                                            (if (isArabic) "عدد الأطباء غير المسجلين: " else "Unregistered doctors: ") + center.unregisteredDoctorCount,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            (if (isArabic) "أطباء بملفات مسجلة: " else "Registered doctor profiles: ") + doctorCenterLinks.count { it.centerId == center.id },
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        if (centerSlots.isNotEmpty()) {
+                                            Text(if (isArabic) "مواعيد عمل المركز" else "Center working hours", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                            centerSlots.groupBy { it.slotGroupId }.values.forEach { group ->
+                                                val first = group.first()
+                                                val daysText = group.map { slot ->
+                                                    mapOf(6 to "السبت", 7 to "الأحد", 1 to "الاثنين", 2 to "الثلاثاء", 3 to "الأربعاء", 4 to "الخميس", 5 to "الجمعة")[slot.dayOfWeek].orEmpty()
+                                                }.joinToString("، ")
+                                                Text(daysText + " • " + first.startTime + " – " + first.endTime, style = MaterialTheme.typography.bodySmall)
+                                                if (first.notes.isNotBlank()) Text(first.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

@@ -1074,21 +1074,36 @@ private fun DoctorAvailabilityTimePickerDialog(
         initialMinute = initialMinute,
         is24Hour = false
     )
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (isArabic) "اختيار الوقت" else "Choose time") },
-        text = { TimePicker(state = state) },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(state.hour, state.minute) }) {
-                Text(if (isArabic) "تأكيد" else "Confirm")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(if (isArabic) "إلغاء" else "Cancel")
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    if (isArabic) "اختيار الوقت" else "Choose time",
+                    style = MaterialTheme.typography.titleLarge
+                )
+                TimePicker(state = state)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text(if (isArabic) "إلغاء" else "Cancel")
+                    }
+                    TextButton(onClick = { onConfirm(state.hour, state.minute) }) {
+                        Text(if (isArabic) "تأكيد" else "Confirm")
+                    }
+                }
             }
         }
-    )
+    }
 }
 
 private data class DoctorAvailabilityDraft(

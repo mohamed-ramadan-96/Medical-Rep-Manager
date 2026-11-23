@@ -75,6 +75,7 @@ fun VisitsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.
 
     Scaffold(
         modifier = Modifier.padding(padding),
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
             if (doctors.isNotEmpty()) {
                 FloatingActionButton(onClick = { editing = null; showForm = true }) {
@@ -91,7 +92,7 @@ fun VisitsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.
                 if (isArabic) "سجل زيارات الأطباء" else "Doctor visit history",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = 2.dp)
             )
             Text(
                 if (isArabic) "سجّل نتيجة كل زيارة وملاحظاتها وموعد المتابعة." else "Record each visit outcome, notes, and next follow-up.",

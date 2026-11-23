@@ -40,6 +40,10 @@ import androidx.compose.material3.TextButton
 import com.medicalrep.manager.AppUpdateInfo
 import com.medicalrep.manager.checkForAppUpdate
 import com.medicalrep.manager.downloadAppUpdate
+import com.medicalrep.manager.getAppUpdateDownloadProgress
+import com.medicalrep.manager.AppUpdateDownloadProgress
+import android.app.DownloadManager
+import kotlinx.coroutines.delay
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -48,6 +52,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -154,6 +159,22 @@ private fun ReferenceNavigationIcon(name: String) {
 fun MedicalRepApp() {
     val context = LocalContext.current
     var availableUpdate by remember { mutableStateOf<AppUpdateInfo?>(null) }
+    var updateDownloadId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var updateDownloadProgress by remember { mutableStateOf<AppUpdateDownloadProgress?>(null) }
+
+    LaunchedEffect(updateDownloadId) {
+        val downloadId = updateDownloadId ?: return@LaunchedEffect
+        while (true) {
+            val progress = getAppUpdateDownloadProgress(context, downloadId)
+            updateDownloadProgress = progress
+            if (progress == null ||
+                progress.status == DownloadManager.STATUS_SUCCESSFUL ||
+                progress.status == DownloadManager.STATUS_FAILED
+            ) break
+            delay(500)
+        }
+    }
+
     LaunchedEffect(Unit) {
         availableUpdate = checkForAppUpdate(context)
     }
@@ -242,36 +263,107 @@ fun MedicalRepApp() {
             }
         }
         availableUpdate?.let { update ->
+            val progress = updateDownloadProgress
+            val isDownloading = updateDownloadId != null &&
+                progress?.status != DownloadManager.STATUS_SUCCESSFUL &&
+                progress?.status != DownloadManager.STATUS_FAILED
+            val downloadComplete = progress?.status == DownloadManager.STATUS_SUCCESSFUL
+            val downloadFailed = progress?.status == DownloadManager.STATUS_FAILED
+
             AlertDialog(
-                onDismissRequest = { availableUpdate = null },
-                title = { Text(if (isArabic) "تحديث جديد متاح" else "Update available") },
+                onDismissRequest = {
+                    if (!isDownloading) {
+                        availableUpdate = null
+                        updateDownloadId = null
+                        updateDownloadProgress = null
+                    }
+                },
+                title = {
+                    Text(
+                        when {
+                            isDownloading -> if (isArabic) "جارٍ تحميل التحديث" else "Downloading update"
+                            downloadComplete -> if (isArabic) "اكتمل تحميل التحديث" else "Update downloaded"
+                            downloadFailed -> if (isArabic) "فشل تحميل التحديث" else "Download failed"
+                            else -> if (isArabic) "تحديث جديد متاح" else "Update available"
+                        }
+                    )
+                },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
                             if (isArabic) "الإصدار الجديد: ${update.versionName}" else "New version: ${update.versionName}",
                             fontWeight = FontWeight.SemiBold
                         )
-                        if (update.releaseNotes.isNotBlank()) {
+
+                        if (updateDownloadId == null && update.releaseNotes.isNotBlank()) {
                             Text(update.releaseNotes, style = MaterialTheme.typography.bodyMedium)
                         }
-                        Text(
-                            if (isArabic) "سيتم تنزيل ملف التحديث، وبعدها سيطلب Android تأكيد التثبيت." else "The update APK will download, then Android will ask you to confirm installation.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+
+                        when {
+                            isDownloading -> {
+                                val percent = progress?.percent
+                                LinearProgressIndicator(
+                                    progress = { (percent ?: 0) / 100f },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                Text(
+                                    if (percent != null) {
+                                        if (isArabic) "تم تحميل $percent٪" else "Downloaded $percent%"
+                                    } else {
+                                        if (isArabic) "جاري تحميل الملف..." else "Downloading file…"
+                                    },
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                if (progress != null && progress.totalBytes > 0L) {
+                                    Text(
+                                        "${android.text.format.Formatter.formatShortFileSize(context, progress.downloadedBytes)} / ${android.text.format.Formatter.formatShortFileSize(context, progress.totalBytes)}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            downloadComplete -> Text(
+                                if (isArabic) "تم تنزيل الملف، وسيتم فتح شاشة تثبيت Android." else "Download complete. Android installer will open.",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            downloadFailed -> Text(
+                                if (isArabic) "تعذر تنزيل التحديث. تقدر تحاول مرة تانية." else "The download failed. You can try again.",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            else -> Text(
+                                if (isArabic) "سيظهر تقدم التحميل هنا، وبعدها سيطلب Android تأكيد التثبيت." else "Download progress will appear here, then Android will ask you to confirm installation.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 },
                 confirmButton = {
-                    Button(onClick = {
-                        downloadAppUpdate(context, update)
-                        availableUpdate = null
-                    }) {
-                        Text(if (isArabic) "تحميل التحديث" else "Download update")
+                    when {
+                        updateDownloadId == null || downloadFailed -> Button(onClick = {
+                            updateDownloadProgress = null
+                            updateDownloadId = downloadAppUpdate(context, update)
+                        }) {
+                            Text(if (isArabic) "تحميل التحديث" else "Download update")
+                        }
+                        downloadComplete -> TextButton(onClick = {
+                            availableUpdate = null
+                            updateDownloadId = null
+                            updateDownloadProgress = null
+                        }) {
+                            Text(if (isArabic) "إغلاق" else "Close")
+                        }
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { availableUpdate = null }) {
-                        Text(if (isArabic) "لاحقًا" else "Later")
+                    if (!isDownloading && !downloadComplete) {
+                        TextButton(onClick = {
+                            availableUpdate = null
+                            updateDownloadId = null
+                            updateDownloadProgress = null
+                        }) {
+                            Text(if (isArabic) "لاحقًا" else "Later")
+                        }
                     }
                 }
             )

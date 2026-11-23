@@ -6,6 +6,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -48,6 +51,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -116,8 +120,9 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     items(centers, key = { it.id }) { center ->
                         val expanded = center.id in expandedCenterIds
                         val centerSlots = centerAvailability.filter { it.centerId == center.id }
+                        val expandRotation by animateFloatAsState(targetValue = if (expanded) 180f else 0f, animationSpec = tween(180), label = "centerExpandRotation")
                         Card(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().animateContentSize(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)),
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                         ) {
@@ -148,13 +153,13 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                         onClick = { expandedCenterIds = if (expanded) expandedCenterIds - center.id else expandedCenterIds + center.id }
                                     ) {
                                         Icon(
-                                            if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                            Icons.Default.ExpandMore,
                                             contentDescription = if (isArabic) {
                                                 if (expanded) "إخفاء التفاصيل" else "عرض التفاصيل"
                                             } else {
                                                 if (expanded) "Hide details" else "Show details"
                                             },
-                                            modifier = Modifier.size(20.dp)
+                                            modifier = Modifier.size(20.dp).rotate(expandRotation)
                                         )
                                     }
                                 }
@@ -164,17 +169,17 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     if ((center.latitude != null && center.longitude != null) || !center.mapUrl.isNullOrBlank()) {
-                                        IconButton(modifier = Modifier.size(34.dp), onClick = { directionsCenter = center }) {
+                                        IconButton(modifier = Modifier.size(32.dp), onClick = { directionsCenter = center }) {
                                             Icon(Icons.Default.LocationOn, contentDescription = if (isArabic) "الاتجاهات إلى المركز" else "Directions to center", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                                         }
                                     }
-                                    IconButton(modifier = Modifier.size(34.dp), onClick = { attachmentsCenter = center }) {
+                                    IconButton(modifier = Modifier.size(32.dp), onClick = { attachmentsCenter = center }) {
                                         Icon(Icons.Default.AttachFile, contentDescription = if (isArabic) "المرفقات" else "Attachments", modifier = Modifier.size(18.dp))
                                     }
-                                    IconButton(modifier = Modifier.size(34.dp), onClick = { editing = center; showForm = true }) {
+                                    IconButton(modifier = Modifier.size(32.dp), onClick = { editing = center; showForm = true }) {
                                         Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit", modifier = Modifier.size(18.dp))
                                     }
-                                    IconButton(modifier = Modifier.size(34.dp), onClick = { pendingDelete = center }) {
+                                    IconButton(modifier = Modifier.size(32.dp), onClick = { pendingDelete = center }) {
                                         Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete", modifier = Modifier.size(18.dp))
                                     }
                                 }

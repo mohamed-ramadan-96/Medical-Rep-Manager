@@ -1001,7 +1001,8 @@ private fun DoctorFormDialog(
     var name by remember(initial) { mutableStateOf(initial?.name.orEmpty()) }
     var selectedSpecialtyId by remember(initial, specialties) { mutableStateOf(initial?.specialtyId ?: specialties.firstOrNull { it.name == initial?.specialty }?.id) }
     var showSpecialtyPicker by remember { mutableStateOf(false) }
-    var phones by remember(initial) { mutableStateOf(initial?.phoneNumbers.orEmpty()) }
+    var phoneNumbers by remember(initial) { mutableStateOf(initial?.phoneNumbers.orEmpty().split(Regex("\\r?\\n|\\\\n")).map { it.trim() }.filter { it.isNotBlank() }.ifEmpty { listOf("") }) }
+    var phonesExpanded by remember { mutableStateOf(false) }
     var selectedAreas by remember(initial) { mutableStateOf(doctorAreas(initial?.area.orEmpty()).toSet()) }
     var areaOptions by remember(existingAreas) { mutableStateOf(existingAreas.distinct()) }
     var newArea by remember { mutableStateOf("") }
@@ -1114,12 +1115,49 @@ private fun DoctorFormDialog(
                     )
                 }
                 item {
-                    OutlinedTextField(
-                        shape = RoundedCornerShape(14.dp),
-                        value = phones, onValueChange = { phones = it },
-                        modifier = Modifier.fillMaxWidth(), minLines = 2,
-                        label = { Text(if (isArabic) "أرقام الهاتف (كل رقم في سطر)" else "Phone numbers (one per line)") }
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(onClick = { phonesExpanded = !phonesExpanded }, modifier = Modifier.fillMaxWidth()) {
+                            Text(if (isArabic) "أرقام الهاتف" else "Phone numbers", modifier = Modifier.weight(1f))
+                            Icon(if (phonesExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null)
+                        }
+                        AnimatedVisibility(
+                            visible = phonesExpanded,
+                            enter = expandVertically(animationSpec = tween(220)) + fadeIn(animationSpec = tween(180)),
+                            exit = shrinkVertically(animationSpec = tween(180)) + fadeOut(animationSpec = tween(120))
+                        ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                phoneNumbers.forEachIndexed { index, phone ->
+                                    OutlinedTextField(
+                                        shape = RoundedCornerShape(14.dp),
+                                        value = phone,
+                                        onValueChange = { value ->
+                                            phoneNumbers = phoneNumbers.toMutableList().also { it[index] = value }
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        label = { Text(if (isArabic) "رقم الهاتف ${index + 1}" else "Phone number ${index + 1}") },
+                                        trailingIcon = {
+                                            IconButton(onClick = {
+                                                phoneNumbers = phoneNumbers.toMutableList().also { list ->
+                                                    if (list.size > 1) list.removeAt(index) else list[0] = ""
+                                                }
+                                            }) {
+                                                Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف الرقم" else "Delete number")
+                                            }
+                                        }
+                                    )
+                                }
+                                OutlinedButton(
+                                    onClick = { phoneNumbers = phoneNumbers + "" },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(14.dp)
+                                ) {
+                                    Icon(Icons.Default.Add, contentDescription = null)
+                                    Text(if (isArabic) "إضافة رقم هاتف" else "Add phone number")
+                                }
+                            }
+                        }
+                    }
                 }
                 item {
                     OutlinedSelectionField(
@@ -1317,7 +1355,7 @@ private fun DoctorFormDialog(
                             name = name.trim(),
                             specialty = specialties.firstOrNull { it.id == selectedSpecialtyId }?.name.orEmpty(),
                             specialtyId = selectedSpecialtyId,
-                            phoneNumbers = phones.trim(),
+                            phoneNumbers = phoneNumbers.map { it.trim() }.filter { it.isNotBlank() }.joinToString("\\n"),
                             area = selectedAreas.joinToString("|"),
                             medicalCenter = centers.firstOrNull { it.id == selectedCenterIds.firstOrNull() }?.name.orEmpty(),
                             centerId = selectedCenterIds.firstOrNull(),

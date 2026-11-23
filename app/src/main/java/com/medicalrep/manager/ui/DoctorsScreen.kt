@@ -1008,7 +1008,7 @@ private fun DoctorFormDialog(
     var showAreaPicker by remember { mutableStateOf(false) }
     var selectedCenterIds by remember(initial, initialCenterIds, centers) { mutableStateOf(initialCenterIds.ifEmpty { setOfNotNull(initial?.centerId ?: centers.firstOrNull { it.name == initial?.medicalCenter }?.id) }) }
     var showCenterPicker by remember { mutableStateOf(false) }
-    var centersExpanded by remember { mutableStateOf(true) }
+    var centersExpanded by remember { mutableStateOf(false) }
     var availabilityExpanded by remember(initial, initialAvailability) { mutableStateOf(initialAvailability.isNotEmpty()) }
     var availabilityDrafts by remember(initial, initialAvailability) {
         mutableStateOf(

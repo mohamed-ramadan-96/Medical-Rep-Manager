@@ -1,6 +1,16 @@
 package com.medicalrep.manager.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -84,6 +94,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
@@ -569,80 +580,104 @@ private fun DoctorCard(
     onAttachments: () -> Unit,
     onOpen: () -> Unit
 ) {
+    var expanded by remember(doctor.id) { mutableStateOf(false) }
+    val expandRotation by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        animationSpec = androidx.compose.animation.core.tween(180),
+        label = "doctorExpandRotation"
+    )
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen),
+        modifier = Modifier.fillMaxWidth()
+            .clickable(onClick = onOpen)
+            .animateContentSize(animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                if (doctor.photoUri.isNullOrBlank()) {
+                    Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(44.dp))
+                } else {
+                    AsyncImage(
+                        model = doctor.photoUri,
+                        contentDescription = if (isArabic) "صورة الطبيب" else "Doctor photo",
+                        modifier = Modifier.size(44.dp).clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(doctor.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, maxLines = 1)
+                    if (doctor.specialty.isNotBlank()) {
+                        Text(doctor.specialty, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                    }
+                    if (doctor.area.isNotBlank()) {
+                        Text(
+                            (if (isArabic) "المنطقة: " else "Area: ") + doctorAreas(doctor.area).joinToString("، "),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
+                    }
+                }
+                IconButton(
+                    modifier = Modifier.size(32.dp),
+                    onClick = { expanded = !expanded }
                 ) {
-                    if (doctor.photoUri.isNullOrBlank()) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(56.dp)
-                        )
-                    } else {
-                        AsyncImage(
-                            model = doctor.photoUri,
-                            contentDescription = if (isArabic) "صورة الطبيب" else "Doctor photo",
-                            modifier = Modifier.size(56.dp).clip(CircleShape),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-                    Column(
-                        modifier = Modifier.weight(1f).padding(horizontal = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        Text(doctor.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        if (doctor.specialty.isNotBlank()) {
-                            Text(doctor.specialty, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium)
-                        }
-                        if (doctor.area.isNotBlank()) {
-                            Text((if (isArabic) "المنطقة: " else "Area: ") + doctorAreas(doctor.area).joinToString("، "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                }
-                if (doctor.phoneNumbers.isNotBlank()) {
-                    Text(
-                        (if (isArabic) "الهاتف: " else "Phone: ") + doctor.phoneNumbers.replace("\\n", " • "),
-                        style = MaterialTheme.typography.bodyMedium
+                    Icon(
+                        Icons.Default.ExpandMore,
+                        contentDescription = if (isArabic) if (expanded) "إخفاء التفاصيل" else "عرض التفاصيل" else if (expanded) "Hide details" else "Show details",
+                        modifier = Modifier.size(20.dp).rotate(expandRotation)
                     )
-                }
-                if (centerName.isNotBlank()) {
-                    Text(
-                        (if (isArabic) "المركز: " else "Center: ") + centerName,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-                if (doctor.notes.isNotBlank()) {
-                    Text(doctor.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Row(
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.End),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(modifier = Modifier.size(40.dp), onClick = onAttachments) {
-                    Icon(Icons.Default.AttachFile, contentDescription = if (isArabic) "المرفقات" else "Attachments", modifier = Modifier.size(20.dp))
+                IconButton(modifier = Modifier.size(32.dp), onClick = onAttachments) {
+                    Icon(Icons.Default.AttachFile, contentDescription = if (isArabic) "المرفقات" else "Attachments", modifier = Modifier.size(18.dp))
                 }
-                IconButton(modifier = Modifier.size(40.dp), onClick = onEdit) {
-                    Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit", modifier = Modifier.size(20.dp))
+                IconButton(modifier = Modifier.size(32.dp), onClick = onEdit) {
+                    Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit", modifier = Modifier.size(18.dp))
                 }
-                IconButton(modifier = Modifier.size(40.dp), onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete", modifier = Modifier.size(20.dp))
+                IconButton(modifier = Modifier.size(32.dp), onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete", modifier = Modifier.size(18.dp))
+                }
+            }
+            AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically(animationSpec = androidx.compose.animation.core.tween(220)) +
+                    fadeIn(animationSpec = androidx.compose.animation.core.tween(180)),
+                exit = shrinkVertically(animationSpec = androidx.compose.animation.core.tween(180)) +
+                    fadeOut(animationSpec = androidx.compose.animation.core.tween(140))
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(start = 52.dp, top = 2.dp, bottom = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    if (doctor.phoneNumbers.isNotBlank()) {
+                        Text(
+                            (if (isArabic) "الهاتف: " else "Phone: ") + doctor.phoneNumbers.replace("\\n", " • "),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    if (centerName.isNotBlank()) {
+                        Text(
+                            (if (isArabic) "المركز: " else "Center: ") + centerName,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    if (doctor.notes.isNotBlank()) {
+                        Text(doctor.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             }
         }

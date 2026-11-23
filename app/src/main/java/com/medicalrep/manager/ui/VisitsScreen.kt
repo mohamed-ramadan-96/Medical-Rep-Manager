@@ -1,5 +1,12 @@
 package com.medicalrep.manager.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,6 +24,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EventRepeat
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -38,6 +46,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -72,6 +82,7 @@ fun VisitsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.
     var showForm by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<DoctorVisitEntity?>(null) }
     var search by remember { mutableStateOf("") }
+    var expandedVisitIds by remember { mutableStateOf(emptySet<Long>()) }
 
     Scaffold(
         modifier = Modifier.padding(padding),
@@ -130,43 +141,86 @@ fun VisitsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.
                 ) {
                     items(visibleVisits, key = { it.id }) { visit ->
                         val doctor = doctors.firstOrNull { it.id == visit.doctorId }
+                        val expanded = visit.id in expandedVisitIds
+                        val expandRotation by androidx.compose.animation.core.animateFloatAsState(
+                            if (expanded) 180f else 0f,
+                            animationSpec = tween(180),
+                            label = "visitExpandRotation"
+                        )
                         Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth().animateContentSize(
+                                animationSpec = androidx.compose.animation.core.spring(
+                                    stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
+                                )
+                            ),
+                            shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                                    Text(
-                                        doctor?.name ?: if (isArabic) "طبيب غير موجود" else "Unknown doctor",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        "${visitDateText(visit.visitedAt, "yyyy-MM-dd  HH:mm")} • ${visit.outcome}",
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                    if (visit.notes.isNotBlank()) Text(visit.notes, style = MaterialTheme.typography.bodyMedium)
-                                    visit.nextFollowUpAt?.let {
-                                        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                                            Icon(Icons.Default.EventRepeat, contentDescription = null, modifier = Modifier.size(20.dp))
-                                            Text(
-                                                (if (isArabic) "المتابعة: " else "Follow-up: ") + visitDateText(it),
-                                                style = MaterialTheme.typography.bodySmall
-                                            )
-                                        }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+                                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                        Text(
+                                            doctor?.name ?: if (isArabic) "طبيب غير موجود" else "Unknown doctor",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1
+                                        )
+                                        Text(
+                                            "${visitDateText(visit.visitedAt, "yyyy-MM-dd  HH:mm")} • ${visit.outcome}",
+                                            color = MaterialTheme.colorScheme.primary,
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                    IconButton(
+                                        modifier = Modifier.size(32.dp),
+                                        onClick = { expandedVisitIds = if (expanded) expandedVisitIds - visit.id else expandedVisitIds + visit.id }
+                                    ) {
+                                        Icon(
+                                            Icons.Default.ExpandMore,
+                                            contentDescription = if (isArabic) if (expanded) "إخفاء التفاصيل" else "عرض التفاصيل" else if (expanded) "Hide details" else "Show details",
+                                            modifier = Modifier.size(20.dp).rotate(expandRotation)
+                                        )
                                     }
                                 }
-                                Column {
-                                    IconButton(modifier = Modifier.size(40.dp), onClick = { editing = visit; showForm = true }) {
-                                        Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit", modifier = Modifier.size(20.dp))
-                                    }
-                                    IconButton(modifier = Modifier.size(40.dp), onClick = { pendingDelete = visit }) {
-                                        Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete", modifier = Modifier.size(20.dp))
+                                AnimatedVisibility(
+                                    visible = expanded,
+                                    enter = expandVertically(tween(220)) + fadeIn(tween(180)),
+                                    exit = shrinkVertically(tween(180)) + fadeOut(tween(140))
+                                ) {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth().padding(start = 30.dp, top = 2.dp, bottom = 4.dp),
+                                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        if (visit.notes.isNotBlank()) Text(visit.notes, style = MaterialTheme.typography.bodyMedium)
+                                        visit.nextFollowUpAt?.let {
+                                            Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(Icons.Default.EventRepeat, contentDescription = null, modifier = Modifier.size(18.dp))
+                                                Text(
+                                                    (if (isArabic) "المتابعة: " else "Follow-up: ") + visitDateText(it),
+                                                    style = MaterialTheme.typography.bodySmall
+                                                )
+                                            }
+                                        }
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.End,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            IconButton(modifier = Modifier.size(32.dp), onClick = { editing = visit; showForm = true }) {
+                                                Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit", modifier = Modifier.size(18.dp))
+                                            }
+                                            IconButton(modifier = Modifier.size(32.dp), onClick = { pendingDelete = visit }) {
+                                                Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete", modifier = Modifier.size(18.dp))
+                                            }
+                                        }
                                     }
                                 }
                             }

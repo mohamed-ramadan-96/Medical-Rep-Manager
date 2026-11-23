@@ -19,7 +19,7 @@ data class AppUpdateInfo(
 )
 
 private const val RELEASE_API_URL =
-    "https://api.github.com/repos/mohamed-ramadan-96/Medical-Rep-Manager/releases/latest"
+    "https://api.github.com/repos/mohamed-ramadan-96/Medical-Rep-Manager-Releases/releases/latest"
 
 suspend fun checkForAppUpdate(context: Context): AppUpdateInfo? = withContext(Dispatchers.IO) {
     var releaseConnection: HttpURLConnection? = null

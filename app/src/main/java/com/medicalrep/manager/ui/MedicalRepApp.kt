@@ -378,6 +378,7 @@ fun MedicalRepApp() {
 @Composable
 private fun FollowUpScreen(isArabic: Boolean, padding: PaddingValues) {
     var showPlan by rememberSaveable { mutableStateOf(true) }
+    var pendingPlanVisit by remember { mutableStateOf<Pair<Long, String>?>(null) }
     Scaffold(
         modifier = Modifier.padding(padding),
         topBar = {
@@ -391,8 +392,44 @@ private fun FollowUpScreen(isArabic: Boolean, padding: PaddingValues) {
             }
         }
     ) { innerPadding ->
-        if (showPlan) WeeklyPlanScreen(isArabic = isArabic, padding = innerPadding)
-        else VisitsScreen(isArabic = isArabic, padding = innerPadding)
+        AnimatedContent(
+            targetState = showPlan,
+            label = "plan_visits_transition",
+            transitionSpec = {
+                val forward = targetState
+                val direction = if (isArabic) -1 else 1
+                val offset = if (forward) direction else -direction
+                (slideInHorizontally(
+                    animationSpec = tween(durationMillis = 220),
+                    initialOffsetX = { width -> offset * (width / 12) }
+                ) + fadeIn(animationSpec = tween(durationMillis = 180)))
+                    .togetherWith(
+                        slideOutHorizontally(
+                            animationSpec = tween(durationMillis = 180),
+                            targetOffsetX = { width -> -offset * (width / 16) }
+                        ) + fadeOut(animationSpec = tween(durationMillis = 140))
+                    )
+            }
+        ) { planVisible ->
+            if (planVisible) {
+                WeeklyPlanScreen(
+                    isArabic = isArabic,
+                    padding = innerPadding,
+                    onRecordVisit = { doctorId, visitDate ->
+                        pendingPlanVisit = doctorId to visitDate
+                        showPlan = false
+                    }
+                )
+            } else {
+                VisitsScreen(
+                    isArabic = isArabic,
+                    padding = innerPadding,
+                    initialDoctorId = pendingPlanVisit?.first,
+                    initialVisitDate = pendingPlanVisit?.second,
+                    onInitialVisitHandled = { pendingPlanVisit = null }
+                )
+            }
+        }
     }
 }
 

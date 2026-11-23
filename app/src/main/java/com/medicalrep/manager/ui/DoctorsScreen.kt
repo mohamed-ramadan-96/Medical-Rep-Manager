@@ -1458,14 +1458,14 @@ private fun DoctorFormDialog(
                                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                             Box(modifier = Modifier.weight(1f)) {
                                                 DoctorTimeSelectionField(
-                                                    label = if (isArabic) "من (بداية التواجد)" else "From (start)",
+                                                    label = if (isArabic) "من" else "From",
                                                     value = doctorDisplayTime(draft.startTime),
                                                     onClick = { availabilityTimePickerTarget = index to true }
                                                 )
                                             }
                                             Box(modifier = Modifier.weight(1f)) {
                                                 DoctorTimeSelectionField(
-                                                    label = if (isArabic) "إلى (نهاية التواجد)" else "To (end)",
+                                                    label = if (isArabic) "إلى" else "To",
                                                     value = doctorDisplayTime(draft.endTime),
                                                     onClick = { availabilityTimePickerTarget = index to false }
                                                 )

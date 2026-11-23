@@ -157,6 +157,12 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                             modifier = Modifier.size(20.dp)
                                         )
                                     }
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
                                     if ((center.latitude != null && center.longitude != null) || !center.mapUrl.isNullOrBlank()) {
                                         IconButton(modifier = Modifier.size(34.dp), onClick = { directionsCenter = center }) {
                                             Icon(Icons.Default.LocationOn, contentDescription = if (isArabic) "الاتجاهات إلى المركز" else "Directions to center", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))

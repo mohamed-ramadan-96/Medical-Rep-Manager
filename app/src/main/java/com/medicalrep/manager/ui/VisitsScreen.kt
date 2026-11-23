@@ -40,6 +40,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -71,7 +72,13 @@ private fun parseVisitDate(date: String, time: String): Long? = try {
 }
 
 @Composable
-fun VisitsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.PaddingValues) {
+fun VisitsScreen(
+    isArabic: Boolean,
+    padding: androidx.compose.foundation.layout.PaddingValues,
+    initialDoctorId: Long? = null,
+    initialVisitDate: String? = null,
+    onInitialVisitHandled: () -> Unit = {}
+) {
     val context = LocalContext.current
     val database = remember { MedicalRepDatabase.getInstance(context) }
     val visitDao = database.doctorVisitDao()
@@ -84,13 +91,25 @@ fun VisitsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.
     var pendingDelete by remember { mutableStateOf<DoctorVisitEntity?>(null) }
     var search by remember { mutableStateOf("") }
     var expandedVisitIds by remember { mutableStateOf(emptySet<Long>()) }
+    var formDoctorId by remember { mutableStateOf<Long?>(null) }
+    var formVisitDate by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(initialDoctorId, initialVisitDate) {
+        if (initialDoctorId != null && initialVisitDate != null) {
+            editing = null
+            formDoctorId = initialDoctorId
+            formVisitDate = initialVisitDate
+            showForm = true
+            onInitialVisitHandled()
+        }
+    }
 
     Scaffold(
         modifier = Modifier.padding(padding),
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
             if (doctors.isNotEmpty()) {
-                FloatingActionButton(onClick = { editing = null; showForm = true }) {
+                FloatingActionButton(onClick = { editing = null; formDoctorId = null; formVisitDate = null; showForm = true }) {
                     Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة زيارة" else "Add visit", modifier = Modifier.size(20.dp))
                 }
             }
@@ -237,6 +256,8 @@ fun VisitsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.
             isArabic = isArabic,
             initial = editing,
             doctors = doctors,
+            initialDoctorId = formDoctorId,
+            initialVisitDate = formVisitDate,
             onDismiss = { showForm = false },
             onSave = { visit ->
                 scope.launch {
@@ -270,14 +291,16 @@ private fun VisitFormDialog(
     isArabic: Boolean,
     initial: DoctorVisitEntity?,
     doctors: List<DoctorEntity>,
+    initialDoctorId: Long? = null,
+    initialVisitDate: String? = null,
     onDismiss: () -> Unit,
     onSave: (DoctorVisitEntity) -> Unit
 ) {
-    var selectedDoctorId by remember(initial, doctors) {
-        mutableStateOf(initial?.doctorId ?: doctors.firstOrNull()?.id)
+    var selectedDoctorId by remember(initial, doctors, initialDoctorId) {
+        mutableStateOf(initial?.doctorId ?: initialDoctorId ?: doctors.firstOrNull()?.id)
     }
-    var date by remember(initial) {
-        mutableStateOf(initial?.let { visitDateText(it.visitedAt) } ?: visitDateText(System.currentTimeMillis()))
+    var date by remember(initial, initialVisitDate) {
+        mutableStateOf(initial?.let { visitDateText(it.visitedAt) } ?: initialVisitDate ?: visitDateText(System.currentTimeMillis()))
     }
     var time by remember(initial) {
         mutableStateOf(initial?.let { visitDateText(it.visitedAt, "HH:mm") } ?: visitDateText(System.currentTimeMillis(), "HH:mm"))

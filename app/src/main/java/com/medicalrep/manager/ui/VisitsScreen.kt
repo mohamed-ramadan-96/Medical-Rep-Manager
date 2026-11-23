@@ -189,6 +189,12 @@ fun VisitsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.
                                             modifier = Modifier.size(20.dp).rotate(expandRotation)
                                         )
                                     }
+                                    IconButton(modifier = Modifier.size(32.dp), onClick = { editing = visit; showForm = true }) {
+                                        Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit", modifier = Modifier.size(18.dp))
+                                    }
+                                    IconButton(modifier = Modifier.size(32.dp), onClick = { pendingDelete = visit }) {
+                                        Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete", modifier = Modifier.size(18.dp))
+                                    }
                                 }
                                 AnimatedVisibility(
                                     visible = expanded,
@@ -207,18 +213,6 @@ fun VisitsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.
                                                     (if (isArabic) "المتابعة: " else "Follow-up: ") + visitDateText(it),
                                                     style = MaterialTheme.typography.bodySmall
                                                 )
-                                            }
-                                        }
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.End,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            IconButton(modifier = Modifier.size(32.dp), onClick = { editing = visit; showForm = true }) {
-                                                Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit", modifier = Modifier.size(18.dp))
-                                            }
-                                            IconButton(modifier = Modifier.size(32.dp), onClick = { pendingDelete = visit }) {
-                                                Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete", modifier = Modifier.size(18.dp))
                                             }
                                         }
                                     }

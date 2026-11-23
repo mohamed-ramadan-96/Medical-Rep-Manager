@@ -88,7 +88,11 @@ private fun dayLabel(date: LocalDate, isArabic: Boolean): String {
 }
 
 @Composable
-fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.PaddingValues) {
+fun WeeklyPlanScreen(
+    isArabic: Boolean,
+    padding: androidx.compose.foundation.layout.PaddingValues,
+    onRecordVisit: (doctorId: Long, visitDate: String) -> Unit = { _, _ -> }
+) {
     val context = LocalContext.current
     val database = remember { MedicalRepDatabase.getInstance(context) }
     val doctors by database.doctorDao().observeAll().collectAsState(initial = emptyList())
@@ -388,7 +392,12 @@ fun WeeklyPlanScreen(isArabic: Boolean, padding: androidx.compose.foundation.lay
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text(entry.doctorNameSnapshot, fontWeight = FontWeight.Bold)
+                                Text(
+                                    entry.doctorNameSnapshot,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.clickable { onRecordVisit(entry.doctorId, entry.visitDate) },
+                                    color = MaterialTheme.colorScheme.primary
+                                )
                                 if (entry.centerNameSnapshot.isNotBlank()) Text(entry.centerNameSnapshot, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                                 Text(entry.regionSnapshot, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }

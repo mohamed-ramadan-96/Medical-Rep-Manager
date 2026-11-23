@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -386,23 +387,65 @@ fun WeeklyPlanScreen(
                 item { Text(if (isArabic) "لم تتم إضافة أطباء لهذا اليوم بعد." else "No doctors have been added to this date yet.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             } else {
                 lazyItems(currentDayEntries, key = { it.id }) { entry ->
-                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
                                 Text(
                                     entry.doctorNameSnapshot,
                                     fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.clickable { onRecordVisit(entry.doctorId, entry.visitDate) },
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    style = MaterialTheme.typography.titleLarge
                                 )
-                                if (entry.centerNameSnapshot.isNotBlank()) Text(entry.centerNameSnapshot, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-                                Text(entry.regionSnapshot, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    entry.regionSnapshot,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                if (entry.centerNameSnapshot.isNotBlank()) {
+                                    Text(
+                                        entry.centerNameSnapshot,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
-                            IconButton(onClick = { scope.launch { database.weeklyPlanDao().delete(entry) } }) {
-                                Icon(Icons.Default.Delete, contentDescription = if (isArabic) "إزالة الطبيب من الخطة" else "Remove doctor from plan")
+                            Button(
+                                onClick = { onRecordVisit(entry.doctorId, entry.visitDate) },
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 18.dp, vertical = 14.dp),
+                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                    contentColor = MaterialTheme.colorScheme.onSurface
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.EditNote,
+                                    contentDescription = null
+                                )
+                                Text(
+                                    text = if (isArabic) "تسجيل زيارة" else "Record visit",
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                            IconButton(
+                                onClick = { scope.launch { database.weeklyPlanDao().delete(entry) } }
+                            ) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = if (isArabic) "إزالة الطبيب من الخطة" else "Remove doctor from plan"
+                                )
                             }
                         }
                     }

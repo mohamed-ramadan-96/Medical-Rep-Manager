@@ -1418,7 +1418,7 @@ private fun DoctorFormDialog(
                     ) {
                             Text(if (isArabic) "كل فترة مستقلة: عامة أو مرتبطة بمركز من المراكز المختارة." else "Each slot is independent: general or linked to one of the selected centers.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             availabilityDrafts.forEachIndexed { index, draft ->
-                                Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                                Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                                     Column(Modifier.fillMaxWidth().padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                         Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                                             Text((if (isArabic) "الفترة " else "Slot ") + (index + 1), modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)

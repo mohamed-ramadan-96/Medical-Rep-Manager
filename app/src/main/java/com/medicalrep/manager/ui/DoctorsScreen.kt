@@ -123,7 +123,7 @@ private fun FormExpandableSection(
     title: String,
     expanded: Boolean,
     onToggle: () -> Unit,
-    content: @Composable Column.() -> Unit
+    content: @Composable () -> Unit
 ) {
     Surface(
         shape = RoundedCornerShape(14.dp),

@@ -1004,6 +1004,48 @@ private fun DoctorDetailsDialog(
 }
 
 
+@Composable
+private fun DoctorTimeSelectionField(
+    label: String,
+    value: String,
+    onClick: () -> Unit
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp),
+        shape = RoundedCornerShape(14.dp),
+        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1
+                )
+            }
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = null
+            )
+        }
+    }
+}
+
 private fun doctorDisplayTime(value: String): String {
     val parts = value.split(":")
     val hour = parts.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 23) ?: 9
@@ -1359,15 +1401,15 @@ private fun DoctorFormDialog(
                                         }
                                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                             Box(modifier = Modifier.weight(1f)) {
-                                                OutlinedSelectionField(
-                                                    label = if (isArabic) "من — AM / PM" else "From — AM / PM",
+                                                DoctorTimeSelectionField(
+                                                    label = if (isArabic) "من (بداية التواجد)" else "From (start)",
                                                     value = doctorDisplayTime(draft.startTime),
                                                     onClick = { availabilityTimePickerTarget = index to true }
                                                 )
                                             }
                                             Box(modifier = Modifier.weight(1f)) {
-                                                OutlinedSelectionField(
-                                                    label = if (isArabic) "إلى — AM / PM" else "To — AM / PM",
+                                                DoctorTimeSelectionField(
+                                                    label = if (isArabic) "إلى (نهاية التواجد)" else "To (end)",
                                                     value = doctorDisplayTime(draft.endTime),
                                                     onClick = { availabilityTimePickerTarget = index to false }
                                                 )

@@ -1492,7 +1492,7 @@ private fun DoctorFormDialog(
                     ) {
                         if (hasDoctorLocation) {
                             OutlinedButton(
-                                shape = RoundedCornerShape(14.dp),
+                                shape = RoundedCornerShape(50),
                                 modifier = Modifier.fillMaxWidth(),
                                 onClick = {
                                     latitude = null

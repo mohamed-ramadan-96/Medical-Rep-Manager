@@ -421,6 +421,14 @@ fun WeeklyPlanScreen(
                                     )
                                 }
                             }
+                            IconButton(
+                                onClick = { scope.launch { database.weeklyPlanDao().delete(entry) } }
+                            ) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = if (isArabic) "إزالة الطبيب من الخطة" else "Remove doctor from plan"
+                                )
+                            }
                             Button(
                                 onClick = { onRecordVisit(entry.doctorId, entry.visitDate) },
                                 shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
@@ -437,14 +445,6 @@ fun WeeklyPlanScreen(
                                 Text(
                                     text = if (isArabic) "تسجيل زيارة" else "Record visit",
                                     fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                            IconButton(
-                                onClick = { scope.launch { database.weeklyPlanDao().delete(entry) } }
-                            ) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = if (isArabic) "إزالة الطبيب من الخطة" else "Remove doctor from plan"
                                 )
                             }
                         }

@@ -1,20 +1,33 @@
-name: Firebase App Distribution
+name: Build and Distribute Android APK
 
 on:
   workflow_dispatch:
     inputs:
+      build_type:
+        description: "Choose where this build should be published"
+        required: true
+        default: tester
+        type: choice
+        options:
+          - tester
+          - final
+      version_name:
+        description: "App version name (for example 1.2.0)"
+        required: true
+        default: "0.1.1"
+        type: string
       release_notes:
-        description: "Release notes shown to testers"
+        description: "Release notes / tester notes"
         required: false
-        default: "New test build"
+        default: "Bug fixes and improvements"
         type: string
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  distribute:
-    name: Build and distribute signed APK
+  build:
+    name: Build signed APK (${{ inputs.build_type }})
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -57,14 +70,18 @@ jobs:
           grep -Ei "SHA1:|SHA-1:" "$RUNNER_TEMP/keystore-info.txt"
           echo "Stable signing key verification passed."
 
-      - name: Build release APK
+      - name: Build signed release APK
         env:
           ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          APP_VERSION_CODE: ${{ github.run_number }}
+          APP_VERSION_NAME: ${{ inputs.version_name }}
         run: gradle --no-daemon assembleRelease
 
-      - name: Verify APK
+      - name: Verify and prepare APK
+        env:
+          VERSION_NAME: ${{ inputs.version_name }}
         run: |
           APK_PATH="$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' -print -quit)"
           if [ -z "$APK_PATH" ]; then
@@ -82,38 +99,59 @@ jobs:
             exit 1
           fi
           "$APKSIGNER" verify --verbose "$APK_PATH"
-          echo "APK_PATH=$APK_PATH" >> "$GITHUB_ENV"
+          mkdir -p dist
+          cp "$APK_PATH" "dist/MedicalRepManager-$VERSION_NAME.apk"
+          echo "APK_PATH=dist/MedicalRepManager-$VERSION_NAME.apk" >> "$GITHUB_ENV"
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Install Firebase CLI
-        run: npm install --global firebase-tools
-
-      - name: Authenticate Firebase CLI
+      - name: Distribute to Firebase tester group
+        if: inputs.build_type == 'tester'
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: |
-          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
-            echo "::error::FIREBASE_SERVICE_ACCOUNT secret is missing."
-            exit 1
-          fi
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-service-account.json"
-          jq -e '.client_email and .private_key and .project_id' "$RUNNER_TEMP/firebase-service-account.json" > /dev/null
-          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-service-account.json" >> "$GITHUB_ENV"
-
-      - name: Distribute to tester group
-        env:
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
           FIREBASE_GROUP: ${{ secrets.FIREBASE_GROUP }}
           RELEASE_NOTES: ${{ inputs.release_notes }}
         run: |
+          test -n "$FIREBASE_SERVICE_ACCOUNT" || { echo "::error::FIREBASE_SERVICE_ACCOUNT secret is missing."; exit 1; }
           test -n "$FIREBASE_APP_ID" || { echo "::error::FIREBASE_APP_ID secret is missing."; exit 1; }
           test -n "$FIREBASE_GROUP" || { echo "::error::FIREBASE_GROUP secret is missing."; exit 1; }
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-service-account.json"
+          jq -e '.client_email and .private_key and .project_id' "$RUNNER_TEMP/firebase-service-account.json" > /dev/null
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-service-account.json" >> "$GITHUB_ENV"
+          npm install --global firebase-tools
           firebase appdistribution:distribute "$APK_PATH" \
             --app "$FIREBASE_APP_ID" \
             --groups "$FIREBASE_GROUP" \
             --release-notes "$RELEASE_NOTES" \
             --non-interactive
+
+      - name: Create update manifest
+        if: inputs.build_type == 'final'
+        env:
+          VERSION_NAME: ${{ inputs.version_name }}
+          VERSION_CODE: ${{ github.run_number }}
+          RELEASE_NOTES: ${{ inputs.release_notes }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          TAG="v$VERSION_NAME"
+          APK_NAME="$(basename "$APK_PATH")"
+          DOWNLOAD_URL="https://github.com/$REPOSITORY/releases/download/$TAG/$APK_NAME"
+          jq -n \
+            --arg versionName "$VERSION_NAME" \
+            --argjson versionCode "$VERSION_CODE" \
+            --arg apkUrl "$DOWNLOAD_URL" \
+            --arg notes "$RELEASE_NOTES" \
+            '{versionName:$versionName,versionCode:$versionCode,apkUrl:$apkUrl,releaseNotes:$notes}' \
+            > dist/latest.json
+
+      - name: Publish GitHub Release
+        if: inputs.build_type == 'final'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version_name }}
+          name: Medical Rep Manager v${{ inputs.version_name }}
+          body: ${{ inputs.release_notes }}
+          files: |
+            dist/MedicalRepManager-${{ inputs.version_name }}.apk
+            dist/latest.json
+          draft: false
+          prerelease: false

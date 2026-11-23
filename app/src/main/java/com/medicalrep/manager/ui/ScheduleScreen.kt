@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.fadeIn
@@ -55,6 +57,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -108,6 +111,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
     var specialtyFilterMenu by remember { mutableStateOf(false) }
     var showFilters by remember { mutableStateOf(false) }
     var showPageDescription by remember { mutableStateOf(false) }
+    var expandedAvailabilityGroups by remember { mutableStateOf(emptySet<String>()) }
 
     val groupedSlots = slots.groupBy { it.slotGroupId.ifBlank { "legacy-${it.id}" } }
         .values.sortedWith(compareBy(
@@ -210,34 +214,84 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                 LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     items(filteredGroups, key = { group -> group.first().id }) { group ->
                         val slot = group.first()
+                        val groupKey = slot.slotGroupId.ifBlank { "legacy-${slot.id}" }
+                        val expanded = groupKey in expandedAvailabilityGroups
+                        val expandRotation by animateFloatAsState(if (expanded) 180f else 0f, animationSpec = tween(180), label = "availabilityExpandRotation")
                         val doctor = doctors.firstOrNull { it.id == slot.doctorId }
                         val centerName = centers.firstOrNull { it.id == slot.centerId }?.name
                         val dayNames = weekDays.mapNotNull { (number, names) ->
                             group.firstOrNull { it.dayOfWeek == number }?.let { if (isArabic) names.second else names.first }
                         }.joinToString("، ")
                         Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth().animateContentSize(
+                                animationSpec = androidx.compose.animation.core.spring(
+                                    stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
+                                )
+                            ),
+                            shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text(doctor?.name ?: if (isArabic) "طبيب غير موجود" else "Unknown doctor", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                    if (!centerName.isNullOrBlank()) Text(centerName, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium)
-                                    Text(dayNames, color = MaterialTheme.colorScheme.primary)
-                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(20.dp))
-                                        Text("${slot.startTime} – ${slot.endTime}")
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+                                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                        Text(doctor?.name ?: if (isArabic) "طبيب غير موجود" else "Unknown doctor", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, maxLines = 1)
+                                        if (!centerName.isNullOrBlank()) {
+                                            Text(centerName, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                                        } else {
+                                            Text(if (isArabic) "موعد عام" else "General availability", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                                        }
                                     }
-                                    if (slot.notes.isNotBlank()) Text(slot.notes, style = MaterialTheme.typography.bodySmall)
+                                    IconButton(
+                                        modifier = Modifier.size(32.dp),
+                                        onClick = { expandedAvailabilityGroups = if (expanded) expandedAvailabilityGroups - groupKey else expandedAvailabilityGroups + groupKey }
+                                    ) {
+                                        Icon(
+                                            Icons.Default.ExpandMore,
+                                            contentDescription = if (isArabic) if (expanded) "إخفاء التفاصيل" else "عرض التفاصيل" else if (expanded) "Hide details" else "Show details",
+                                            modifier = Modifier.size(20.dp).rotate(expandRotation)
+                                        )
+                                    }
                                 }
-                                IconButton(modifier = Modifier.size(40.dp), onClick = { editingGroup = group; showForm = true }) { Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit", modifier = Modifier.size(20.dp)) }
-                                IconButton(modifier = Modifier.size(40.dp), onClick = { pendingDelete = group }) { Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete", modifier = Modifier.size(20.dp)) }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                        Text(dayNames, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium)
+                                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Text("${slot.startTime} – ${slot.endTime}", style = MaterialTheme.typography.bodyMedium)
+                                        }
+                                    }
+                                    IconButton(modifier = Modifier.size(32.dp), onClick = { editingGroup = group; showForm = true }) {
+                                        Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit", modifier = Modifier.size(18.dp))
+                                    }
+                                    IconButton(modifier = Modifier.size(32.dp), onClick = { pendingDelete = group }) {
+                                        Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete", modifier = Modifier.size(18.dp))
+                                    }
+                                }
+                                AnimatedVisibility(
+                                    visible = expanded,
+                                    enter = expandVertically(tween(220)) + fadeIn(tween(180)),
+                                    exit = shrinkVertically(tween(180)) + fadeOut(tween(140))
+                                ) {
+                                    Column(modifier = Modifier.fillMaxWidth().padding(start = 30.dp, top = 2.dp, bottom = 4.dp)) {
+                                        if (slot.notes.isNotBlank()) {
+                                            Text(slot.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        } else {
+                                            Text(if (isArabic) "لا توجد ملاحظات إضافية." else "No additional notes.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

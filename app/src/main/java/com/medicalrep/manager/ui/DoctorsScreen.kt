@@ -119,6 +119,54 @@ private fun doctorAreas(value: String): List<String> =
     value.split("|").map { it.trim() }.filter { it.isNotBlank() }.distinctBy { it.lowercase(Locale.ROOT) }
 
 @Composable
+private fun FormExpandableSection(
+    title: String,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    content: @Composable Column.() -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize(animationSpec = tween(220))
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onToggle)
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                Icon(
+                    if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically(animationSpec = tween(220)) + fadeIn(animationSpec = tween(180)),
+                exit = shrinkVertically(animationSpec = tween(180)) + fadeOut(animationSpec = tween(120))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    content()
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun FilterActionButton(isArabic: Boolean, expanded: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val iconColor = MaterialTheme.colorScheme.onSurface
     Surface(
@@ -1248,47 +1296,39 @@ private fun DoctorFormDialog(
                     )
                 }
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(onClick = { phonesExpanded = !phonesExpanded }, modifier = Modifier.fillMaxWidth()) {
-                            Text(if (isArabic) "أرقام الهاتف" else "Phone numbers", modifier = Modifier.weight(1f))
-                            Icon(if (phonesExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null)
-                        }
-                        AnimatedVisibility(
-                            visible = phonesExpanded,
-                            enter = expandVertically(animationSpec = tween(220)) + fadeIn(animationSpec = tween(180)),
-                            exit = shrinkVertically(animationSpec = tween(180)) + fadeOut(animationSpec = tween(120))
-                        ) {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                phoneNumbers.forEachIndexed { index, phone ->
-                                    OutlinedTextField(
-                                        shape = RoundedCornerShape(14.dp),
-                                        value = phone,
-                                        onValueChange = { value ->
-                                            phoneNumbers = phoneNumbers.toMutableList().also { it[index] = value }
-                                        },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        singleLine = true,
-                                        label = { Text(if (isArabic) "رقم الهاتف ${index + 1}" else "Phone number ${index + 1}") },
-                                        trailingIcon = {
-                                            IconButton(onClick = {
-                                                phoneNumbers = phoneNumbers.toMutableList().also { list ->
-                                                    if (list.size > 1) list.removeAt(index) else list[0] = ""
-                                                }
-                                            }) {
-                                                Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف الرقم" else "Delete number")
-                                            }
+                    FormExpandableSection(
+                        title = if (isArabic) "أرقام الهاتف" else "Phone numbers",
+                        expanded = phonesExpanded,
+                        onToggle = { phonesExpanded = !phonesExpanded }
+                    ) {
+                        phoneNumbers.forEachIndexed { index, phone ->
+                            OutlinedTextField(
+                                shape = RoundedCornerShape(14.dp),
+                                value = phone,
+                                onValueChange = { value ->
+                                    phoneNumbers = phoneNumbers.toMutableList().also { it[index] = value }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                label = { Text(if (isArabic) "رقم الهاتف ${index + 1}" else "Phone number ${index + 1}") },
+                                trailingIcon = {
+                                    IconButton(onClick = {
+                                        phoneNumbers = phoneNumbers.toMutableList().also { list ->
+                                            if (list.size > 1) list.removeAt(index) else list[0] = ""
                                         }
-                                    )
+                                    }) {
+                                        Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف الرقم" else "Delete number")
+                                    }
                                 }
-                                OutlinedButton(
-                                    onClick = { phoneNumbers = phoneNumbers + "" },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(14.dp)
-                                ) {
-                                    Icon(Icons.Default.Add, contentDescription = null)
-                                    Text(if (isArabic) "إضافة رقم هاتف" else "Add phone number")
-                                }
-                            }
+                            )
+                        }
+                        OutlinedButton(
+                            onClick = { phoneNumbers = phoneNumbers + "" },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Text(if (isArabic) "إضافة رقم هاتف" else "Add phone number")
                         }
                     }
                 }
@@ -1355,29 +1395,26 @@ private fun DoctorFormDialog(
                     )
                 }
                 item {
-                    TextButton(onClick = { centersExpanded = !centersExpanded }, modifier = Modifier.fillMaxWidth()) {
-                        Text(if (isArabic) "مراكز عمل الطبيب" else "Doctor's centers", modifier = Modifier.weight(1f))
-                        Icon(if (centersExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null)
-                    }
-                    AnimatedVisibility(visible = centersExpanded) {
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            OutlinedSelectionField(
-                                label = if (isArabic) "المراكز المرتبط بها" else "Linked centers",
-                                value = if (selectedCenterIds.isEmpty()) if (isArabic) "بدون مركز مسجل" else "No linked center"
-                                    else centers.filter { it.id in selectedCenterIds }.joinToString("، ") { it.name },
-                                onClick = { showCenterPicker = true }
-                            )
-                            Text(if (isArabic) "يمكن إضافة مواعيد عامة حتى لو الطبيب غير مرتبط بمركز." else "General availability is allowed even when no center is linked.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
+                    FormExpandableSection(
+                        title = if (isArabic) "مراكز عمل الطبيب" else "Doctor's centers",
+                        expanded = centersExpanded,
+                        onToggle = { centersExpanded = !centersExpanded }
+                    ) {
+                        OutlinedSelectionField(
+                            label = if (isArabic) "المراكز المرتبط بها" else "Linked centers",
+                            value = if (selectedCenterIds.isEmpty()) if (isArabic) "بدون مركز مسجل" else "No linked center"
+                                else centers.filter { it.id in selectedCenterIds }.joinToString("، ") { it.name },
+                            onClick = { showCenterPicker = true }
+                        )
+                        Text(if (isArabic) "يمكن إضافة مواعيد عامة حتى لو الطبيب غير مرتبط بمركز." else "General availability is allowed even when no center is linked.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 item {
-                    TextButton(onClick = { availabilityExpanded = !availabilityExpanded }, modifier = Modifier.fillMaxWidth()) {
-                        Text(if (isArabic) "مواعيد تواجد الطبيب" else "Doctor availability", modifier = Modifier.weight(1f))
-                        Icon(if (availabilityExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null)
-                    }
-                    AnimatedVisibility(visible = availabilityExpanded) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FormExpandableSection(
+                        title = if (isArabic) "مواعيد تواجد الطبيب" else "Doctor availability",
+                        expanded = availabilityExpanded,
+                        onToggle = { availabilityExpanded = !availabilityExpanded }
+                    ) {
                             Text(if (isArabic) "كل فترة مستقلة: عامة أو مرتبطة بمركز من المراكز المختارة." else "Each slot is independent: general or linked to one of the selected centers.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             availabilityDrafts.forEachIndexed { index, draft ->
                                 Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
@@ -1437,8 +1474,7 @@ private fun DoctorFormDialog(
                                     }
                                 }
                             }
-                            OutlinedButton(shape = RoundedCornerShape(14.dp), onClick = { availabilityDrafts = availabilityDrafts + DoctorAvailabilityDraft() }, modifier = Modifier.fillMaxWidth()) { Text(if (isArabic) "+ إضافة فترة" else "+ Add slot") }
-                        }
+                        OutlinedButton(shape = RoundedCornerShape(14.dp), onClick = { availabilityDrafts = availabilityDrafts + DoctorAvailabilityDraft() }, modifier = Modifier.fillMaxWidth()) { Text(if (isArabic) "+ إضافة فترة" else "+ Add slot") }
                     }
                 }
                 availabilityError?.let { message -> item { Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) } }

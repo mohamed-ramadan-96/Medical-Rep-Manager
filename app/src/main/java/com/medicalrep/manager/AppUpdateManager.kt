@@ -105,3 +105,37 @@ fun downloadAppUpdate(context: Context, update: AppUpdateInfo): Long? {
         null
     }
 }
+
+
+data class AppUpdateDownloadProgress(
+    val downloadedBytes: Long,
+    val totalBytes: Long,
+    val status: Int
+) {
+    val percent: Int?
+        get() = if (totalBytes > 0L) {
+            ((downloadedBytes * 100L) / totalBytes).toInt().coerceIn(0, 100)
+        } else null
+}
+
+fun getAppUpdateDownloadProgress(
+    context: Context,
+    downloadId: Long
+): AppUpdateDownloadProgress? {
+    val manager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+    val query = DownloadManager.Query().setFilterById(downloadId)
+    return manager.query(query)?.use { cursor ->
+        if (!cursor.moveToFirst()) return@use null
+        AppUpdateDownloadProgress(
+            downloadedBytes = cursor.getLong(
+                cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+            ),
+            totalBytes = cursor.getLong(
+                cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+            ),
+            status = cursor.getInt(
+                cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)
+            )
+        )
+    }
+}

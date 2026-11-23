@@ -1216,6 +1216,7 @@ private fun DoctorFormDialog(
     var mapUrl by remember(initial) { mutableStateOf(initial?.mapUrl) }
     var showDoctorMapPicker by remember { mutableStateOf(false) }
     var editDoctorLocation by remember { mutableStateOf(false) }
+    var locationExpanded by remember(initial) { mutableStateOf(false) }
     var nameError by remember { mutableStateOf(false) }
     var availabilityError by remember { mutableStateOf<String?>(null) }
     var availabilityTimePickerTarget by remember { mutableStateOf<Pair<Int, Boolean>?>(null) }
@@ -1479,28 +1480,41 @@ private fun DoctorFormDialog(
                 }
                 availabilityError?.let { message -> item { Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) } }
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(if (isArabic) "موقع الطبيب" else "Doctor location", style = MaterialTheme.typography.labelLarge)
-                        val hasDoctorLocation = (latitude != null && longitude != null) || !mapUrl.isNullOrBlank()
-                        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            if (hasDoctorLocation) {
-                                OutlinedButton(shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth(), onClick = {
-                                    latitude = null; longitude = null; mapUrl = null; editDoctorLocation = false
-                                }) { Text(if (isArabic) "مسح الموقع" else "Remove location") }
-                                OutlinedButton(shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth(), onClick = { editDoctorLocation = !editDoctorLocation }) {
-                                    Text(if (isArabic) "تعديل الموقع" else "Edit location")
+                    val hasDoctorLocation = (latitude != null && longitude != null) || !mapUrl.isNullOrBlank()
+                    FormExpandableSection(
+                        title = if (isArabic) {
+                            if (hasDoctorLocation) "موقع الطبيب • تم تحديد الموقع" else "موقع الطبيب"
+                        } else {
+                            if (hasDoctorLocation) "Doctor location • Set" else "Doctor location"
+                        },
+                        expanded = locationExpanded,
+                        onToggle = { locationExpanded = !locationExpanded }
+                    ) {
+                        if (hasDoctorLocation) {
+                            OutlinedButton(
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = {
+                                    latitude = null
+                                    longitude = null
+                                    mapUrl = null
+                                    editDoctorLocation = false
                                 }
-                            }
-                            AnimatedLocationActions(visible = !hasDoctorLocation || editDoctorLocation) {
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                CurrentLocationButton(isArabic = isArabic) { lat, lon ->
-                                    latitude = lat; longitude = lon; mapUrl = null; editDoctorLocation = false
-                                }
-                                OutlinedButton(shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth(), onClick = { showDoctorMapPicker = true }) {
-                                    Text(if (isArabic) "اختيار من الخريطة" else "Choose on map")
-                                }
-                                }
-                            }
+                            ) { Text(if (isArabic) "مسح الموقع المحدد" else "Clear selected location") }
+                        }
+                        CurrentLocationButton(isArabic = isArabic) { lat, lon ->
+                            latitude = lat
+                            longitude = lon
+                            mapUrl = null
+                            editDoctorLocation = false
+                            locationExpanded = false
+                        }
+                        OutlinedButton(
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = { showDoctorMapPicker = true }
+                        ) {
+                            Text(if (isArabic) "اختيار من الخريطة" else "Choose on map")
                         }
                         if (latitude != null && longitude != null) {
                             Text(

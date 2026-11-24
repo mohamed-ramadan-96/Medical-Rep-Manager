@@ -85,6 +85,9 @@ jobs:
             exit 1
           fi
 
+      - name: Run release lint and unit tests
+        run: gradle --no-daemon lintRelease testReleaseUnitTest
+
       - name: Build signed release APK
         env:
           ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -114,6 +117,20 @@ jobs:
             exit 1
           fi
           "$APKSIGNER" verify --verbose "$APK_PATH"
+          unzip -t "$APK_PATH" >/dev/null
+
+          AAPT="$(find "$SDK_ROOT/build-tools" -maxdepth 2 -type f -name aapt -print | sort -V | tail -n 1)"
+          if [ -z "$AAPT" ]; then
+            echo "::error::aapt was not found in Android SDK build-tools."
+            exit 1
+          fi
+          BADGING="$("$AAPT" dump badging "$APK_PATH")"
+          echo "$BADGING" | grep -F "versionCode='$GITHUB_RUN_NUMBER' versionName='$VERSION_NAME'" >/dev/null || {
+            echo "::error::APK version metadata does not match the requested version."
+            echo "$BADGING" | grep '^package:'
+            exit 1
+          }
+
           mkdir -p dist
           cp "$APK_PATH" "dist/MedicalRepManager-$VERSION_NAME.apk"
           echo "APK_PATH=dist/MedicalRepManager-$VERSION_NAME.apk" >> "$GITHUB_ENV"
@@ -132,7 +149,8 @@ jobs:
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-service-account.json"
           jq -e '.client_email and .private_key and .project_id' "$RUNNER_TEMP/firebase-service-account.json" > /dev/null
           echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-service-account.json" >> "$GITHUB_ENV"
-          npm install --global firebase-tools
+          npm install --global firebase-tools@14.12.0
+          firebase --version
           firebase appdistribution:distribute "$APK_PATH" \
             --app "$FIREBASE_APP_ID" \
             --groups "$FIREBASE_GROUP" \
@@ -157,6 +175,10 @@ jobs:
             --arg notes "$RELEASE_NOTES" \
             '{versionName:$versionName,versionCode:$versionCode,apkUrl:$apkUrl,releaseNotes:$notes}' \
             > dist/latest.json
+
+          jq -e --arg name "$VERSION_NAME" --argjson code "$VERSION_CODE" \
+            '.versionName == $name and .versionCode == $code and (.apkUrl | type == "string" and length > 0)' \
+            dist/latest.json >/dev/null
 
       - name: Publish GitHub Release
         if: inputs.build_type == 'final'

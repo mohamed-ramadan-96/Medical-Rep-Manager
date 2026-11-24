@@ -442,26 +442,38 @@ private fun AvailabilityFormDialog(
                                     }
                                 }
                                 Text(if (isArabic) "أيام التواجد" else "Available days", style = MaterialTheme.typography.labelMedium)
-                                weekDays.forEach { (number, names) ->
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Checkbox(
-                                            checked = number in draft.days,
-                                            onCheckedChange = { checked ->
-                                                val updated = if (checked) draft.days + number else draft.days - number
-                                                drafts = drafts.toMutableList().also { it[index] = draft.copy(days = updated) }
-                                                error = null
+                                weekDays.chunked(2).forEach { dayPair ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        dayPair.forEach { (number, names) ->
+                                            Row(
+                                                modifier = Modifier.weight(1f),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Checkbox(
+                                                    checked = number in draft.days,
+                                                    onCheckedChange = { checked ->
+                                                        val updated = if (checked) draft.days + number else draft.days - number
+                                                        drafts = drafts.toMutableList().also { it[index] = draft.copy(days = updated) }
+                                                        error = null
+                                                    }
+                                                )
+                                                Text(if (isArabic) names.second else names.first)
                                             }
-                                        )
-                                        Text(if (isArabic) names.second else names.first)
+                                        }
+                                        if (dayPair.size == 1) Spacer(Modifier.weight(1f))
                                     }
                                 }
                                 OutlinedSelectionField(
-                                    label = if (isArabic) "من — اختر الوقت (AM / PM)" else "From — choose time (AM / PM)",
+                                    label = if (isArabic) "من" else "From",
                                     value = displayAvailabilityTime(draft.startTime),
                                     onClick = { timePickerTarget = index to true }
                                 )
                                 OutlinedSelectionField(
-                                    label = if (isArabic) "إلى — اختر الوقت (AM / PM)" else "To — choose time (AM / PM)",
+                                    label = if (isArabic) "إلى" else "To",
                                     value = displayAvailabilityTime(draft.endTime),
                                     onClick = { timePickerTarget = index to false }
                                 )

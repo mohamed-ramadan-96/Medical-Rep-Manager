@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -57,6 +59,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.medicalrep.manager.data.MedicalCenterEntity
@@ -366,15 +370,22 @@ private fun CenterFormDialog(
     var editCenterLocation by remember { mutableStateOf(false) }
     var nameError by remember { mutableStateOf(false) }
 
+    val dialogMaxHeight = LocalConfiguration.current.screenHeightDp.dp * 0.88f
+
     AlertDialog(
+        modifier = Modifier.fillMaxWidth().widthIn(max = 560.dp).heightIn(max = dialogMaxHeight),
+        properties = DialogProperties(usePlatformDefaultWidth = false),
         onDismissRequest = onDismiss,
-        title = { Text(if (initial == null) { if (isArabic) "إضافة مركز أو عيادة" else "Add center or clinic" } else { if (isArabic) "تعديل المركز" else "Edit center" }) },
+        title = { Text(if (initial == null) { if (isArabic) "إضافة مركز أو عيادة" else "Add center or clinic" } else { if (isArabic) "تعديل المركز" else "Edit center" }, style = MaterialTheme.typography.titleLarge) },
         text = {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth().heightIn(max = dialogMaxHeight - 150.dp),
+                verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
+            ) {
                 item {
                     OutlinedTextField(
                         value = name, onValueChange = { name = it; nameError = false },
-                        modifier = Modifier.fillMaxWidth(), singleLine = true,
+                        modifier = Modifier.fillMaxWidth(), singleLine = true, shape = MaterialTheme.shapes.small,
                         label = { Text(if (isArabic) "اسم المركز *" else "Center name *") },
                         isError = nameError
                     )
@@ -382,19 +393,19 @@ private fun CenterFormDialog(
                 item {
                     OutlinedTextField(
                         value = address, onValueChange = { address = it },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.small,
                         label = { Text(if (isArabic) "العنوان" else "Address") }
                     )
                 }
                 item {
                     OutlinedTextField(
                         value = phone, onValueChange = { phone = it },
-                        modifier = Modifier.fillMaxWidth(), singleLine = true,
+                        modifier = Modifier.fillMaxWidth(), singleLine = true, shape = MaterialTheme.shapes.small,
                         label = { Text(if (isArabic) "رقم الهاتف" else "Phone") }
                     )
                 }
                 item {
-                    OutlinedTextField(value = unregisteredDoctorCount, onValueChange = { value -> unregisteredDoctorCount = value.filter { it.isDigit() } }, modifier = Modifier.fillMaxWidth(), singleLine = true, label = { Text(if (isArabic) "عدد الدكاترة غير المسجلين" else "Unregistered doctors count") })
+                    OutlinedTextField(value = unregisteredDoctorCount, onValueChange = { value -> unregisteredDoctorCount = value.filter { it.isDigit() } }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = MaterialTheme.shapes.small, label = { Text(if (isArabic) "عدد الدكاترة غير المسجلين" else "Unregistered doctors count") })
                 }
 
                 item {
@@ -422,14 +433,14 @@ private fun CenterFormDialog(
                                         }
                                     }
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        OutlinedTextField(value = slot.startTime, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(startTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, label = { Text(if (isArabic) "من HH:mm" else "From HH:mm") })
-                                        OutlinedTextField(value = slot.endTime, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(endTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, label = { Text(if (isArabic) "إلى HH:mm" else "To HH:mm") })
+                                        OutlinedTextField(value = slot.startTime, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(startTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, shape = MaterialTheme.shapes.small, label = { Text(if (isArabic) "من HH:mm" else "From HH:mm") })
+                                        OutlinedTextField(value = slot.endTime, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(endTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, shape = MaterialTheme.shapes.small, label = { Text(if (isArabic) "إلى HH:mm" else "To HH:mm") })
                                     }
-                                    OutlinedTextField(value = slot.notes, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(notes = value) } }, modifier = Modifier.fillMaxWidth(), label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") })
+                                    OutlinedTextField(value = slot.notes, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(notes = value) } }, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.small, label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") })
                                 }
                             }
                         }
-                        OutlinedButton(onClick = { workSlots = workSlots + CenterWorkingHoursDraft() }, modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(onClick = { workSlots = workSlots + CenterWorkingHoursDraft() }, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.small) {
                             Text(if (isArabic) "+ إضافة فترة عمل" else "+ Add working-hours slot")
                         }
                     }
@@ -437,7 +448,7 @@ private fun CenterFormDialog(
                 item {
                     OutlinedTextField(
                         value = notes, onValueChange = { notes = it },
-                        modifier = Modifier.fillMaxWidth(), minLines = 2,
+                        modifier = Modifier.fillMaxWidth(), minLines = 2, shape = MaterialTheme.shapes.small,
                         label = { Text(if (isArabic) "ملاحظات" else "Notes") }
                     )
                 }
@@ -521,7 +532,8 @@ private fun CenterFormDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = {
+            Button(
+                onClick = {
                 if (name.isBlank()) nameError = true else onSave(
                     MedicalCenterEntity(
                         id = initial?.id ?: 0L,
@@ -552,10 +564,14 @@ private fun CenterFormDialog(
                         }
                     }
                 )
-            }) { Text(if (isArabic) "حفظ" else "Save") }
+            })
+            },
+                modifier = Modifier.padding(end = 12.dp),
+                shape = MaterialTheme.shapes.small
+            ) { Text(if (isArabic) "حفظ" else "Save") }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(if (isArabic) "إلغاء" else "Cancel") }
+            OutlinedButton(onClick = onDismiss, shape = MaterialTheme.shapes.small) { Text(if (isArabic) "إلغاء" else "Cancel") }
         }
     )
 

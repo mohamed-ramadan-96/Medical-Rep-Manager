@@ -116,19 +116,24 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
     var showPageDescription by remember { mutableStateOf(false) }
     var expandedAvailabilityGroups by remember { mutableStateOf(emptySet<String>()) }
 
-    val groupedSlots = slots.groupBy { it.slotGroupId.ifBlank { "legacy-${it.id}" } }
-        .values.sortedWith(compareBy(
-            { group -> weekDays.indexOfFirst { it.first == group.firstOrNull()?.dayOfWeek }.let { if (it < 0) Int.MAX_VALUE else it } },
-            { group -> group.firstOrNull()?.startTime.orEmpty() }
-        ))
-    val filteredGroups = groupedSlots.mapNotNull { group ->
-        val matching = group.filter { slot ->
-            val doctor = doctors.firstOrNull { it.id == slot.doctorId }
-            (selectedDay == 0 || slot.dayOfWeek == selectedDay) &&
-            (selectedCenterId == 0L || slot.centerId == selectedCenterId) &&
-            (selectedSpecialty == "all" || doctor?.specialty.equals(selectedSpecialty, ignoreCase = true))
+    val doctorsById = remember(doctors) { doctors.associateBy { it.id } }
+    val groupedSlots = remember(slots) {
+        slots.groupBy { it.slotGroupId.ifBlank { "legacy-${it.id}" } }
+            .values.sortedWith(compareBy(
+                { group -> weekDays.indexOfFirst { it.first == group.firstOrNull()?.dayOfWeek }.let { if (it < 0) Int.MAX_VALUE else it } },
+                { group -> group.firstOrNull()?.startTime.orEmpty() }
+            ))
+    }
+    val filteredGroups = remember(groupedSlots, doctorsById, selectedDay, selectedCenterId, selectedSpecialty) {
+        groupedSlots.mapNotNull { group ->
+            val matching = group.filter { slot ->
+                val doctor = doctorsById[slot.doctorId]
+                (selectedDay == 0 || slot.dayOfWeek == selectedDay) &&
+                (selectedCenterId == 0L || slot.centerId == selectedCenterId) &&
+                (selectedSpecialty == "all" || doctor?.specialty.equals(selectedSpecialty, ignoreCase = true))
+            }
+            matching.takeIf { it.isNotEmpty() }
         }
-        matching.takeIf { it.isNotEmpty() }
     }
 
     Scaffold(

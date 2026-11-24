@@ -210,7 +210,7 @@ private fun DoctorSearchField(
     val textAlpha by animateFloatAsState(if (compact) 0f else 1f, tween(AppMotion.Fast), label = "searchTextAlpha")
     Surface(
         onClick = if (compact) onExpand else ({ }),
-        shape = RoundedCornerShape(if (compact) 16.dp else 24.dp),
+        shape = if (compact) MaterialTheme.shapes.medium else MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier.fillMaxWidth().height(height)

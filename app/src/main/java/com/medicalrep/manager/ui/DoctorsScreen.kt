@@ -3,7 +3,6 @@ package com.medicalrep.manager.ui
 import com.medicalrep.manager.ui.theme.AppMotion
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.expandVertically
@@ -134,7 +133,6 @@ private fun FormExpandableSection(
         border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier
             .fillMaxWidth()
-            .animateContentSize(animationSpec = tween(AppMotion.Emphasized))
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
@@ -637,7 +635,6 @@ private fun DoctorCard(
     Card(
         modifier = Modifier.fillMaxWidth()
             .clickable(onClick = onOpen)
-            .animateContentSize(animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)),
         shape = MaterialTheme.shapes.small,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {

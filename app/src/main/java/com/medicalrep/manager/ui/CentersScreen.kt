@@ -1,5 +1,7 @@
 package com.medicalrep.manager.ui
 
+import com.medicalrep.manager.ui.theme.AppSpacing
+
 import com.medicalrep.manager.ui.theme.AppMotion
 
 import androidx.compose.animation.AnimatedVisibility
@@ -116,7 +118,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             } else {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
                 ) {
                     items(centers, key = { it.id }) { center ->
                         val expanded = center.id in expandedCenterIds
@@ -128,7 +130,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                         ) {
                             Column(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = AppSpacing.md),
                                 verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Row(

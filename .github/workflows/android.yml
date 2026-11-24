@@ -2,10 +2,7 @@ name: Android CI
 run-name: ${{ github.event.head_commit.message || github.workflow }}
 
 on:
-  push:
-    branches: [ "main", "Final", "feature/**" ]
-  pull_request:
-    branches: [ "main" ]
+  # Run CI only when started manually. Routine commits must not consume Actions minutes or artifact storage.
   workflow_dispatch:
 
 concurrency:

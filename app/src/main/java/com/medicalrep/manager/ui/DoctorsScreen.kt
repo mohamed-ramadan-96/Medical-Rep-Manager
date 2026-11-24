@@ -16,8 +16,11 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.animation.core.animateFloatAsState
@@ -1243,10 +1246,15 @@ private fun DoctorFormDialog(
     }
 
     AlertDialog(
+        modifier = Modifier.fillMaxWidth().widthIn(max = 560.dp).heightIn(max = dialogMaxHeight),
+        properties = DialogProperties(usePlatformDefaultWidth = false),
         onDismissRequest = onDismiss,
-        title = { Text(if (initial == null) { if (isArabic) "إضافة طبيب" else "Add doctor" } else { if (isArabic) "تعديل بيانات الطبيب" else "Edit doctor" }) },
+        title = { Text(if (initial == null) { if (isArabic) "إضافة طبيب" else "Add doctor" } else { if (isArabic) "تعديل بيانات الطبيب" else "Edit doctor" }, style = MaterialTheme.typography.titleLarge) },
         text = {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth().heightIn(max = dialogMaxHeight - 150.dp),
+                verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
+            ) {
                 item {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
@@ -1254,12 +1262,12 @@ private fun DoctorFormDialog(
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         if (photoUri.isNullOrBlank()) {
-                            Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(72.dp), tint = MaterialTheme.colorScheme.primary)
+                            Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.primary)
                         } else {
                             AsyncImage(
                                 model = photoUri,
                                 contentDescription = if (isArabic) "صورة الطبيب" else "Doctor photo",
-                                modifier = Modifier.size(88.dp).clip(CircleShape),
+                                modifier = Modifier.size(72.dp).clip(CircleShape),
                                 contentScale = ContentScale.Crop
                             )
                         }
@@ -1291,7 +1299,7 @@ private fun DoctorFormDialog(
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline
                         ),
                         value = name, onValueChange = { name = it; nameError = false },
-                        modifier = Modifier.fillMaxWidth(), singleLine = true,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), singleLine = true,
                         label = { Text(if (isArabic) "اسم الطبيب *" else "Doctor name *") },
                         isError = nameError
                     )
@@ -1574,7 +1582,7 @@ private fun DoctorFormDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = {
+            Button(onClick = {
                 if (name.isBlank()) {
                     nameError = true
                 } else if (selectedAreas.isEmpty()) {
@@ -1621,7 +1629,7 @@ private fun DoctorFormDialog(
             }) { Text(if (isArabic) "حفظ" else "Save") }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(if (isArabic) "إلغاء" else "Cancel") }
+            OutlinedButton(onClick = onDismiss, shape = MaterialTheme.shapes.small) { Text(if (isArabic) "إلغاء" else "Cancel") }
         }
     )
 

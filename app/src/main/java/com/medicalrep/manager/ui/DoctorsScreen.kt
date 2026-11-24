@@ -280,12 +280,29 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val doctors by remember(searchText) {
         if (searchText.isBlank()) dao.observeAll() else dao.search(searchText.trim())
     }.collectAsState(initial = emptyList())
-    val availableAreas = allDoctors.flatMap { doctorAreas(it.area) }.distinctBy { it.lowercase(Locale.ROOT) }.sorted()
-    val filteredDoctors = doctors.filter { doctor ->
-        (selectedArea == "all" || doctorAreas(doctor.area).any { it.equals(selectedArea, ignoreCase = true) }) &&
-        (selectedSpecialty == "all" || doctor.specialty.equals(selectedSpecialty, ignoreCase = true)) &&
-        (selectedCenter == "all" || doctorCenterLinks.any { it.doctorId == doctor.id && it.centerId.toString() == selectedCenter } ||
-            (doctorCenterLinks.none { it.doctorId == doctor.id } && doctor.centerId?.toString() == selectedCenter))
+    val availableAreas = remember(allDoctors) {
+        allDoctors.flatMap { doctorAreas(it.area) }
+            .distinctBy { it.lowercase(Locale.ROOT) }.sorted()
+    }
+    val centerIdsByDoctor = remember(doctorCenterLinks) {
+        doctorCenterLinks.groupBy({ it.doctorId }, { it.centerId })
+    }
+    val centerNameByDoctor = remember(centers, centerIdsByDoctor, allDoctors) {
+        allDoctors.associate { doctor ->
+            val linkedIds = centerIdsByDoctor[doctor.id].orEmpty().toSet()
+            val names = centers.filter { center ->
+                center.id in linkedIds || (linkedIds.isEmpty() && center.id == doctor.centerId)
+            }.joinToString("، ") { it.name }
+            doctor.id to names.ifBlank { doctor.medicalCenter }
+        }
+    }
+    val filteredDoctors = remember(doctors, selectedArea, selectedSpecialty, selectedCenter, centerIdsByDoctor) {
+        doctors.filter { doctor ->
+            (selectedArea == "all" || doctorAreas(doctor.area).any { it.equals(selectedArea, ignoreCase = true) }) &&
+            (selectedSpecialty == "all" || doctor.specialty.equals(selectedSpecialty, ignoreCase = true)) &&
+            (selectedCenter == "all" || centerIdsByDoctor[doctor.id]?.any { it.toString() == selectedCenter }
+                ?: (doctor.centerId?.toString() == selectedCenter))
+        }
     }
     var editingDoctor by remember { mutableStateOf<DoctorEntity?>(null) }
     var showForm by remember { mutableStateOf(false) }
@@ -425,7 +442,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 }
                 if (filteredDoctors.isEmpty()) item { Text(if (doctors.isEmpty()) { if (isArabic) "لا يوجد أطباء حتى الآن. اضغط + لإضافة أول طبيب." else "No doctors yet. Tap + to add your first doctor." } else { if (isArabic) "لا توجد نتائج مطابقة للفلاتر المحددة." else "No doctors match the selected filters." }, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 24.dp)) }
                 else items(filteredDoctors, key = { it.id }) { doctor ->
-                    DoctorCard(doctor = doctor, centerName = centers.filter { center -> doctorCenterLinks.any { it.doctorId == doctor.id && it.centerId == center.id } }.joinToString("، ") { it.name }.ifBlank { centers.firstOrNull { it.id == doctor.centerId }?.name ?: doctor.medicalCenter }, isArabic = isArabic, onEdit = { editingDoctor = doctor; showForm = true }, onDelete = { pendingDelete = doctor }, onAttachments = { attachmentsDoctor = doctor }, onOpen = { detailsDoctor = doctor })
+                    DoctorCard(doctor = doctor, centerName = centerNameByDoctor[doctor.id].orEmpty(), isArabic = isArabic, onEdit = { editingDoctor = doctor; showForm = true }, onDelete = { pendingDelete = doctor }, onAttachments = { attachmentsDoctor = doctor }, onOpen = { detailsDoctor = doctor })
                 }
             }
         }

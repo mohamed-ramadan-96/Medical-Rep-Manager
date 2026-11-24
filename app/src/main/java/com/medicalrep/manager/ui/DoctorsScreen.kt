@@ -300,8 +300,8 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
         doctors.filter { doctor ->
             (selectedArea == "all" || doctorAreas(doctor.area).any { it.equals(selectedArea, ignoreCase = true) }) &&
             (selectedSpecialty == "all" || doctor.specialty.equals(selectedSpecialty, ignoreCase = true)) &&
-            (selectedCenter == "all" || centerIdsByDoctor[doctor.id]?.any { it.toString() == selectedCenter }
-                ?: (doctor.centerId?.toString() == selectedCenter))
+            (selectedCenter == "all" || (centerIdsByDoctor[doctor.id]?.any { it.toString() == selectedCenter }
+                ?: (doctor.centerId?.toString() == selectedCenter)))
         }
     }
     var editingDoctor by remember { mutableStateOf<DoctorEntity?>(null) }

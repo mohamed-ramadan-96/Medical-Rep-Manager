@@ -1495,7 +1495,7 @@ private fun DoctorFormDialog(
                                         }
                                         Text(if (isArabic) "أيام التواجد" else "Available days", style = MaterialTheme.typography.labelMedium)
                                         listOf(6 to "السبت", 7 to "الأحد", 1 to "الاثنين", 2 to "الثلاثاء", 3 to "الأربعاء", 4 to "الخميس", 5 to "الجمعة").chunked(2).forEach { pair ->
-                                            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                                                 pair.forEach { (day, label) ->
                                                     Row(Modifier.weight(1f), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                                                         Checkbox(checked = day in draft.days, onCheckedChange = { checked ->
@@ -1606,6 +1606,7 @@ private fun DoctorFormDialog(
             }
         },
         confirmButton = {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Button(
                 onClick = {
                 if (name.isBlank()) {
@@ -1652,13 +1653,12 @@ private fun DoctorFormDialog(
                     ) }
                 }
             },
-                modifier = Modifier.padding(end = 12.dp),
                 shape = MaterialTheme.shapes.small
             ) { Text(if (isArabic) "حفظ" else "Save") }
-        },
-        dismissButton = {
             OutlinedButton(onClick = onDismiss, shape = MaterialTheme.shapes.small) { Text(if (isArabic) "إلغاء" else "Cancel") }
-        }
+            }
+        },
+        dismissButton = { }
     )
 
     availabilityTimePickerTarget?.let { (draftIndex, isStart) ->

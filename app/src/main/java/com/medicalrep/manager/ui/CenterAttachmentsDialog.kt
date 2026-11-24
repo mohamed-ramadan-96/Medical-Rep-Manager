@@ -1,5 +1,7 @@
 package com.medicalrep.manager.ui
 
+import com.medicalrep.manager.ui.theme.AppSpacing
+
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -104,7 +106,7 @@ fun CenterAttachmentsDialog(
         onDismissRequest = onDismiss,
         title = { Text((if (isArabic) "مرفقات " else "Attachments: ") + center.name) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
                 OutlinedButton(
                     onClick = { documentPicker.launch(arrayOf("*/*")) },
                     enabled = !isCopying,

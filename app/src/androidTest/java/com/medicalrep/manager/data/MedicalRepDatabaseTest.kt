@@ -9,6 +9,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.first
 import com.medicalrep.manager.domain.WeeklyPlanRules
 import com.medicalrep.manager.domain.ContactPhoneRules
+import com.medicalrep.manager.backup.DriveBackupEngine
 import java.time.LocalDate
 import java.io.File
 import java.util.zip.ZipEntry
@@ -36,6 +37,34 @@ class MedicalRepDatabaseTest {
     @After
     fun closeDatabase() {
         database.close()
+    }
+
+    @Test
+    fun backupRestoreRejectsArchivePathTraversalBeforeReplacingData() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val existingDoctorId = runBlocking {
+            database.doctorDao().insert(DoctorEntity(name = "Must Remain"))
+        }
+        val archive = File.createTempFile("invalid-backup-", ".zip", context.cacheDir)
+        try {
+            ZipOutputStream(archive.outputStream()).use { zip ->
+                zip.putNextEntry(ZipEntry("../outside.txt"))
+                zip.write("malicious".toByteArray())
+                zip.closeEntry()
+            }
+
+            try {
+                DriveBackupEngine.restoreFromLocalFile(context, archive)
+                throw AssertionError("Expected restore to reject path traversal")
+            } catch (expected: IllegalStateException) {
+                assertTrue(expected.message.orEmpty().contains("Invalid backup archive path"))
+            }
+
+            val remaining = runBlocking { database.doctorDao().getAllForImport() }
+            assertTrue(remaining.any { it.id == existingDoctorId && it.name == "Must Remain" })
+        } finally {
+            archive.delete()
+        }
     }
 
     @Test

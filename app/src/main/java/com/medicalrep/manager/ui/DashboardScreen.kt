@@ -1,5 +1,7 @@
 package com.medicalrep.manager.ui
 
+import com.medicalrep.manager.ui.theme.AppSpacing
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.app.Activity
@@ -281,7 +283,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(padding),
-        contentPadding = PaddingValues(18.dp),
+        contentPadding = PaddingValues(AppSpacing.lg),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
@@ -293,7 +295,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
             }
         }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.md), modifier = Modifier.fillMaxWidth()) {
                 Box(modifier = Modifier.weight(1f)) {
                     Button(onClick = { exportMenuExpanded = true }, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.FileUpload, contentDescription = null)
@@ -356,7 +358,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
             GoogleDriveBackupCard(isArabic = isArabic)
         }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
                 MetricCard(Modifier.weight(1f), Icons.Default.PeopleAlt, doctors.size.toString(),
                     if (isArabic) "الأطباء" else "Doctors")
                 MetricCard(Modifier.weight(1f), Icons.Default.LocalHospital, centers.size.toString(),
@@ -364,7 +366,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
             }
         }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
                 MetricCard(Modifier.weight(1f), Icons.Default.Schedule, todayVisits.toString(),
                     if (isArabic) "زيارات اليوم" else "Today's visits")
                 MetricCard(Modifier.weight(1f), Icons.Default.History, visits.size.toString(),
@@ -376,7 +378,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                 if (isArabic) "ملخص الشهر والسنة واتجاه الزيارات خلال آخر 6 أشهر" else "Monthly and yearly summary with the last 6 months of activity")
         }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
                 MetricCard(Modifier.weight(1f), Icons.Default.CalendarMonth, monthVisits.toString(),
                     if (isArabic) "زيارات هذا الشهر" else "This month")
                 MetricCard(Modifier.weight(1f), Icons.Default.History, yearVisits.toString(),
@@ -475,7 +477,7 @@ private fun VisitSummaryCard(visit: DoctorVisitEntity, doctorName: String?, isAr
     val date = remember(timestamp) { SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(timestamp)) }
     Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
-        Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
             Icon(if (followUp) Icons.Default.EventRepeat else Icons.Default.CalendarMonth,
                 contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {

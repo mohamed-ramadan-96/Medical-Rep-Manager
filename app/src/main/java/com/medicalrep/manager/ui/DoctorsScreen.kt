@@ -1,5 +1,7 @@
 package com.medicalrep.manager.ui
 
+import com.medicalrep.manager.ui.theme.AppMotion
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
@@ -127,12 +129,12 @@ private fun FormExpandableSection(
     content: @Composable () -> Unit
 ) {
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        shape = MaterialTheme.shapes.small,
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier
             .fillMaxWidth()
-            .animateContentSize(animationSpec = tween(220))
+            .animateContentSize(animationSpec = tween(AppMotion.Emphasized))
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
@@ -151,8 +153,8 @@ private fun FormExpandableSection(
             }
             AnimatedVisibility(
                 visible = expanded,
-                enter = expandVertically(animationSpec = tween(220)) + fadeIn(animationSpec = tween(180)),
-                exit = shrinkVertically(animationSpec = tween(180)) + fadeOut(animationSpec = tween(120))
+                enter = expandVertically(animationSpec = tween(AppMotion.Emphasized)) + fadeIn(animationSpec = tween(AppMotion.Standard)),
+                exit = shrinkVertically(animationSpec = tween(AppMotion.Standard)) + fadeOut(animationSpec = tween(AppMotion.Fast))
             ) {
                 Column(
                     modifier = Modifier
@@ -172,7 +174,7 @@ private fun FilterActionButton(isArabic: Boolean, expanded: Boolean, onClick: ()
     val iconColor = MaterialTheme.colorScheme.onSurface
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(22.dp),
+        shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = modifier.size(60.dp)
@@ -204,8 +206,8 @@ private fun DoctorSearchField(
     compact: Boolean,
     onExpand: () -> Unit = {}
 ) {
-    val height by animateDpAsState(if (compact) 44.dp else 60.dp, tween(240), label = "searchHeight")
-    val textAlpha by animateFloatAsState(if (compact) 0f else 1f, tween(120), label = "searchTextAlpha")
+    val height by animateDpAsState(if (compact) 44.dp else 60.dp, tween(AppMotion.Emphasized), label = "searchHeight")
+    val textAlpha by animateFloatAsState(if (compact) 0f else 1f, tween(AppMotion.Fast), label = "searchTextAlpha")
     Surface(
         onClick = if (compact) onExpand else ({ }),
         shape = RoundedCornerShape(if (compact) 16.dp else 24.dp),
@@ -343,7 +345,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                         Text(if (isArabic) "إدارة الأطباء" else "Doctors", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                         OutlinedButton(
                             onClick = { showSpecialtiesManager = true },
-                            shape = RoundedCornerShape(12.dp),
+                            shape = MaterialTheme.shapes.small,
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 7.dp)
                         ) {
                             Icon(Icons.Default.MedicalServices, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -354,10 +356,10 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 }
                 stickyHeader {
                     BoxWithConstraints(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(vertical = 4.dp)) {
-                        val filterWidth by animateDpAsState(if (searchHeaderExpanded) 60.dp else 0.dp, tween(240), label = "filterWidth")
-                        val filterAlpha by animateFloatAsState(if (searchHeaderExpanded) 1f else 0f, tween(160), label = "filterAlpha")
-                        val searchWidth by animateDpAsState(if (searchHeaderExpanded) maxWidth - 68.dp else 44.dp, tween(280), label = "searchWidth")
-                        val controlHeight by animateDpAsState(if (searchHeaderExpanded) 60.dp else 44.dp, tween(240), label = "searchControlHeight")
+                        val filterWidth by animateDpAsState(if (searchHeaderExpanded) 60.dp else 0.dp, tween(AppMotion.Emphasized), label = "filterWidth")
+                        val filterAlpha by animateFloatAsState(if (searchHeaderExpanded) 1f else 0f, tween(AppMotion.Fast), label = "filterAlpha")
+                        val searchWidth by animateDpAsState(if (searchHeaderExpanded) maxWidth - 68.dp else 44.dp, tween(AppMotion.Emphasized), label = "searchWidth")
+                        val controlHeight by animateDpAsState(if (searchHeaderExpanded) 60.dp else 44.dp, tween(AppMotion.Emphasized), label = "searchControlHeight")
                         Row(
                             Modifier.fillMaxWidth().height(controlHeight),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -392,7 +394,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     )
                 }
                 item {
-                    AnimatedVisibility(visible = showFilters, enter = expandVertically(tween(220)) + fadeIn(tween(180)), exit = shrinkVertically(tween(180)) + fadeOut(tween(140))) {
+                    AnimatedVisibility(visible = showFilters, enter = expandVertically(tween(AppMotion.Emphasized)) + fadeIn(tween(AppMotion.Standard)), exit = shrinkVertically(tween(AppMotion.Standard)) + fadeOut(tween(AppMotion.Fast))) {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                                 Column(Modifier.weight(1f)) {
@@ -629,14 +631,14 @@ private fun DoctorCard(
     var expanded by remember(doctor.id) { mutableStateOf(false) }
     val expandRotation by androidx.compose.animation.core.animateFloatAsState(
         targetValue = if (expanded) 180f else 0f,
-        animationSpec = androidx.compose.animation.core.tween(180),
+        animationSpec = androidx.compose.animation.core.tween(AppMotion.Standard),
         label = "doctorExpandRotation"
     )
     Card(
         modifier = Modifier.fillMaxWidth()
             .clickable(onClick = onOpen)
             .animateContentSize(animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.small,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {
         Column(
@@ -700,10 +702,10 @@ private fun DoctorCard(
             }
             AnimatedVisibility(
                 visible = expanded,
-                enter = expandVertically(animationSpec = androidx.compose.animation.core.tween(220)) +
-                    fadeIn(animationSpec = androidx.compose.animation.core.tween(180)),
-                exit = shrinkVertically(animationSpec = androidx.compose.animation.core.tween(180)) +
-                    fadeOut(animationSpec = androidx.compose.animation.core.tween(140))
+                enter = expandVertically(animationSpec = androidx.compose.animation.core.tween(AppMotion.Emphasized)) +
+                    fadeIn(animationSpec = androidx.compose.animation.core.tween(AppMotion.Standard)),
+                exit = shrinkVertically(animationSpec = androidx.compose.animation.core.tween(AppMotion.Standard)) +
+                    fadeOut(animationSpec = androidx.compose.animation.core.tween(AppMotion.Fast))
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(start = 52.dp, top = 2.dp, bottom = 4.dp),
@@ -1065,7 +1067,7 @@ private fun DoctorTimeSelectionField(
     OutlinedButton(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp),
-        shape = RoundedCornerShape(14.dp),
+        shape = MaterialTheme.shapes.small,
         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp)
     ) {
         Row(
@@ -1125,7 +1127,7 @@ private fun DoctorAvailabilityTimePickerDialog(
     )
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(24.dp),
+            shape = MaterialTheme.shapes.extraLarge,
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 6.dp
         ) {
@@ -1282,7 +1284,7 @@ private fun DoctorFormDialog(
                 }
                 item {
                     OutlinedTextField(
-                        shape = RoundedCornerShape(14.dp),
+                        shape = MaterialTheme.shapes.small,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surface,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -1311,7 +1313,7 @@ private fun DoctorFormDialog(
                     ) {
                         phoneNumbers.forEachIndexed { index, phone ->
                             OutlinedTextField(
-                                shape = RoundedCornerShape(14.dp),
+                                shape = MaterialTheme.shapes.small,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surface,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -1339,7 +1341,7 @@ private fun DoctorFormDialog(
                         OutlinedButton(
                             onClick = { phoneNumbers = phoneNumbers + "" },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp)
+                            shape = MaterialTheme.shapes.small
                         ) {
                             Icon(Icons.Default.Add, contentDescription = null)
                             Text(if (isArabic) "إضافة رقم هاتف" else "Add phone number")
@@ -1383,7 +1385,7 @@ private fun DoctorFormDialog(
                                     }
                                 }
                                 OutlinedTextField(
-                        shape = RoundedCornerShape(14.dp),
+                        shape = MaterialTheme.shapes.small,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surface,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -1437,7 +1439,7 @@ private fun DoctorFormDialog(
                     ) {
                             Text(if (isArabic) "كل فترة مستقلة: عامة أو مرتبطة بمركز من المراكز المختارة." else "Each slot is independent: general or linked to one of the selected centers.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             availabilityDrafts.forEachIndexed { index, draft ->
-                                Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                                Card(shape = MaterialTheme.shapes.medium, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                                     Column(Modifier.fillMaxWidth().padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                         Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                                             Text((if (isArabic) "الفترة " else "Slot ") + (index + 1), modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
@@ -1494,7 +1496,7 @@ private fun DoctorFormDialog(
                                             value = draft.notes,
                                             onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(notes = value) } },
                                             modifier = Modifier.fillMaxWidth(),
-                                            shape = RoundedCornerShape(14.dp),
+                                            shape = MaterialTheme.shapes.small,
                                             colors = OutlinedTextFieldDefaults.colors(
                                                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                                                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -1506,7 +1508,7 @@ private fun DoctorFormDialog(
                                     }
                                 }
                             }
-                        OutlinedButton(shape = RoundedCornerShape(14.dp), onClick = { availabilityDrafts = availabilityDrafts + DoctorAvailabilityDraft() }, modifier = Modifier.fillMaxWidth()) { Text(if (isArabic) "+ إضافة فترة" else "+ Add slot") }
+                        OutlinedButton(shape = MaterialTheme.shapes.small, onClick = { availabilityDrafts = availabilityDrafts + DoctorAvailabilityDraft() }, modifier = Modifier.fillMaxWidth()) { Text(if (isArabic) "+ إضافة فترة" else "+ Add slot") }
                     }
                 }
                 availabilityError?.let { message -> item { Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) } }
@@ -1541,7 +1543,7 @@ private fun DoctorFormDialog(
                             locationExpanded = false
                         }
                         OutlinedButton(
-                            shape = RoundedCornerShape(14.dp),
+                            shape = MaterialTheme.shapes.small,
                             modifier = Modifier.fillMaxWidth(),
                             onClick = { showDoctorMapPicker = true }
                         ) {
@@ -1558,7 +1560,7 @@ private fun DoctorFormDialog(
                 }
                 item {
                     OutlinedTextField(
-                        shape = RoundedCornerShape(14.dp),
+                        shape = MaterialTheme.shapes.small,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surface,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surface,

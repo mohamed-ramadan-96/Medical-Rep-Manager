@@ -1183,6 +1183,7 @@ private fun DoctorFormDialog(
     onSave: (DoctorEntity, Set<Long>, List<DoctorAvailabilityEntity>) -> Unit
 ) {
     val context = LocalContext.current
+    val dialogMaxHeight = LocalConfiguration.current.screenHeightDp.dp * 0.88f
     var name by remember(initial) { mutableStateOf(initial?.name.orEmpty()) }
     var selectedSpecialtyId by remember(initial, specialties) { mutableStateOf(initial?.specialtyId ?: specialties.firstOrNull { it.name == initial?.specialty }?.id) }
     var showSpecialtyPicker by remember { mutableStateOf(false) }

@@ -636,7 +636,7 @@ private fun DoctorCard(
     )
     Card(
         modifier = Modifier.fillMaxWidth()
-            .clickable(onClick = onOpen)
+            .clickable(onClick = onOpen),
         shape = MaterialTheme.shapes.small,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {

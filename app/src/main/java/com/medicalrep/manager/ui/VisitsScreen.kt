@@ -3,7 +3,6 @@ package com.medicalrep.manager.ui
 import com.medicalrep.manager.ui.theme.AppMotion
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.fadeIn
@@ -170,11 +169,7 @@ fun VisitsScreen(
                             label = "visitExpandRotation"
                         )
                         Card(
-                            modifier = Modifier.fillMaxWidth().animateContentSize(
-                                animationSpec = androidx.compose.animation.core.spring(
-                                    stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
-                                )
-                            ),
+                            modifier = Modifier.fillMaxWidth(),
                             shape = MaterialTheme.shapes.small,
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                         ) {

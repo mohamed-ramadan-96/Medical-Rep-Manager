@@ -897,11 +897,14 @@ internal fun DoctorDetailsDialog(
                         ) {
                             Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text(center.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                                if (center.address.isNotBlank()) {                                    Text(if (isArabic) "العنوان" else "Address", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                if (center.address.isNotBlank()) {
+                                    Text(if (isArabic) "العنوان" else "Address", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                                     Text(center.address)
                                 }
                                 if (center.phone.isNotBlank()) {
-                                    Text(if (isArabic) "الهاتف" else "Phone", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)                                    Text(center.phone)                                }
+                                    Text(if (isArabic) "الهاتف" else "Phone", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                    Text(center.phone)
+                                }
                                 val hasCenterLocation = (center.latitude != null && center.longitude != null) || !center.mapUrl.isNullOrBlank()
                                 var showCenterLocationActions by remember(center.id, center.latitude, center.longitude, center.mapUrl) { mutableStateOf(false) }
                                 Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {

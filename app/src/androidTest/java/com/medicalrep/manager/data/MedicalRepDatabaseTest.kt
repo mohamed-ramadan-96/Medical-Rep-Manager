@@ -200,7 +200,7 @@ class MedicalRepDatabaseTest {
 
         val entry = database.weeklyPlanDao().observeAll().first().single()
         assertEquals(doctorId, entry.doctorId)
-        assertEquals(null, entry.centerId)
+        assertTrue(entry.centerId == null)
         assertEquals("Temporary Center", entry.centerNameSnapshot)
     }
 

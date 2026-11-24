@@ -1,5 +1,7 @@
 package com.medicalrep.manager.ui
 
+import com.medicalrep.manager.ui.theme.AppMotion
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
@@ -164,7 +166,7 @@ fun VisitsScreen(
                         val expanded = visit.id in expandedVisitIds
                         val expandRotation by androidx.compose.animation.core.animateFloatAsState(
                             if (expanded) 180f else 0f,
-                            animationSpec = tween(180),
+                            animationSpec = tween(AppMotion.Standard),
                             label = "visitExpandRotation"
                         )
                         Card(
@@ -173,7 +175,7 @@ fun VisitsScreen(
                                     stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
                                 )
                             ),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = MaterialTheme.shapes.small,
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                         ) {
                             Column(
@@ -187,7 +189,7 @@ fun VisitsScreen(
                                 ) {
                                     Surface(
                                         modifier = Modifier.size(36.dp),
-                                        shape = RoundedCornerShape(10.dp),
+                                        shape = MaterialTheme.shapes.small,
                                         color = MaterialTheme.colorScheme.primaryContainer
                                     ) {
                                         Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.padding(8.dp))
@@ -224,8 +226,8 @@ fun VisitsScreen(
                                 }
                                 AnimatedVisibility(
                                     visible = expanded,
-                                    enter = expandVertically(tween(220)) + fadeIn(tween(180)),
-                                    exit = shrinkVertically(tween(180)) + fadeOut(tween(140))
+                                    enter = expandVertically(tween(AppMotion.Emphasized)) + fadeIn(tween(AppMotion.Standard)),
+                                    exit = shrinkVertically(tween(AppMotion.Standard)) + fadeOut(tween(AppMotion.Fast))
                                 ) {
                                     Column(
                                         modifier = Modifier.fillMaxWidth().padding(start = 30.dp, top = 2.dp, bottom = 4.dp),

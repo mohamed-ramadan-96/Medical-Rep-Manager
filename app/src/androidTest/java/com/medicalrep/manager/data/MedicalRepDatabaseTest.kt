@@ -5,6 +5,9 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
+import com.medicalrep.manager.domain.WeeklyPlanRules
+import java.time.LocalDate
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -28,6 +31,21 @@ class MedicalRepDatabaseTest {
     @After
     fun closeDatabase() {
         database.close()
+    }
+
+    @Test
+    fun weeklyPlanWeekAlwaysStartsOnSaturday() {
+        assertEquals(LocalDate.parse("2026-11-21"), WeeklyPlanRules.weekStart(LocalDate.parse("2026-11-21")))
+        assertEquals(LocalDate.parse("2026-11-21"), WeeklyPlanRules.weekStart(LocalDate.parse("2026-11-22")))
+        assertEquals(LocalDate.parse("2026-11-21"), WeeklyPlanRules.weekStart(LocalDate.parse("2026-11-27")))
+        assertEquals(LocalDate.parse("2026-11-28"), WeeklyPlanRules.weekStart(LocalDate.parse("2026-11-28")))
+    }
+
+    @Test
+    fun weeklyPlanAreaMatchingIsCaseInsensitiveAndDeduplicated() {
+        assertEquals(listOf("Cairo", "Giza"), WeeklyPlanRules.splitAreas(" Cairo | Giza | cairo || "))
+        assertTrue(WeeklyPlanRules.matchesArea("Cairo|Giza", "gIzA"))
+        assertTrue(WeeklyPlanRules.matchesArea("Cairo|Giza", "__all__"))
     }
 
     @Test
@@ -72,7 +90,7 @@ class MedicalRepDatabaseTest {
         val doctor = database.doctorDao().getAllForImport().single()
         database.doctorDao().delete(doctor)
 
-        assertTrue(database.doctorVisitDao().observeAll().toListBlocking().isEmpty())
+        assertTrue(database.doctorVisitDao().observeAll().first().isEmpty())
         assertTrue(database.weeklyPlanDao().observeAll().toListBlocking().isEmpty())
     }
 }

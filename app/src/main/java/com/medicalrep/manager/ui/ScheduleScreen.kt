@@ -1,5 +1,7 @@
 package com.medicalrep.manager.ui
 
+import com.medicalrep.manager.ui.theme.AppSpacing
+
 import com.medicalrep.manager.ui.theme.AppMotion
 
 import androidx.compose.foundation.BorderStroke
@@ -171,7 +173,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(20.dp))
-                    Text(if (isArabic) "الفلاتر" else "Filters", modifier = Modifier.padding(horizontal = 10.dp), style = MaterialTheme.typography.labelLarge)
+                    Text(if (isArabic) "الفلاتر" else "Filters", modifier = Modifier.padding(horizontal = AppSpacing.md), style = MaterialTheme.typography.labelLarge)
                     Icon(if (showFilters) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null, modifier = Modifier.size(20.dp))
                 }
             }
@@ -180,7 +182,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                 enter = expandVertically(animationSpec = tween(AppMotion.Emphasized)) + fadeIn(animationSpec = tween(AppMotion.Standard)),
                 exit = shrinkVertically(animationSpec = tween(AppMotion.Standard)) + fadeOut(animationSpec = tween(AppMotion.Fast))
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
                     OutlinedSelectionField(label = if (isArabic) "اليوم" else "Day", value = if (selectedDay == 0) { if (isArabic) "كل الأيام" else "All days" } else weekDays.firstOrNull { it.first == selectedDay }?.second?.let { if (isArabic) it.second else it.first }.orEmpty(), onClick = { dayMenu = true })
@@ -212,7 +214,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
             } else if (filteredGroups.isEmpty()) {
                 Text(if (isArabic) "لا توجد مواعيد مطابقة للاختيارات." else "No availability matches these filters.", modifier = Modifier.padding(top = 20.dp))
             } else {
-                LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
                     items(filteredGroups, key = { group -> group.first().id }) { group ->
                         val slot = group.first()
                         val groupKey = slot.slotGroupId.ifBlank { "legacy-${slot.id}" }
@@ -229,7 +231,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                         ) {
                             Column(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = AppSpacing.md),
                                 verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Row(
@@ -421,7 +423,7 @@ private fun AvailabilityFormDialog(
                     items(drafts.size) { index ->
                         val draft = drafts[index]
                         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
-                            Column(modifier = Modifier.fillMaxWidth().padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Column(modifier = Modifier.fillMaxWidth().padding(AppSpacing.md), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
                                         (if (isArabic) "الفترة " else "Time slot ") + (index + 1),

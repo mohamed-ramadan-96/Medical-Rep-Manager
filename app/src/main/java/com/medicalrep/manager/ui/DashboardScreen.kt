@@ -28,6 +28,7 @@ import com.medicalrep.manager.backup.DriveBackupEngine
 import com.medicalrep.manager.data.ExcelExporter
 import com.medicalrep.manager.data.ExcelImporter
 import com.medicalrep.manager.data.DoctorEntity
+import com.medicalrep.manager.domain.ContactPhoneRules
 import java.io.File
 import java.io.FileInputStream
 import androidx.compose.foundation.layout.Arrangement
@@ -128,12 +129,12 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                     database.withTransaction {
                         val dao = database.doctorDao()
                         val knownPhones = dao.getAllForImport()
-                            .flatMap { splitPhones(it.phoneNumbers) }
-                            .mapNotNull(::normalizePhone).toMutableSet()
+                            .flatMap { ContactPhoneRules.split(it.phoneNumbers) }
+                            .mapNotNull(::ContactPhoneRules::normalize).toMutableSet()
                         var added = 0
                         var skipped = 0
                         imported.forEach { row ->
-                            val rowPhones = splitPhones(row.phone).mapNotNull(::normalizePhone).toSet()
+                            val rowPhones = ContactPhoneRules.split(row.phone).mapNotNull(::normalizePhone).toSet()
                             if (rowPhones.isNotEmpty() && rowPhones.any { it in knownPhones }) {
                                 skipped++
                             } else {
@@ -515,20 +516,6 @@ private fun EmptyDashboardCard(message: String) {
     }
 }
 
-
-private fun splitPhones(value: String): List<String> =
-    value.split(Regex("[,;\\n\\r•|/]")).map { it.trim() }.filter { it.isNotBlank() }
-
-private fun normalizePhone(value: String): String? {
-    val normalizedDigits = value.map { char ->
-        when (char) {
-            in '٠'..'٩' -> ('0'.code + char.code - '٠'.code).toChar()
-            in '۰'..'۹' -> ('0'.code + char.code - '۰'.code).toChar()
-            else -> char
-        }
-    }.filter { it.isDigit() }
-    return normalizedDigits.joinToString("").takeIf { it.isNotBlank() }
-}
 
 private tailrec fun findDashboardActivity(context: Context): Activity? = when (context) {
     is Activity -> context

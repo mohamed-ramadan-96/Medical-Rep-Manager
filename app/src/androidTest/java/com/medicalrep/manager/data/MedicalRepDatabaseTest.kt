@@ -39,6 +39,28 @@ class MedicalRepDatabaseTest {
     }
 
     @Test
+    fun doctorImportServiceSkipsExistingAndWithinFilePhoneDuplicatesAtomically() = runBlocking {
+        database.doctorDao().insert(
+            DoctorEntity(name = "Existing Doctor", phoneNumbers = "01012345678")
+        )
+
+        val result = DoctorImportService(database).import(
+            listOf(
+                ImportedDoctorRow("Duplicate Existing", "٠١٠١٢٣٤٥٦٧٨"),
+                ImportedDoctorRow("New Doctor", "01112345678"),
+                ImportedDoctorRow("Duplicate In File", "01112345678")
+            )
+        )
+
+        assertEquals(1, result.added)
+        assertEquals(2, result.skippedDuplicates)
+        assertEquals(
+            setOf("Existing Doctor", "New Doctor"),
+            database.doctorDao().getAllForImport().map { it.name }.toSet()
+        )
+    }
+
+    @Test
     fun excelImporterReadsNameAndPhoneColumns() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val file = createWorkbook(

@@ -178,8 +178,8 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
             }
             AnimatedVisibility(
                 visible = showFilters,
-                enter = expandVertically(animationSpec = tween(AppMotion.Emphasized)) + fadeIn(animationSpec = tween(AppMotion.Emphasized)),
-                exit = shrinkVertically(animationSpec = tween(AppMotion.Emphasized)) + fadeOut(animationSpec = tween(AppMotion.Emphasized))
+                enter = expandVertically(animationSpec = tween(AppMotion.Emphasized)) + fadeIn(animationSpec = tween(AppMotion.Standard)),
+                exit = shrinkVertically(animationSpec = tween(AppMotion.Standard)) + fadeOut(animationSpec = tween(AppMotion.Fast))
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {

@@ -29,7 +29,7 @@ fun OutlinedSelectionField(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier.fillMaxWidth().heightIn(min = 56.dp),
-        shape = RoundedCornerShape(14.dp),
+        shape = MaterialTheme.shapes.small,
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {

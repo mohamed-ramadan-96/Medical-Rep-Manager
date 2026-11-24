@@ -1,5 +1,7 @@
 package com.medicalrep.manager.ui
 
+import com.medicalrep.manager.ui.theme.AppSpacing
+
 import com.medicalrep.manager.ui.theme.AppMotion
 
 import androidx.compose.animation.AnimatedVisibility
@@ -157,7 +159,7 @@ private fun FormExpandableSection(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
+                        .padding(start = AppSpacing.lg, end = AppSpacing.lg, bottom = AppSpacing.lg),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     content()
@@ -337,7 +339,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 }
         }
         Column(modifier = Modifier.fillMaxSize().padding(inner)) {
-            LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
                 item {
                     Row(Modifier.fillMaxWidth().padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(if (isArabic) "إدارة الأطباء" else "Doctors", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
@@ -393,7 +395,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 }
                 item {
                     AnimatedVisibility(visible = showFilters, enter = expandVertically(tween(AppMotion.Emphasized)) + fadeIn(tween(AppMotion.Standard)), exit = shrinkVertically(tween(AppMotion.Standard)) + fadeOut(tween(AppMotion.Fast))) {
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                                 Column(Modifier.weight(1f)) {
                                     OutlinedSelectionField(label = if (isArabic) "المنطقة" else "Area", value = if (selectedArea == "all") { if (isArabic) "كل المناطق" else "All areas" } else selectedArea, onClick = { areaMenu = true })
@@ -639,7 +641,7 @@ private fun DoctorCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = AppSpacing.md),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Row(
@@ -775,7 +777,7 @@ internal fun DoctorDetailsDialog(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
                     ) {
-                        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(Modifier.fillMaxWidth().padding(AppSpacing.lg), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             if (doctor.specialty.isNotBlank()) {
                                 Text(if (isArabic) "التخصص" else "Specialty", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                                 Text(doctor.specialty, style = MaterialTheme.typography.bodyLarge)
@@ -1065,7 +1067,7 @@ private fun DoctorTimeSelectionField(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp),
         shape = MaterialTheme.shapes.small,
-        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp)
+        contentPadding = PaddingValues(horizontal = AppSpacing.md, vertical = 8.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1437,7 +1439,7 @@ private fun DoctorFormDialog(
                             Text(if (isArabic) "كل فترة مستقلة: عامة أو مرتبطة بمركز من المراكز المختارة." else "Each slot is independent: general or linked to one of the selected centers.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             availabilityDrafts.forEachIndexed { index, draft ->
                                 Card(shape = MaterialTheme.shapes.medium, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                                    Column(Modifier.fillMaxWidth().padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Column(Modifier.fillMaxWidth().padding(AppSpacing.md), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                         Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                                             Text((if (isArabic) "الفترة " else "Slot ") + (index + 1), modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
                                             if (availabilityDrafts.size > 1) TextButton(onClick = { availabilityDrafts = availabilityDrafts.filterIndexed { i, _ -> i != index } }) { Text(if (isArabic) "حذف" else "Remove") }

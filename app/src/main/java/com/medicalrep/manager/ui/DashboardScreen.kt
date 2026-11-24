@@ -10,7 +10,6 @@ import android.content.ContextWrapper
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
-import androidx.room.withTransaction
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -28,7 +27,6 @@ import com.medicalrep.manager.backup.DriveBackupEngine
 import com.medicalrep.manager.data.ExcelExporter
 import com.medicalrep.manager.data.ExcelImporter
 import com.medicalrep.manager.data.DoctorEntity
-import com.medicalrep.manager.domain.ContactPhoneRules
 import java.io.File
 import java.io.FileInputStream
 import androidx.compose.foundation.layout.Arrangement
@@ -126,25 +124,8 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
             try {
                 val result = withContext(Dispatchers.IO) {
                     val imported = ExcelImporter.readDoctors(context.contentResolver, uri)
-                    database.withTransaction {
-                        val dao = database.doctorDao()
-                        val knownPhones = dao.getAllForImport()
-                            .flatMap { ContactPhoneRules.split(it.phoneNumbers) }
-                            .mapNotNull(ContactPhoneRules::normalize).toMutableSet()
-                        var added = 0
-                        var skipped = 0
-                        imported.forEach { row ->
-                            val rowPhones = ContactPhoneRules.split(row.phone).mapNotNull(ContactPhoneRules::normalize).toSet()
-                            if (rowPhones.isNotEmpty() && rowPhones.any { it in knownPhones }) {
-                                skipped++
-                            } else {
-                                dao.insert(DoctorEntity(name = row.name, phoneNumbers = row.phone))
-                                knownPhones.addAll(rowPhones)
-                                added++
-                            }
-                        }
-                        added to skipped
-                    }
+                    val importResult = DoctorImportService(database).import(imported)
+                    importResult.added to importResult.skippedDuplicates
                 }
                 Toast.makeText(context, if (isArabic)
                     "تمت إضافة ${result.first} طبيب جديد، وتخطي ${result.second} مكرر."

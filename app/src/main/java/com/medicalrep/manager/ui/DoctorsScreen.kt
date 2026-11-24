@@ -447,7 +447,8 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                             }
                         }
                     }
-                }                if (filteredDoctors.isEmpty()) item { Text(if (doctors.isEmpty()) { if (isArabic) "لا يوجد أطباء حتى الآن. اضغط + لإضافة أول طبيب." else "No doctors yet. Tap + to add your first doctor." } else { if (isArabic) "لا توجد نتائج مطابقة للفلاتر المحددة." else "No doctors match the selected filters." }, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 24.dp)) }
+                }
+                if (filteredDoctors.isEmpty()) item { Text(if (doctors.isEmpty()) { if (isArabic) "لا يوجد أطباء حتى الآن. اضغط + لإضافة أول طبيب." else "No doctors yet. Tap + to add your first doctor." } else { if (isArabic) "لا توجد نتائج مطابقة للفلاتر المحددة." else "No doctors match the selected filters." }, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 24.dp)) }
                 else items(filteredDoctors, key = { it.id }) { doctor ->
                     DoctorCard(doctor = doctor, centerName = centerNameByDoctor[doctor.id].orEmpty(), isArabic = isArabic, onEdit = { editingDoctor = doctor; showForm = true }, onDelete = { pendingDelete = doctor }, onAttachments = { attachmentsDoctor = doctor }, onOpen = { detailsDoctor = doctor })
                 }

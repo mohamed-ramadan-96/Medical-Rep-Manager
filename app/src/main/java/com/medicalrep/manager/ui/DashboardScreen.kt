@@ -243,7 +243,9 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
     val tomorrowStart = remember(todayStart) { Calendar.getInstance().apply {
         timeInMillis = todayStart; add(Calendar.DAY_OF_YEAR, 1)
     }.timeInMillis }
-    val todayVisits = visits.count { it.visitedAt >= todayStart && it.visitedAt < tomorrowStart }
+    val todayVisits = remember(visits, todayStart, tomorrowStart) {
+        visits.count { it.visitedAt >= todayStart && it.visitedAt < tomorrowStart }
+    }
     val monthStart = remember { Calendar.getInstance().apply {
         set(Calendar.DAY_OF_MONTH, 1); set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
         set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
@@ -258,8 +260,12 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
     val nextYearStart = remember(yearStart) { Calendar.getInstance().apply {
         timeInMillis = yearStart; add(Calendar.YEAR, 1)
     }.timeInMillis }
-    val monthVisits = visits.count { it.visitedAt >= monthStart && it.visitedAt < nextMonthStart }
-    val yearVisits = visits.count { it.visitedAt >= yearStart && it.visitedAt < nextYearStart }
+    val monthVisits = remember(visits, monthStart, nextMonthStart) {
+        visits.count { it.visitedAt >= monthStart && it.visitedAt < nextMonthStart }
+    }
+    val yearVisits = remember(visits, yearStart, nextYearStart) {
+        visits.count { it.visitedAt >= yearStart && it.visitedAt < nextYearStart }
+    }
     val monthFormatter = remember(isArabic) { SimpleDateFormat("MMM", if (isArabic) Locale("ar") else Locale.US) }
     val monthlyTrend = remember(visits, isArabic) {
         (5 downTo 0).map { offset ->
@@ -273,13 +279,17 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
         }
     }
     val trendMaximum = monthlyTrend.maxOfOrNull { it.second }?.coerceAtLeast(1) ?: 1
-    val outcomeSummary = visits.filter { it.visitedAt >= yearStart && it.visitedAt < nextYearStart }
-        .groupingBy { it.outcome.ifBlank { if (isArabic) "بدون نتيجة" else "No outcome" } }
-        .eachCount().entries.sortedByDescending { it.value }.take(3)
-    val upcoming = visits.filter { it.nextFollowUpAt != null && it.nextFollowUpAt >= todayStart }
-        .sortedBy { it.nextFollowUpAt }.take(5)
-    val recent = visits.take(5)
-    val doctorNames = doctors.associate { it.id to it.name }
+    val outcomeSummary = remember(visits, yearStart, nextYearStart, isArabic) {
+        visits.asSequence().filter { it.visitedAt >= yearStart && it.visitedAt < nextYearStart }
+            .groupingBy { it.outcome.ifBlank { if (isArabic) "بدون نتيجة" else "No outcome" } }
+            .eachCount().entries.sortedByDescending { it.value }.take(3)
+    }
+    val upcoming = remember(visits, todayStart) {
+        visits.asSequence().filter { it.nextFollowUpAt != null && it.nextFollowUpAt >= todayStart }
+            .sortedBy { it.nextFollowUpAt }.take(5).toList()
+    }
+    val recent = remember(visits) { visits.take(5) }
+    val doctorNames = remember(doctors) { doctors.associate { it.id to it.name } }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(padding),

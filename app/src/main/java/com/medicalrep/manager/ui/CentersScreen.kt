@@ -1,5 +1,7 @@
 package com.medicalrep.manager.ui
 
+import com.medicalrep.manager.ui.theme.AppMotion
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
@@ -122,10 +124,10 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     items(centers, key = { it.id }) { center ->
                         val expanded = center.id in expandedCenterIds
                         val centerSlots = centerAvailability.filter { it.centerId == center.id }
-                        val expandRotation by animateFloatAsState(targetValue = if (expanded) 180f else 0f, animationSpec = tween(180), label = "centerExpandRotation")
+                        val expandRotation by animateFloatAsState(targetValue = if (expanded) 180f else 0f, animationSpec = tween(AppMotion.Standard), label = "centerExpandRotation")
                         Card(
                             modifier = Modifier.fillMaxWidth().animateContentSize(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = MaterialTheme.shapes.small,
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                         ) {
                             Column(
@@ -139,7 +141,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                 ) {
                                     Surface(
                                         modifier = Modifier.size(36.dp),
-                                        shape = RoundedCornerShape(10.dp),
+                                        shape = MaterialTheme.shapes.small,
                                         color = MaterialTheme.colorScheme.primaryContainer
                                     ) {
                                         Icon(Icons.Default.LocalHospital, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.padding(8.dp))
@@ -193,8 +195,8 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                 }
                                 AnimatedVisibility(
                                     visible = expanded,
-                                    enter = expandVertically(animationSpec = tween(220)) + fadeIn(animationSpec = tween(180)),
-                                    exit = shrinkVertically(animationSpec = tween(180)) + fadeOut(animationSpec = tween(120))
+                                    enter = expandVertically(animationSpec = tween(AppMotion.Emphasized)) + fadeIn(animationSpec = tween(AppMotion.Standard)),
+                                    exit = shrinkVertically(animationSpec = tween(AppMotion.Standard)) + fadeOut(animationSpec = tween(AppMotion.Fast))
                                 ) {
                                     Column(
                                         modifier = Modifier.fillMaxWidth().padding(start = 28.dp, top = 4.dp, bottom = 4.dp),

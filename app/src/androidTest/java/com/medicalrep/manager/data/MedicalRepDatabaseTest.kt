@@ -178,6 +178,6 @@ class MedicalRepDatabaseTest {
         database.doctorDao().delete(doctor)
 
         assertTrue(database.doctorVisitDao().observeAll().first().isEmpty())
-        assertTrue(database.weeklyPlanDao().observeAll().toListBlocking().isEmpty())
+        assertTrue(database.weeklyPlanDao().observeAll().first().isEmpty())
     }
 }

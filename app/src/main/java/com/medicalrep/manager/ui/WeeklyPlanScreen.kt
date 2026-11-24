@@ -395,7 +395,7 @@ fun WeeklyPlanScreen(
                 lazyItems(currentDayEntries, key = { it.id }) { entry ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                        shape = MaterialTheme.shapes.medium,
                         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
@@ -440,7 +440,7 @@ fun WeeklyPlanScreen(
                             Button(
                                 onClick = { onRecordVisit(entry.doctorId, entry.visitDate) },
                                 modifier = Modifier.height(40.dp),
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                                shape = MaterialTheme.shapes.small,
                                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 0.dp),
                                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceVariant,

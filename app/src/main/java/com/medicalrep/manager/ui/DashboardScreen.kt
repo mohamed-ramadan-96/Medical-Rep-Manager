@@ -384,7 +384,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
             }
         }
         item {
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
+            Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(if (isArabic) "نشاط الزيارات - آخر 6 أشهر" else "Visit activity - last 6 months",
@@ -449,7 +449,7 @@ private fun MetricCard(
     value: String,
     label: String
 ) {
-    Card(modifier = modifier, shape = RoundedCornerShape(16.dp),
+    Card(modifier = modifier, shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -473,7 +473,7 @@ private fun SectionHeading(title: String, subtitle: String) {
 private fun VisitSummaryCard(visit: DoctorVisitEntity, doctorName: String?, isArabic: Boolean, followUp: Boolean) {
     val timestamp = if (followUp) visit.nextFollowUpAt ?: visit.visitedAt else visit.visitedAt
     val date = remember(timestamp) { SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(timestamp)) }
-    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
+    Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
         Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Icon(if (followUp) Icons.Default.EventRepeat else Icons.Default.CalendarMonth,
@@ -495,7 +495,7 @@ private fun VisitSummaryCard(visit: DoctorVisitEntity, doctorName: String?, isAr
 
 @Composable
 private fun EmptyDashboardCard(message: String) {
-    Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+    Card(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
         Text(message, Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

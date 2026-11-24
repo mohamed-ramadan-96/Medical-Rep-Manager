@@ -564,8 +564,7 @@ private fun CenterFormDialog(
                         }
                     }
                 )
-            })
-            },
+                },
                 modifier = Modifier.padding(end = 12.dp),
                 shape = MaterialTheme.shapes.small
             ) { Text(if (isArabic) "حفظ" else "Save") }

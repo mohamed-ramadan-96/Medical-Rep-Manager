@@ -1,5 +1,7 @@
 package com.medicalrep.manager.ui
 
+import com.medicalrep.manager.ui.theme.AppSpacing
+
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -190,7 +192,7 @@ fun WeeklyPlanScreen(
             }
             item {
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
-                    Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = { month = month.minusMonths(1); selectedDate = month.atDay(1) }) {
                                 Icon(if (isArabic) Icons.Default.ChevronRight else Icons.Default.ChevronLeft, contentDescription = if (isArabic) "الشهر السابق" else "Previous month")
@@ -441,7 +443,7 @@ fun WeeklyPlanScreen(
                                 onClick = { onRecordVisit(entry.doctorId, entry.visitDate) },
                                 modifier = Modifier.height(40.dp),
                                 shape = MaterialTheme.shapes.small,
-                                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = AppSpacing.md, vertical = 0.dp),
                                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                                     contentColor = MaterialTheme.colorScheme.onSurface

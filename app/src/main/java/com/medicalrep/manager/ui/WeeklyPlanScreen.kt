@@ -154,7 +154,7 @@ fun WeeklyPlanScreen(
         doctors.filter { doctor ->
             doctor.id in eligibleDoctorIds &&
                 selectedRegion.isNotBlank() &&
-                (selectedRegion == ALL_REGIONS || weeklyDoctorAreas(doctor.area).any { it.equals(selectedRegion, ignoreCase = true) }) &&
+                WeeklyPlanRules.matchesArea(doctor.area, selectedRegion) &&
                 doctor.id !in assignedDoctorIdsThisWeek
         }.sortedBy { it.name.lowercase(Locale.ROOT) }
     }

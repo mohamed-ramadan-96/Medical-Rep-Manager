@@ -1,5 +1,7 @@
 package com.medicalrep.manager.ui
 
+import com.medicalrep.manager.ui.theme.AppSpacing
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Column
@@ -86,7 +88,7 @@ fun SpecialtiesScreen(isArabic: Boolean, padding: androidx.compose.foundation.la
             } else {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
                 ) {
                     items(specialties, key = { it.id }) { specialty ->
                         Card(
@@ -96,7 +98,7 @@ fun SpecialtiesScreen(isArabic: Boolean, padding: androidx.compose.foundation.la
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                horizontalArrangement = Arrangement.spacedBy(AppSpacing.md),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(Icons.Default.MedicalServices, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))

@@ -1,5 +1,7 @@
 package com.medicalrep.manager.ui
 
+import com.medicalrep.manager.ui.theme.AppSpacing
+
 import com.medicalrep.manager.ui.theme.AppMotion
 
 import androidx.compose.animation.AnimatedVisibility
@@ -118,7 +120,7 @@ fun VisitsScreen(
     ) { inner ->
         Column(
             modifier = Modifier.fillMaxSize().padding(inner).padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
         ) {
             Text(
                 if (isArabic) "سجل زيارات الأطباء" else "Doctor visit history",
@@ -146,19 +148,19 @@ fun VisitsScreen(
             if (doctors.isEmpty()) {
                 Text(
                     if (isArabic) "أضف طبيباً أولاً لتسجيل الزيارات." else "Add a doctor first to record visits.",
-                    modifier = Modifier.padding(top = 18.dp),
+                    modifier = Modifier.padding(top = AppSpacing.lg),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else if (visibleVisits.isEmpty()) {
                 Text(
                     if (isArabic) "لا توجد زيارات مسجلة بعد. اضغط + لإضافة أول زيارة." else "No visits recorded yet. Tap + to add the first visit.",
-                    modifier = Modifier.padding(top = 18.dp),
+                    modifier = Modifier.padding(top = AppSpacing.lg),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
                 ) {
                     items(visibleVisits, key = { it.id }) { visit ->
                         val doctor = doctors.firstOrNull { it.id == visit.doctorId }
@@ -174,7 +176,7 @@ fun VisitsScreen(
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                         ) {
                             Column(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = AppSpacing.md),
                                 verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Row(

@@ -731,7 +731,7 @@ private fun DoctorCard(
 }
 
 @Composable
-private fun DoctorDetailsDialog(
+internal fun DoctorDetailsDialog(
     doctor: DoctorEntity,
     centers: List<MedicalCenterEntity>,
     availability: List<DoctorAvailabilityEntity>,

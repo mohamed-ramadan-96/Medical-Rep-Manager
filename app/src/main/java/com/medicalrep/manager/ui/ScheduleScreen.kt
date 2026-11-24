@@ -555,9 +555,8 @@ private fun displayAvailabilityTime(value: String): String {
     val pieces = value.split(":")
     val hour = pieces.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 23) ?: 9
     val minute = pieces.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 59) ?: 0
-    val suffix = if (hour < 12) "AM" else "PM"
     val displayHour = when (hour % 12) { 0 -> 12; else -> hour % 12 }
-    return String.format(Locale.US, "%02d:%02d %s", displayHour, minute, suffix)
+    return String.format(Locale.US, "%02d:%02d", displayHour, minute)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

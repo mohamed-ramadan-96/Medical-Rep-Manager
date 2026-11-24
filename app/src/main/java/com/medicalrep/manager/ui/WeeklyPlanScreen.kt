@@ -54,6 +54,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.medicalrep.manager.data.MedicalRepDatabase
+import com.medicalrep.manager.data.DoctorEntity
+import com.medicalrep.manager.data.MedicalCenterEntity
 import com.medicalrep.manager.data.WeeklyPlanEntryEntity
 import com.medicalrep.manager.data.WeeklyPlanExcelExporter
 import com.medicalrep.manager.data.WeeklyPlanExportRow
@@ -98,6 +100,9 @@ fun WeeklyPlanScreen(
     val database = remember { MedicalRepDatabase.getInstance(context) }
     val doctors by database.doctorDao().observeAll().collectAsState(initial = emptyList())
     val availability by database.doctorAvailabilityDao().observeAll().collectAsState(initial = emptyList())
+    val centers by database.medicalCenterDao().observeAll().collectAsState(initial = emptyList())
+    val centerLinks by database.doctorCenterLinkDao().observeAll().collectAsState(initial = emptyList())
+    val visits by database.doctorVisitDao().observeAll().collectAsState(initial = emptyList())
     val entries by database.weeklyPlanDao().observeAll().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
 
@@ -153,6 +158,7 @@ fun WeeklyPlanScreen(
     var doctorMenu by remember { mutableStateOf(false) }
     var showAllDoctorsDialog by remember { mutableStateOf(false) }
     var showPlanDescription by remember { mutableStateOf(false) }
+    var detailsDoctorId by remember { mutableStateOf<Long?>(null) }
 
     Scaffold(
         modifier = Modifier.padding(padding),
@@ -389,50 +395,53 @@ fun WeeklyPlanScreen(
                 lazyItems(currentDayEntries, key = { it.id }) { entry ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
                         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 9.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                                modifier = Modifier.weight(1f).clickable { detailsDoctorId = entry.doctorId }.padding(vertical = 2.dp),
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
                                 Text(
                                     entry.doctorNameSnapshot,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurface,
-                                    style = MaterialTheme.typography.titleLarge
+                                    style = MaterialTheme.typography.titleMedium
                                 )
                                 Text(
                                     entry.regionSnapshot,
-                                    style = MaterialTheme.typography.bodyLarge,
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 if (entry.centerNameSnapshot.isNotBlank()) {
                                     Text(
                                         entry.centerNameSnapshot,
-                                        style = MaterialTheme.typography.bodySmall,
+                                        style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
                             IconButton(
-                                onClick = { scope.launch { database.weeklyPlanDao().delete(entry) } }
+                                onClick = { scope.launch { database.weeklyPlanDao().delete(entry) } },
+                                modifier = Modifier.height(40.dp)
                             ) {
                                 Icon(
                                     Icons.Default.Delete,
-                                    contentDescription = if (isArabic) "إزالة الطبيب من الخطة" else "Remove doctor from plan"
+                                    contentDescription = if (isArabic) "إزالة الطبيب من الخطة" else "Remove doctor from plan",
+                                    modifier = Modifier.height(20.dp)
                                 )
                             }
                             Button(
                                 onClick = { onRecordVisit(entry.doctorId, entry.visitDate) },
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-                                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 18.dp, vertical = 14.dp),
+                                modifier = Modifier.height(40.dp),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 0.dp),
                                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                                     contentColor = MaterialTheme.colorScheme.onSurface
@@ -440,11 +449,13 @@ fun WeeklyPlanScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.EditNote,
-                                    contentDescription = null
+                                    contentDescription = null,
+                                    modifier = Modifier.height(17.dp)
                                 )
                                 Text(
                                     text = if (isArabic) "تسجيل زيارة" else "Record visit",
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.Medium,
+                                    style = MaterialTheme.typography.labelMedium
                                 )
                             }
                         }
@@ -482,6 +493,34 @@ fun WeeklyPlanScreen(
                     }
                 }
             }
+        }
+    }
+
+    detailsDoctorId?.let { doctorId ->
+        val doctor = doctors.firstOrNull { it.id == doctorId }
+        if (doctor != null) {
+            val linkedCenterIds = centerLinks.filter { it.doctorId == doctorId }.map { it.centerId }.toSet()
+            val doctorCenters = centers.filter { it.id in linkedCenterIds || (linkedCenterIds.isEmpty() && it.id == doctor.centerId) }
+            DoctorDetailsDialog(
+                doctor = doctor,
+                centers = doctorCenters,
+                availability = availability.filter { it.doctorId == doctorId },
+                visits = visits.filter { it.doctorId == doctorId },
+                isArabic = isArabic,
+                onDismiss = { detailsDoctorId = null },
+                onUpdateCenterLocation = { center, latitude, longitude, mapUrl ->
+                    scope.launch {
+                        database.medicalCenterDao().update(
+                            center.copy(latitude = latitude, longitude = longitude, mapUrl = mapUrl)
+                        )
+                    }
+                },
+                onUpdateDoctorLocation = { updatedDoctor ->
+                    scope.launch { database.doctorDao().update(updatedDoctor) }
+                }
+            )
+        } else {
+            detailsDoctorId = null
         }
     }
 

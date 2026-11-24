@@ -4,6 +4,7 @@ import android.content.ContentResolver
 import android.net.Uri
 import android.util.Xml
 import org.xmlpull.v1.XmlPullParser
+import java.io.ByteArrayOutputStream
 import java.util.zip.ZipInputStream
 
 data class ImportedDoctorRow(val name: String, val phone: String)
@@ -13,11 +14,16 @@ object ExcelImporter {
         val entries = HashMap<String, ByteArray>()
         resolver.openInputStream(uri)?.use { input ->
             ZipInputStream(input).use { zip ->
+                var totalBytes = 0L
                 while (true) {
                     val entry = zip.nextEntry ?: break
                     if (!entry.isDirectory && (entry.name == "xl/worksheets/sheet1.xml" ||
                         entry.name == "xl/sharedStrings.xml")) {
-                        entries[entry.name] = zip.readBytes()
+                        check(entry.name !in entries) { "Excel file contains duplicate workbook XML entries" }
+                        val bytes = readEntryWithLimit(zip, MAX_XML_ENTRY_BYTES)
+                        totalBytes += bytes.size
+                        check(totalBytes <= MAX_TOTAL_XML_BYTES) { "Excel workbook XML is too large" }
+                        entries[entry.name] = bytes
                     }
                     zip.closeEntry()
                 }
@@ -49,6 +55,23 @@ object ExcelImporter {
             val phone = if (phoneColumn != null) row[phoneColumn]?.trim().orEmpty() else ""
             if (name.isBlank()) null else ImportedDoctorRow(name, phone)
         }
+    }
+
+    private const val MAX_XML_ENTRY_BYTES = 20 * 1024 * 1024
+    private const val MAX_TOTAL_XML_BYTES = 32 * 1024 * 1024
+
+    private fun readEntryWithLimit(input: ZipInputStream, limit: Int): ByteArray {
+        val output = ByteArrayOutputStream()
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        var total = 0
+        while (true) {
+            val count = input.read(buffer)
+            if (count < 0) break
+            total += count
+            check(total <= limit) { "Excel workbook XML entry exceeds the size limit" }
+            output.write(buffer, 0, count)
+        }
+        return output.toByteArray()
     }
 
     private fun parseSharedStrings(bytes: ByteArray): List<String> {

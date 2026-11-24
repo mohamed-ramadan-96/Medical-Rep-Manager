@@ -363,7 +363,6 @@ private fun CenterFormDialog(
             }
         )
     }
-    var unregisteredDoctorCount by remember(initial) { mutableStateOf(initial?.unregisteredDoctorCount?.toString() ?: "0") }
     var latitude by remember(initial) { mutableStateOf(initial?.latitude) }
     var longitude by remember(initial) { mutableStateOf(initial?.longitude) }
     var mapUrl by remember(initial) { mutableStateOf(initial?.mapUrl) }
@@ -406,10 +405,6 @@ private fun CenterFormDialog(
                     )
                 }
                 item {
-                    OutlinedTextField(value = unregisteredDoctorCount, onValueChange = { value -> unregisteredDoctorCount = value.filter { it.isDigit() } }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = MaterialTheme.shapes.small, label = { Text(if (isArabic) "عدد الدكاترة غير المسجلين" else "Unregistered doctors count") })
-                }
-
-                item {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(if (isArabic) "مواعيد عمل المركز" else "Center working hours", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                         Text(if (isArabic) "المواعيد دي تخص المركز نفسه، ومش محتاجة ملفات أطباء. تقدر تضيف أكتر من فترة." else "These hours belong to the center itself; no doctor profiles are required. Add multiple time slots if needed.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -421,7 +416,7 @@ private fun CenterFormDialog(
                                         TextButton(onClick = { workSlots = workSlots.filterIndexed { i, _ -> i != index } }) { Text(if (isArabic) "حذف" else "Remove") }
                                     }
                                     listOf(6 to "السبت", 7 to "الأحد", 1 to "الاثنين", 2 to "الثلاثاء", 3 to "الأربعاء", 4 to "الخميس", 5 to "الجمعة").chunked(2).forEach { pair ->
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                             pair.forEach { (day, label) ->
                                                 Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                                                     Checkbox(checked = day in slot.days, onCheckedChange = { checked ->
@@ -434,8 +429,8 @@ private fun CenterFormDialog(
                                         }
                                     }
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        OutlinedTextField(value = slot.startTime, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(startTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, shape = MaterialTheme.shapes.small, label = { Text(if (isArabic) "من HH:mm" else "From HH:mm") })
-                                        OutlinedTextField(value = slot.endTime, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(endTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, shape = MaterialTheme.shapes.small, label = { Text(if (isArabic) "إلى HH:mm" else "To HH:mm") })
+                                        OutlinedTextField(value = slot.startTime, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(startTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, shape = MaterialTheme.shapes.small, label = { Text(if (isArabic) "من" else "From") })
+                                        OutlinedTextField(value = slot.endTime, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(endTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, shape = MaterialTheme.shapes.small, label = { Text(if (isArabic) "إلى" else "To") })
                                     }
                                     OutlinedTextField(value = slot.notes, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(notes = value) } }, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.small, label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") })
                                 }
@@ -533,6 +528,7 @@ private fun CenterFormDialog(
             }
         },
         confirmButton = {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Button(
                 onClick = {
                 if (name.isBlank()) nameError = true else onSave(
@@ -547,7 +543,7 @@ private fun CenterFormDialog(
                         longitude = longitude,
                         mapUrl = mapUrl,
 
-                        unregisteredDoctorCount = unregisteredDoctorCount.toIntOrNull() ?: 0
+                        unregisteredDoctorCount = initial?.unregisteredDoctorCount ?: 0
                     ),
                     workSlots.flatMap { slot ->
                         slot.days.map { day ->
@@ -566,13 +562,12 @@ private fun CenterFormDialog(
                     }
                 )
                 },
-                modifier = Modifier.padding(end = 12.dp),
                 shape = MaterialTheme.shapes.small
             ) { Text(if (isArabic) "حفظ" else "Save") }
-        },
-        dismissButton = {
             OutlinedButton(onClick = onDismiss, shape = MaterialTheme.shapes.small) { Text(if (isArabic) "إلغاء" else "Cancel") }
-        }
+            }
+        },
+        dismissButton = { }
     )
 
     if (showMapPicker) {

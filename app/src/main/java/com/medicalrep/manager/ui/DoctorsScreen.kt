@@ -447,8 +447,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                             }
                         }
                     }
-                }
-                if (filteredDoctors.isEmpty()) item { Text(if (doctors.isEmpty()) { if (isArabic) "لا يوجد أطباء حتى الآن. اضغط + لإضافة أول طبيب." else "No doctors yet. Tap + to add your first doctor." } else { if (isArabic) "لا توجد نتائج مطابقة للفلاتر المحددة." else "No doctors match the selected filters." }, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 24.dp)) }
+                }                if (filteredDoctors.isEmpty()) item { Text(if (doctors.isEmpty()) { if (isArabic) "لا يوجد أطباء حتى الآن. اضغط + لإضافة أول طبيب." else "No doctors yet. Tap + to add your first doctor." } else { if (isArabic) "لا توجد نتائج مطابقة للفلاتر المحددة." else "No doctors match the selected filters." }, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 24.dp)) }
                 else items(filteredDoctors, key = { it.id }) { doctor ->
                     DoctorCard(doctor = doctor, centerName = centerNameByDoctor[doctor.id].orEmpty(), isArabic = isArabic, onEdit = { editingDoctor = doctor; showForm = true }, onDelete = { pendingDelete = doctor }, onAttachments = { attachmentsDoctor = doctor }, onOpen = { detailsDoctor = doctor })
                 }
@@ -897,8 +896,7 @@ internal fun DoctorDetailsDialog(
                         ) {
                             Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text(center.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                                if (center.address.isNotBlank()) {
-                                    Text(if (isArabic) "العنوان" else "Address", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                if (center.address.isNotBlank()) {                                    Text(if (isArabic) "العنوان" else "Address", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                                     Text(center.address)
                                 }
                                 if (center.phone.isNotBlank()) {
@@ -1298,9 +1296,12 @@ private fun DoctorFormDialog(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                         ) {
-                            Button(onClick = {
-                                photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                            }) {
+                            Button(
+                                onClick = {
+                                    photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                                },
+                                shape = MaterialTheme.shapes.small
+                            ) {
                                 Text(if (isArabic) "اختيار صورة" else "Choose photo")
                             }
                             if (!photoUri.isNullOrBlank()) {
@@ -1347,8 +1348,7 @@ private fun DoctorFormDialog(
                             focusedContainerColor = MaterialTheme.colorScheme.surface,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                             focusedBorderColor = MaterialTheme.colorScheme.outline,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                        ),
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline                        ),
                                 value = phone,
                                 onValueChange = { value ->
                                     phoneNumbers = phoneNumbers.toMutableList().also { it[index] = value }                                },                                modifier = Modifier.fillMaxWidth(),
@@ -1602,7 +1602,8 @@ private fun DoctorFormDialog(
             }
         },
         confirmButton = {
-            Button(onClick = {
+            Button(
+                onClick = {
                 if (name.isBlank()) {
                     nameError = true
                 } else if (selectedAreas.isEmpty()) {
@@ -1646,7 +1647,10 @@ private fun DoctorFormDialog(
                         }
                     ) }
                 }
-            }) { Text(if (isArabic) "حفظ" else "Save") }
+            },
+                modifier = Modifier.padding(end = 12.dp),
+                shape = MaterialTheme.shapes.small
+            ) { Text(if (isArabic) "حفظ" else "Save") }
         },
         dismissButton = {
             OutlinedButton(onClick = onDismiss, shape = MaterialTheme.shapes.small) { Text(if (isArabic) "إلغاء" else "Cancel") }

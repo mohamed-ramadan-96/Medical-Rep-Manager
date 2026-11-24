@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.first
 import com.medicalrep.manager.domain.WeeklyPlanRules
+import com.medicalrep.manager.domain.ContactPhoneRules
 import java.time.LocalDate
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -31,6 +32,13 @@ class MedicalRepDatabaseTest {
     @After
     fun closeDatabase() {
         database.close()
+    }
+
+    @Test
+    fun contactPhoneRulesNormalizeArabicAndPersianDigits() {
+        assertEquals("01012345678", ContactPhoneRules.normalize("٠١٠١٢٣٤٥٦٧٨"))
+        assertEquals("0123456789", ContactPhoneRules.normalize("۰۱۲۳۴۵۶۷۸۹"))
+        assertEquals(listOf("0100", "0111", "0122"), ContactPhoneRules.split("0100 / 0111، 0122"))
     }
 
     @Test

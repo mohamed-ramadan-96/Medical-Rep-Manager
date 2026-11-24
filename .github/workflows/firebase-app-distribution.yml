@@ -75,8 +75,8 @@ jobs:
         env:
           VERSION_NAME: ${{ inputs.version_name }}
         run: |
-          if [[ ! "$VERSION_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
-            echo "::error::Version must look like 1.2.3 (optional prerelease suffix allowed)."
+          if [[ ! "$VERSION_NAME" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Version must look like 0.3 or 1.2.3 (optional prerelease suffix allowed)."
             exit 1
           fi
           TAG="v$VERSION_NAME"

@@ -1,5 +1,7 @@
 package com.medicalrep.manager.ui
 
+import com.medicalrep.manager.ui.theme.AppMotion
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.Surface
 import androidx.compose.material.icons.outlined.HelpOutline
@@ -159,7 +161,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
             }
             Surface(
                 onClick = { showFilters = !showFilters },
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.small,
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 modifier = Modifier.fillMaxWidth()
@@ -176,8 +178,8 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
             }
             AnimatedVisibility(
                 visible = showFilters,
-                enter = expandVertically(animationSpec = tween(320)) + fadeIn(animationSpec = tween(260)),
-                exit = shrinkVertically(animationSpec = tween(280)) + fadeOut(animationSpec = tween(200))
+                enter = expandVertically(animationSpec = tween(AppMotion.Emphasized)) + fadeIn(animationSpec = tween(AppMotion.Emphasized)),
+                exit = shrinkVertically(animationSpec = tween(AppMotion.Emphasized)) + fadeOut(animationSpec = tween(AppMotion.Emphasized))
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -216,7 +218,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                         val slot = group.first()
                         val groupKey = slot.slotGroupId.ifBlank { "legacy-${slot.id}" }
                         val expanded = groupKey in expandedAvailabilityGroups
-                        val expandRotation by animateFloatAsState(if (expanded) 180f else 0f, animationSpec = tween(180), label = "availabilityExpandRotation")
+                        val expandRotation by animateFloatAsState(if (expanded) 180f else 0f, animationSpec = tween(AppMotion.Standard), label = "availabilityExpandRotation")
                         val doctor = doctors.firstOrNull { it.id == slot.doctorId }
                         val centerName = centers.firstOrNull { it.id == slot.centerId }?.name
                         val dayNames = weekDays.mapNotNull { (number, names) ->
@@ -228,7 +230,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                                     stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
                                 )
                             ),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = MaterialTheme.shapes.small,
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                         ) {
                             Column(
@@ -242,7 +244,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                                 ) {
                                     Surface(
                                         modifier = Modifier.size(36.dp),
-                                        shape = RoundedCornerShape(10.dp),
+                                        shape = MaterialTheme.shapes.small,
                                         color = MaterialTheme.colorScheme.primaryContainer
                                     ) {
                                         Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.padding(8.dp))
@@ -287,8 +289,8 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                                 }
                                 AnimatedVisibility(
                                     visible = expanded,
-                                    enter = expandVertically(tween(220)) + fadeIn(tween(180)),
-                                    exit = shrinkVertically(tween(180)) + fadeOut(tween(140))
+                                    enter = expandVertically(tween(AppMotion.Emphasized)) + fadeIn(tween(AppMotion.Standard)),
+                                    exit = shrinkVertically(tween(AppMotion.Standard)) + fadeOut(tween(AppMotion.Fast))
                                 ) {
                                     Column(modifier = Modifier.fillMaxWidth().padding(start = 30.dp, top = 2.dp, bottom = 4.dp)) {
                                         if (slot.notes.isNotBlank()) {

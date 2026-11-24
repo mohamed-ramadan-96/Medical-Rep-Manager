@@ -330,7 +330,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
         var searchHeaderExpanded by remember { mutableStateOf(true) }
         val scrollDirectionThreshold = with(LocalDensity.current) { 8.dp.roundToPx() }
         LaunchedEffect(listState) {
-            var previousPosition = 0
+            var previousPosition: Int? = null
             var accumulatedDelta = 0
             snapshotFlow {
                 listState.layoutInfo.visibleItemsInfo
@@ -340,16 +340,22 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             }
                 .distinctUntilChanged()
                 .collect { position ->
-                    val delta = position - previousPosition
-                    if (previousPosition != 0 || position != 0) {
-                        accumulatedDelta += delta
-                        if (accumulatedDelta >= scrollDirectionThreshold) {
-                            searchHeaderExpanded = false
-                            accumulatedDelta = 0
-                        } else if (accumulatedDelta <= -scrollDirectionThreshold) {
-                            searchHeaderExpanded = true
-                            accumulatedDelta = 0
-                        }
+                    val previous = previousPosition
+                    if (previous == null) {
+                        // Ignore the initial layout measurement so the search starts expanded.
+                        previousPosition = position
+                        if (position == 0) searchHeaderExpanded = true
+                        return@collect
+                    }
+
+                    val delta = position - previous
+                    accumulatedDelta += delta
+                    if (accumulatedDelta >= scrollDirectionThreshold) {
+                        searchHeaderExpanded = false
+                        accumulatedDelta = 0
+                    } else if (accumulatedDelta <= -scrollDirectionThreshold) {
+                        searchHeaderExpanded = true
+                        accumulatedDelta = 0
                     }
                     if (position == 0) {
                         searchHeaderExpanded = true
@@ -447,8 +453,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     DoctorCard(doctor = doctor, centerName = centerNameByDoctor[doctor.id].orEmpty(), isArabic = isArabic, onEdit = { editingDoctor = doctor; showForm = true }, onDelete = { pendingDelete = doctor }, onAttachments = { attachmentsDoctor = doctor }, onOpen = { detailsDoctor = doctor })
                 }
             }
-        }
-    }
+        }    }
     if (showForm) {
         DoctorFormDialog(
             isArabic = isArabic,
@@ -897,8 +902,7 @@ internal fun DoctorDetailsDialog(
                                     Text(center.address)
                                 }
                                 if (center.phone.isNotBlank()) {
-                                    Text(if (isArabic) "الهاتف" else "Phone", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                                    Text(center.phone)                                }
+                                    Text(if (isArabic) "الهاتف" else "Phone", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)                                    Text(center.phone)                                }
                                 val hasCenterLocation = (center.latitude != null && center.longitude != null) || !center.mapUrl.isNullOrBlank()
                                 var showCenterLocationActions by remember(center.id, center.latitude, center.longitude, center.mapUrl) { mutableStateOf(false) }
                                 Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1347,8 +1351,7 @@ private fun DoctorFormDialog(
                         ),
                                 value = phone,
                                 onValueChange = { value ->
-                                    phoneNumbers = phoneNumbers.toMutableList().also { it[index] = value }                                },
-                                modifier = Modifier.fillMaxWidth(),
+                                    phoneNumbers = phoneNumbers.toMutableList().also { it[index] = value }                                },                                modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
                                 label = { Text(if (isArabic) "رقم الهاتف ${index + 1}" else "Phone number ${index + 1}") },
                                 trailingIcon = {

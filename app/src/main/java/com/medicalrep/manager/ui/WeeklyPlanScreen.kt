@@ -134,25 +134,36 @@ fun WeeklyPlanScreen(
 
     val weekStart = planWeekStart(selectedDate)
     val weekStartText = weekStart.toString()
-    val monthEntries = entries.filter {
-        runCatching { YearMonth.from(LocalDate.parse(it.visitDate)) == month }.getOrDefault(false)
+    val monthEntries = remember(entries, month) {
+        entries.filter {
+            runCatching { YearMonth.from(LocalDate.parse(it.visitDate)) == month }.getOrDefault(false)
+        }
     }
-    val weekEntries = entries.filter { it.weekStartDate == weekStartText }
-    val currentDayEntries = entries.filter { it.visitDate == selectedDate.toString() }
-        .sortedWith(compareBy({ it.centerNameSnapshot }, { it.doctorNameSnapshot }))
-    val assignedDoctorIdsThisWeek = weekEntries.map { it.doctorId }.toSet()
+    val weekEntries = remember(entries, weekStartText) {
+        entries.filter { it.weekStartDate == weekStartText }
+    }
+    val currentDayEntries = remember(entries, selectedDate) {
+        entries.filter { it.visitDate == selectedDate.toString() }
+            .sortedWith(compareBy({ it.centerNameSnapshot }, { it.doctorNameSnapshot }))
+    }
+    val assignedDoctorIdsThisWeek = remember(weekEntries) { weekEntries.map { it.doctorId }.toSet() }
 
     val selectedDayCode = selectedDate.dayOfWeek.value
-    val eligibleDoctorIds = availability.asSequence()
-        .filter { it.dayOfWeek == selectedDayCode }
-        .map { it.doctorId }
-        .toSet()
-    val eligibleDoctors = doctors.filter { doctor ->
-        doctor.id in eligibleDoctorIds &&
-            selectedRegion.isNotBlank() &&
-            (selectedRegion == ALL_REGIONS || weeklyDoctorAreas(doctor.area).any { it.equals(selectedRegion, ignoreCase = true) }) &&
-            doctor.id !in assignedDoctorIdsThisWeek
-    }.sortedBy { it.name.lowercase(Locale.ROOT) }
+    val eligibleDoctorIds = remember(availability, selectedDayCode) {
+        availability.asSequence()
+            .filter { it.dayOfWeek == selectedDayCode }
+            .map { it.doctorId }
+            .toSet()
+    }
+    val eligibleDoctors = remember(doctors, eligibleDoctorIds, selectedRegion, assignedDoctorIdsThisWeek) {
+        doctors.filter { doctor ->
+            doctor.id in eligibleDoctorIds &&
+                selectedRegion.isNotBlank() &&
+                (selectedRegion == ALL_REGIONS || weeklyDoctorAreas(doctor.area).any { it.equals(selectedRegion, ignoreCase = true) }) &&
+                doctor.id !in assignedDoctorIdsThisWeek
+        }.sortedBy { it.name.lowercase(Locale.ROOT) }
+    }
+    val entriesByDate = remember(entries) { entries.groupingBy { it.visitDate }.eachCount() }
 
     var selectedDoctorIds by remember(selectedDate, selectedRegion, eligibleDoctors) {
         mutableStateOf(emptySet<Long>())
@@ -234,7 +245,7 @@ fun WeeklyPlanScreen(
                                 if (date == null) {
                                     Box(Modifier.height(40.dp))
                                 } else {
-                                    val count = entries.count { it.visitDate == date.toString() }
+                                    val count = entriesByDate[date.toString()] ?: 0
                                     Box(
                                         modifier = Modifier.fillMaxWidth().height(40.dp)
                                             .clip(CircleShape)

@@ -56,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.medicalrep.manager.data.MedicalRepDatabase
+import com.medicalrep.manager.domain.WeeklyPlanRules
 import com.medicalrep.manager.data.DoctorEntity
 import com.medicalrep.manager.data.MedicalCenterEntity
 import com.medicalrep.manager.data.WeeklyPlanEntryEntity
@@ -79,13 +80,7 @@ private val planDays = listOf(
 
 private const val ALL_REGIONS = "__all__"
 
-private fun weeklyDoctorAreas(value: String): List<String> =
-    value.split("|").map { it.trim() }.filter { it.isNotBlank() }
-
-private fun planWeekStart(date: LocalDate): LocalDate {
-    val offset = if (date.dayOfWeek.value >= 6) date.dayOfWeek.value - 6 else date.dayOfWeek.value + 1
-    return date.minusDays(offset.toLong())
-}
+private fun weeklyDoctorAreas(value: String): List<String> = WeeklyPlanRules.splitAreas(value)
 
 private fun dayLabel(date: LocalDate, isArabic: Boolean): String {
     val day = planDays.firstOrNull { it.first == date.dayOfWeek.value }?.second
@@ -132,7 +127,7 @@ fun WeeklyPlanScreen(
         }
     }
 
-    val weekStart = planWeekStart(selectedDate)
+    val weekStart = WeeklyPlanRules.weekStart(selectedDate)
     val weekStartText = weekStart.toString()
     val monthEntries = remember(entries, month) {
         entries.filter {

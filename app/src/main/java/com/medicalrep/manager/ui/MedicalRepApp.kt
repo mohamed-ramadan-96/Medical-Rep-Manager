@@ -1,5 +1,7 @@
 package com.medicalrep.manager.ui
 
+import com.medicalrep.manager.ui.theme.AppSpacing
+
 import com.medicalrep.manager.ui.theme.AppMotion
 
 import androidx.compose.foundation.Canvas
@@ -295,7 +297,7 @@ fun MedicalRepApp() {
                     )
                 },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
                         Text(
                             if (isArabic) "الإصدار الجديد: ${update.versionName}" else "New version: ${update.versionName}",
                             fontWeight = FontWeight.SemiBold
@@ -386,7 +388,7 @@ private fun FollowUpScreen(isArabic: Boolean, padding: PaddingValues) {
         topBar = {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(AppSpacing.md),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 FilterChip(selected = showPlan, onClick = { showPlan = true }, label = { Text(if (isArabic) "الخطة" else "Plan") }, leadingIcon = { Icon(Icons.Outlined.CalendarMonth, contentDescription = null) }, modifier = Modifier.weight(1f))

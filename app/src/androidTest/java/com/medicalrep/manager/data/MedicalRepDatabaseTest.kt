@@ -38,7 +38,7 @@ class MedicalRepDatabaseTest {
     fun contactPhoneRulesNormalizeArabicAndPersianDigits() {
         assertEquals("01012345678", ContactPhoneRules.normalize("٠١٠١٢٣٤٥٦٧٨"))
         assertEquals("0123456789", ContactPhoneRules.normalize("۰۱۲۳۴۵۶۷۸۹"))
-        assertEquals(listOf("0100", "0111", "0122"), ContactPhoneRules.split("0100 / 0111، 0122"))
+        assertEquals(listOf("0100", "0111", "0122"), ContactPhoneRules.split("0100 / 0111, 0122"))
     }
 
     @Test

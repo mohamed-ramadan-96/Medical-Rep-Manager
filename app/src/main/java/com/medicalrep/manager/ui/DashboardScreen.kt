@@ -10,6 +10,7 @@ import android.content.ContextWrapper
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
+import androidx.room.withTransaction
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -124,23 +125,25 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
             try {
                 val result = withContext(Dispatchers.IO) {
                     val imported = ExcelImporter.readDoctors(context.contentResolver, uri)
-                    val dao = database.doctorDao()
-                    val existing = dao.getAllForImport()
-                    val knownPhones = existing.flatMap { splitPhones(it.phoneNumbers) }
-                        .mapNotNull(::normalizePhone).toMutableSet()
-                    var added = 0
-                    var skipped = 0
-                    imported.forEach { row ->
-                        val rowPhones = splitPhones(row.phone).mapNotNull(::normalizePhone).toSet()
-                        if (rowPhones.isNotEmpty() && rowPhones.any { it in knownPhones }) {
-                            skipped++
-                        } else {
-                            dao.insert(DoctorEntity(name = row.name, phoneNumbers = row.phone))
-                            knownPhones.addAll(rowPhones)
-                            added++
+                    database.withTransaction {
+                        val dao = database.doctorDao()
+                        val knownPhones = dao.getAllForImport()
+                            .flatMap { splitPhones(it.phoneNumbers) }
+                            .mapNotNull(::normalizePhone).toMutableSet()
+                        var added = 0
+                        var skipped = 0
+                        imported.forEach { row ->
+                            val rowPhones = splitPhones(row.phone).mapNotNull(::normalizePhone).toSet()
+                            if (rowPhones.isNotEmpty() && rowPhones.any { it in knownPhones }) {
+                                skipped++
+                            } else {
+                                dao.insert(DoctorEntity(name = row.name, phoneNumbers = row.phone))
+                                knownPhones.addAll(rowPhones)
+                                added++
+                            }
                         }
+                        added to skipped
                     }
-                    added to skipped
                 }
                 Toast.makeText(context, if (isArabic)
                     "تمت إضافة ${result.first} طبيب جديد، وتخطي ${result.second} مكرر."

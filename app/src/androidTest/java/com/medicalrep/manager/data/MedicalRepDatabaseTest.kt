@@ -67,6 +67,32 @@ class MedicalRepDatabaseTest {
     }
 
     @Test
+    fun deletingCenterPreservesWeeklyPlanAndClearsCenterReference() = runBlocking {
+        val doctorId = database.doctorDao().insert(DoctorEntity(name = "Center Doctor"))
+        val centerId = database.medicalCenterDao().insert(MedicalCenterEntity(name = "Temporary Center"))
+        database.weeklyPlanDao().insert(
+            WeeklyPlanEntryEntity(
+                weekStartDate = "2026-11-21",
+                visitDate = "2026-11-24",
+                doctorId = doctorId,
+                centerId = centerId,
+                regionSnapshot = "Cairo",
+                centerNameSnapshot = "Temporary Center",
+                doctorNameSnapshot = "Center Doctor"
+            )
+        )
+
+        database.medicalCenterDao().delete(
+            MedicalCenterEntity(id = centerId, name = "Temporary Center")
+        )
+
+        val entry = database.weeklyPlanDao().observeAll().first().single()
+        assertEquals(doctorId, entry.doctorId)
+        assertEquals(null, entry.centerId)
+        assertEquals("Temporary Center", entry.centerNameSnapshot)
+    }
+
+    @Test
     fun deletingDoctorCascadesToVisitsAndWeeklyPlan() = runBlocking {
         val doctorId = database.doctorDao().insert(DoctorEntity(name = "Cascade Doctor"))
         database.doctorVisitDao().insert(

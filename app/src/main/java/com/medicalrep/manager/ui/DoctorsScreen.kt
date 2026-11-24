@@ -405,13 +405,15 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                         }
                     }
                 }
-                item {
-                    Text(
-                        if (isArabic) "${filteredDoctors.size} من ${doctors.size} طبيب" else "${filteredDoctors.size} of ${doctors.size} doctors",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp)
-                    )
+                if (selectedArea != "all" || selectedSpecialty != "all" || selectedCenter != "all") {
+                    item {
+                        Text(
+                            if (isArabic) "${filteredDoctors.size} من ${doctors.size} طبيب" else "${filteredDoctors.size} of ${doctors.size} doctors",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp)
+                        )
+                    }
                 }
                 item {
                     AnimatedVisibility(visible = showFilters, enter = expandVertically(tween(AppMotion.Emphasized)) + fadeIn(tween(AppMotion.Standard)), exit = shrinkVertically(tween(AppMotion.Standard)) + fadeOut(tween(AppMotion.Fast))) {
@@ -447,7 +449,6 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             }
         }
     }
-
     if (showForm) {
         DoctorFormDialog(
             isArabic = isArabic,
@@ -897,8 +898,7 @@ internal fun DoctorDetailsDialog(
                                 }
                                 if (center.phone.isNotBlank()) {
                                     Text(if (isArabic) "الهاتف" else "Phone", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                                    Text(center.phone)
-                                }
+                                    Text(center.phone)                                }
                                 val hasCenterLocation = (center.latitude != null && center.longitude != null) || !center.mapUrl.isNullOrBlank()
                                 var showCenterLocationActions by remember(center.id, center.latitude, center.longitude, center.mapUrl) { mutableStateOf(false) }
                                 Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1347,8 +1347,7 @@ private fun DoctorFormDialog(
                         ),
                                 value = phone,
                                 onValueChange = { value ->
-                                    phoneNumbers = phoneNumbers.toMutableList().also { it[index] = value }
-                                },
+                                    phoneNumbers = phoneNumbers.toMutableList().also { it[index] = value }                                },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
                                 label = { Text(if (isArabic) "رقم الهاتف ${index + 1}" else "Phone number ${index + 1}") },

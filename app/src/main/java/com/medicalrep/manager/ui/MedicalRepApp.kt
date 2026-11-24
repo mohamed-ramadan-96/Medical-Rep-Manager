@@ -1,5 +1,7 @@
 package com.medicalrep.manager.ui
 
+import com.medicalrep.manager.ui.theme.AppMotion
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -245,14 +247,14 @@ fun MedicalRepApp() {
                     val rtlDirection = if (isArabic) -1 else 1
                     val offset = if (forward) rtlDirection else -rtlDirection
                     (slideInHorizontally(
-                        animationSpec = tween(durationMillis = 220),
+                        animationSpec = tween(durationMillis = AppMotion.Emphasized),
                         initialOffsetX = { width -> offset * (width / 12) }
-                    ) + fadeIn(animationSpec = tween(durationMillis = 180)))
+                    ) + fadeIn(animationSpec = tween(durationMillis = AppMotion.Standard)))
                         .togetherWith(
                             slideOutHorizontally(
-                                animationSpec = tween(durationMillis = 180),
+                                animationSpec = tween(durationMillis = AppMotion.Standard),
                                 targetOffsetX = { width -> -offset * (width / 16) }
-                            ) + fadeOut(animationSpec = tween(durationMillis = 140))
+                            ) + fadeOut(animationSpec = tween(durationMillis = AppMotion.Fast))
                         )
                 }
             ) { tab ->
@@ -400,14 +402,14 @@ private fun FollowUpScreen(isArabic: Boolean, padding: PaddingValues) {
                 val direction = if (isArabic) -1 else 1
                 val offset = if (forward) direction else -direction
                 (slideInHorizontally(
-                    animationSpec = tween(durationMillis = 220),
+                    animationSpec = tween(durationMillis = AppMotion.Emphasized),
                     initialOffsetX = { width -> offset * (width / 12) }
-                ) + fadeIn(animationSpec = tween(durationMillis = 180)))
+                ) + fadeIn(animationSpec = tween(durationMillis = AppMotion.Standard)))
                     .togetherWith(
                         slideOutHorizontally(
-                            animationSpec = tween(durationMillis = 180),
+                            animationSpec = tween(durationMillis = AppMotion.Standard),
                             targetOffsetX = { width -> -offset * (width / 16) }
-                        ) + fadeOut(animationSpec = tween(durationMillis = 140))
+                        ) + fadeOut(animationSpec = tween(durationMillis = AppMotion.Fast))
                     )
             }
         ) { planVisible ->

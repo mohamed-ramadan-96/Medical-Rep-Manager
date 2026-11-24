@@ -130,11 +130,11 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                         val dao = database.doctorDao()
                         val knownPhones = dao.getAllForImport()
                             .flatMap { ContactPhoneRules.split(it.phoneNumbers) }
-                            .mapNotNull(::ContactPhoneRules::normalize).toMutableSet()
+                            .mapNotNull(ContactPhoneRules::normalize).toMutableSet()
                         var added = 0
                         var skipped = 0
                         imported.forEach { row ->
-                            val rowPhones = ContactPhoneRules.split(row.phone).mapNotNull(::normalizePhone).toSet()
+                            val rowPhones = ContactPhoneRules.split(row.phone).mapNotNull(ContactPhoneRules::normalize).toSet()
                             if (rowPhones.isNotEmpty() && rowPhones.any { it in knownPhones }) {
                                 skipped++
                             } else {

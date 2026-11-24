@@ -1,6 +1,7 @@
 package com.medicalrep.manager.data
 
 import android.content.Context
+import android.net.Uri
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -9,6 +10,9 @@ import kotlinx.coroutines.flow.first
 import com.medicalrep.manager.domain.WeeklyPlanRules
 import com.medicalrep.manager.domain.ContactPhoneRules
 import java.time.LocalDate
+import java.io.File
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -32,6 +36,55 @@ class MedicalRepDatabaseTest {
     @After
     fun closeDatabase() {
         database.close()
+    }
+
+    @Test
+    fun excelImporterReadsNameAndPhoneColumns() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val file = createWorkbook(
+            context.cacheDir,
+            """<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>
+                <row r="1"><c r="A1" t="inlineStr"><is><t>Doctor Name</t></is></c><c r="B1" t="inlineStr"><is><t>Phone Number</t></is></c></row>
+                <row r="2"><c r="A2" t="inlineStr"><is><t>Dr Test</t></is></c><c r="B2" t="inlineStr"><is><t>01012345678</t></is></c></row>
+            </sheetData></worksheet>"""
+        )
+        try {
+            val rows = ExcelImporter.readDoctors(context.contentResolver, Uri.fromFile(file))
+            assertEquals(listOf(ImportedDoctorRow("Dr Test", "01012345678")), rows)
+        } finally {
+            file.delete()
+        }
+    }
+
+    @Test
+    fun excelImporterRejectsMoreThanTwoColumns() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val file = createWorkbook(
+            context.cacheDir,
+            """<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>
+                <row r="1"><c r="A1" t="inlineStr"><is><t>Doctor Name</t></is></c><c r="B1" t="inlineStr"><is><t>Phone Number</t></is></c><c r="C1" t="inlineStr"><is><t>Notes</t></is></c></row>
+            </sheetData></worksheet>"""
+        )
+        try {
+            try {
+                ExcelImporter.readDoctors(context.contentResolver, Uri.fromFile(file))
+                throw AssertionError("Expected importer to reject a third column")
+            } catch (expected: IllegalStateException) {
+                assertTrue(expected.message.orEmpty().contains("more than two columns"))
+            }
+        } finally {
+            file.delete()
+        }
+    }
+
+    private fun createWorkbook(directory: File, sheetXml: String): File {
+        val file = File.createTempFile("doctor-import-test-", ".xlsx", directory)
+        ZipOutputStream(file.outputStream()).use { zip ->
+            zip.putNextEntry(ZipEntry("xl/worksheets/sheet1.xml"))
+            zip.write(sheetXml.toByteArray(Charsets.UTF_8))
+            zip.closeEntry()
+        }
+        return file
     }
 
     @Test

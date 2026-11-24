@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import com.medicalrep.manager.ui.theme.AppMotion
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -122,15 +123,15 @@ internal fun AnimatedLocationActions(
 ) {
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(tween(150)) + expandVertically(
+        enter = fadeIn(tween(AppMotion.Fast)) + expandVertically(
             animationSpec = spring(
                 dampingRatio = Spring.DampingRatioNoBouncy,
                 stiffness = Spring.StiffnessMediumLow
             ),
             expandFrom = Alignment.Top
         ),
-        exit = fadeOut(tween(110)) + shrinkVertically(
-            animationSpec = tween(140),
+        exit = fadeOut(tween(AppMotion.Fast)) + shrinkVertically(
+            animationSpec = tween(AppMotion.Standard),
             shrinkTowards = Alignment.Top
         ),
         label = "location_actions_transition"

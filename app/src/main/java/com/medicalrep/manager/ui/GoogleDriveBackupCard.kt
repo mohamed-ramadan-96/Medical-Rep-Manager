@@ -1,5 +1,7 @@
 package com.medicalrep.manager.ui
 
+import com.medicalrep.manager.ui.theme.AppSpacing
+
 import android.app.Activity
 import android.content.Context
 import android.widget.Toast
@@ -159,7 +161,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(AppSpacing.md)
             ) {
                 Text(
                     if (isArabic) "تكرار النسخ:" else "Backup frequency:",
@@ -357,7 +359,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                         ) {
-                            Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Column(Modifier.padding(AppSpacing.md), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text(item.name, style = MaterialTheme.typography.bodyMedium)
                                 Text(item.modifiedTime, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {

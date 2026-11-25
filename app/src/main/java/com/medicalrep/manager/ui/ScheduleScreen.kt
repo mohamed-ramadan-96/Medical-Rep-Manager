@@ -11,6 +11,7 @@ import androidx.compose.material3.Divider
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Button
@@ -428,7 +429,7 @@ private fun AvailabilityFormDialog(
         overlappingPeriod != null -> if (isArabic) "يوجد تداخل في مواعيد الفترة ${overlappingPeriod + 1}" else "Time overlap in period ${overlappingPeriod + 1}"
         else -> null
     }
-    val canSave = formError == null
+    val canSave = formError == null || ((selectedCenterId == null || linkedCenters.none { it.id == selectedCenterId }) && !centerError)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -569,11 +570,20 @@ private fun AvailabilityFormDialog(
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                                     Text(if (isArabic) "من" else "From", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    OutlinedSelectionField(label = "", value = displayAvailabilityTime(draft.startTime, isArabic), onClick = { timePickerTarget = index to true })
+                                    AvailabilitySelectionField(
+                                        label = if (isArabic) "من" else "From",
+                                        value = displayAvailabilityTime(draft.startTime, isArabic),
+                                        onClick = { timePickerTarget = index to true }
+                                    )
                                 }
                                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                                     Text(if (isArabic) "إلى" else "To", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    OutlinedSelectionField(label = "", value = displayAvailabilityTime(draft.endTime, isArabic), onClick = { timePickerTarget = index to false }, isError = draft.endTime <= draft.startTime)
+                                    AvailabilitySelectionField(
+                                        label = if (isArabic) "إلى" else "To",
+                                        value = displayAvailabilityTime(draft.endTime, isArabic),
+                                        isError = draft.endTime <= draft.startTime,
+                                        onClick = { timePickerTarget = index to false }
+                                    )
                                 }
                             }
                             if (draft.endTime <= draft.startTime) Text(if (isArabic) "وقت النهاية لازم يكون بعد البداية" else "End time must be after start time", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -682,6 +692,30 @@ private fun AvailabilityFormDialog(
                     timePickerTarget = null
                 }
             )
+        }
+    }
+}
+
+@Composable
+private fun AvailabilitySelectionField(
+    label: String,
+    value: String,
+    onClick: () -> Unit,
+    isError: Boolean = false
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        border = BorderStroke(
+            if (isError) 1.5.dp else 1.dp,
+            if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant
+        )
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
         }
     }
 }

@@ -195,7 +195,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
             var accumulatedDelta = 0
             snapshotFlow {
                 listState.layoutInfo.visibleItemsInfo
-                    .firstOrNull { it.index > 1 }
+                    .firstOrNull()
                     ?.let { it.index * 100000 - it.offset }
                     ?: 0
             }.distinctUntilChanged().collect { position ->

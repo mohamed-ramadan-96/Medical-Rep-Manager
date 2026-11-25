@@ -47,6 +47,8 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -189,6 +191,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
     ) { inner ->
         val listState = rememberLazyListState()
         var searchHeaderExpanded by remember { mutableStateOf(true) }
+        var scheduleTitleVisible by remember { mutableStateOf(true) }
         val scrollDirectionThreshold = with(LocalDensity.current) { 8.dp.roundToPx() }
         LaunchedEffect(listState) {
             var previousPosition: Int? = null
@@ -208,13 +211,16 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                 accumulatedDelta += position - previous
                 if (accumulatedDelta >= scrollDirectionThreshold) {
                     searchHeaderExpanded = false
+                    scheduleTitleVisible = false
                     accumulatedDelta = 0
                 } else if (accumulatedDelta <= -scrollDirectionThreshold) {
                     searchHeaderExpanded = true
+                    scheduleTitleVisible = true
                     accumulatedDelta = 0
                 }
                 if (position == 0) {
                     searchHeaderExpanded = true
+                    scheduleTitleVisible = true
                     accumulatedDelta = 0
                 }
                 previousPosition = position
@@ -224,18 +230,24 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
             modifier = Modifier.fillMaxSize().padding(inner).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+            AnimatedVisibility(
+                visible = scheduleTitleVisible,
+                enter = slideInVertically(animationSpec = tween(AppMotion.Emphasized)) { -it } + fadeIn(animationSpec = tween(AppMotion.Standard)),
+                exit = slideOutVertically(animationSpec = tween(AppMotion.Standard)) { -it } + fadeOut(animationSpec = tween(AppMotion.Fast))
             ) {
-                Text(
-                    if (isArabic) "جدول المواعيد المتاحة" else "Weekly availability",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                IconButton(onClick = { showPageDescription = true }, modifier = Modifier.size(36.dp)) {
-                    Icon(Icons.Outlined.HelpOutline, contentDescription = if (isArabic) "عن جدول المواعيد" else "About availability", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        if (isArabic) "جدول المواعيد المتاحة" else "Weekly availability",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    IconButton(onClick = { showPageDescription = true }, modifier = Modifier.size(36.dp)) {
+                        Icon(Icons.Outlined.HelpOutline, contentDescription = if (isArabic) "عن جدول المواعيد" else "About availability", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             }
             BoxWithConstraints(Modifier.fillMaxWidth()) {

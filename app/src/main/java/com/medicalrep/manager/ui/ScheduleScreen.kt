@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import java.time.LocalTime
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -519,11 +520,16 @@ private fun AvailabilityFormDialog(
                                 }
                             }
                             Text(if (isArabic) "أيام التواجد" else "Available days", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                maxItemsInEachRow = 4,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
                                 weekDays.forEach { (day, names) ->
                                     val selected = day in draft.days
                                     Surface(
-                                        modifier = Modifier.weight(1f).height(36.dp),
+                                        modifier = Modifier.weight(1f).height(40.dp),
                                         onClick = {
                                             val updated = if (selected) draft.days - day else draft.days + day
                                             drafts = drafts.toMutableList().also { it[index] = draft.copy(days = updated) }
@@ -533,10 +539,13 @@ private fun AvailabilityFormDialog(
                                         color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
                                         border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)
                                     ) {
-                                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier.fillMaxSize().padding(horizontal = 6.dp)
+                                        ) {
                                             Text(
                                                 if (isArabic) names.second else names.first.take(3),
-                                                style = MaterialTheme.typography.labelSmall,
+                                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                                                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                                                 color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                                                 maxLines = 1
@@ -546,7 +555,7 @@ private fun AvailabilityFormDialog(
                                 }
                             }
                             if (draft.days.isEmpty()) Text(if (isArabic) "اختر يوم واحد على الأقل" else "Select at least one day", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 val workDays = setOf(6, 7, 1, 2, 3, 4)
                                 val quickOptions = listOf(
                                     (if (isArabic) "أيام العمل" else "Work days") to workDays,
@@ -556,13 +565,13 @@ private fun AvailabilityFormDialog(
                                 quickOptions.forEach { (label, days) ->
                                     val active = draft.days == days
                                     Surface(
-                                        modifier = Modifier.weight(1f).height(36.dp),
+                                        modifier = Modifier.weight(1f).height(40.dp),
                                         onClick = { drafts = drafts.toMutableList().also { it[index] = draft.copy(days = days) }; error = null },
                                         shape = RoundedCornerShape(8.dp),
                                         color = if (active) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
                                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                                     ) {
-                                        Box(contentAlignment = Alignment.Center) {
+                                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp)) {
                                             Text(label, style = MaterialTheme.typography.labelSmall, color = if (active) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                                         }
                                     }

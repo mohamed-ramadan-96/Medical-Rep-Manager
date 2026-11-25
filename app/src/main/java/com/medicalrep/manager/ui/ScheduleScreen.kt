@@ -30,6 +30,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import java.time.LocalTime
@@ -52,6 +53,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.LaunchedEffect
@@ -223,7 +225,25 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
         }
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize().padding(inner),
+            modifier = Modifier.fillMaxSize().padding(inner).drawWithContent {
+                drawContent()
+                val stickyHeader = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }
+                if (stickyHeader != null) {
+                    val fadeTop = (stickyHeader.offset + stickyHeader.size).toFloat()
+                    val fadeHeight = 36.dp.toPx()
+                    val fadeColor = MaterialTheme.colorScheme.background
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            0f to fadeColor,
+                            1f to fadeColor.copy(alpha = 0f),
+                            startY = fadeTop,
+                            endY = fadeTop + fadeHeight
+                        ),
+                        topLeft = androidx.compose.ui.geometry.Offset(0f, fadeTop),
+                        size = androidx.compose.ui.geometry.Size(size.width, fadeHeight)
+                    )
+                }
+            },
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
         ) {

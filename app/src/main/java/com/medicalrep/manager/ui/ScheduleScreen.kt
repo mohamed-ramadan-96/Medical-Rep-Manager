@@ -10,6 +10,7 @@ import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material3.Divider
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.verticalScroll
@@ -54,6 +55,8 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -64,6 +67,8 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -401,6 +406,8 @@ private fun AvailabilityFormDialog(
     }
     var doctorMenu by remember { mutableStateOf(false) }
     var centerMenu by remember { mutableStateOf(false) }
+    var doctorSearch by remember { mutableStateOf("") }
+    var centerSearch by remember { mutableStateOf("") }
     var selectedCenterId by remember(initialGroup, doctors, doctorCenterLinks) {
         mutableStateOf(initial?.centerId ?: doctorCenterLinks.firstOrNull { it.doctorId == selectedDoctorId }?.centerId ?: doctors.firstOrNull { it.id == selectedDoctorId }?.centerId)
     }
@@ -451,29 +458,102 @@ private fun AvailabilityFormDialog(
                 AvailabilitySelectionField(
                     label = if (isArabic) "الطبيب" else "Doctor",
                     value = doctors.firstOrNull { it.id == selectedDoctorId }?.name ?: if (isArabic) "اختر الطبيب" else "Choose doctor",
-                    onClick = { doctorMenu = true }
+                    onClick = { doctorSearch = ""; doctorMenu = true }
                 )
-                DropdownMenu(expanded = doctorMenu, onDismissRequest = { doctorMenu = false }) {
-                    doctors.forEach { doctor ->
-                        DropdownMenuItem(
-                            text = { Text(doctor.name) },
-                            onClick = {
-                                selectedDoctorId = doctor.id
-                                selectedCenterId = doctorCenterLinks.firstOrNull { it.doctorId == doctor.id }?.centerId ?: doctor.centerId
-                                doctorMenu = false
+                if (doctorMenu) {
+                    ModalBottomSheet(
+                        onDismissRequest = { doctorMenu = false },
+                        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(if (isArabic) "اختيار الطبيب" else "Choose doctor", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            OutlinedTextField(
+                                value = doctorSearch,
+                                onValueChange = { doctorSearch = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp),
+                                placeholder = { Text(if (isArabic) "ابحث عن دكتور..." else "Search doctors...") },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
+                            )
+                            val filteredDoctors = doctors.filter { normalizePickerSearch(it.name).contains(normalizePickerSearch(doctorSearch)) }
+                            LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp)) {
+                                items(filteredDoctors, key = { it.id }) { doctor ->
+                                    Surface(
+                                        onClick = {
+                                            selectedDoctorId = doctor.id
+                                            selectedCenterId = doctorCenterLinks.firstOrNull { it.doctorId == doctor.id }?.centerId ?: doctor.centerId
+                                            doctorMenu = false
+                                        },
+                                        color = MaterialTheme.colorScheme.surfaceContainer,
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                                    ) {
+                                        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 15.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            Text(doctor.name, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyLarge)
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Icon(Icons.Default.RadioButtonUnchecked, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
+                                        }
+                                    }
+                                }
+                                if (filteredDoctors.isEmpty()) item {
+                                    Text(if (isArabic) "لا توجد نتائج" else "No results", modifier = Modifier.fillMaxWidth().padding(20.dp), textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
                             }
-                        )
+                        }
                     }
                 }
                 AvailabilitySelectionField(
                     label = if (isArabic) "المركز" else "Center",
                     value = selectableCenters.firstOrNull { it.id == selectedCenterId }?.name
                         ?: if (isArabic) "اختر المركز" else "Choose center",
-                    onClick = { centerMenu = true },
+                    onClick = { centerSearch = ""; centerMenu = true }
                 )
-                DropdownMenu(expanded = centerMenu, onDismissRequest = { centerMenu = false }) {
-                    selectableCenters.forEach { center ->
-                        DropdownMenuItem(text = { Text(center.name) }, onClick = { selectedCenterId = center.id; centerMenu = false })
+                if (centerMenu) {
+                    ModalBottomSheet(
+                        onDismissRequest = { centerMenu = false },
+                        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(if (isArabic) "اختيار المركز" else "Choose center", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            OutlinedTextField(
+                                value = centerSearch,
+                                onValueChange = { centerSearch = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp),
+                                placeholder = { Text(if (isArabic) "ابحث عن مركز..." else "Search centers...") },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
+                            )
+                            val filteredCenters = selectableCenters.filter { normalizePickerSearch(it.name).contains(normalizePickerSearch(centerSearch)) }
+                            LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp)) {
+                                items(filteredCenters, key = { it.id }) { center ->
+                                    Surface(
+                                        onClick = { selectedCenterId = center.id; centerMenu = false },
+                                        color = MaterialTheme.colorScheme.surfaceContainer,
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                                    ) {
+                                        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 15.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            Text(center.name, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyLarge)
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Icon(Icons.Default.RadioButtonUnchecked, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
+                                        }
+                                    }
+                                }
+                                if (filteredCenters.isEmpty()) item {
+                                    Text(if (isArabic) "لا توجد نتائج" else "No results", modifier = Modifier.fillMaxWidth().padding(20.dp), textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
                     }
                 }
                 drafts.forEachIndexed { index, draft ->
@@ -727,6 +807,15 @@ private fun AvailabilitySelectionField(
         }
     }
 }
+
+private fun normalizePickerSearch(value: String): String =
+    value.lowercase()
+        .replace('أ', 'ا')
+        .replace('إ', 'ا')
+        .replace('آ', 'ا')
+        .replace('ى', 'ي')
+        .replace('ة', 'ه')
+        .trim()
 
 private fun displayAvailabilityTime(value: String, isArabic: Boolean): String {
     val pieces = value.split(":")

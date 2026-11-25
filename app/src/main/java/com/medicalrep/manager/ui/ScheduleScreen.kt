@@ -223,6 +223,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                 previousPosition = position
             }
         }
+        val scheduleFadeColor = MaterialTheme.colorScheme.background
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize().padding(inner).drawWithContent {
@@ -231,11 +232,10 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                 if (stickyHeader != null) {
                     val fadeTop = (stickyHeader.offset + stickyHeader.size).toFloat()
                     val fadeHeight = 36.dp.toPx()
-                    val fadeColor = MaterialTheme.colorScheme.background
                     drawRect(
                         brush = Brush.verticalGradient(
-                            0f to fadeColor,
-                            1f to fadeColor.copy(alpha = 0f),
+                            0f to scheduleFadeColor,
+                            1f to scheduleFadeColor.copy(alpha = 0f),
                             startY = fadeTop,
                             endY = fadeTop + fadeHeight
                         ),

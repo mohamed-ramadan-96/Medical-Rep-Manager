@@ -5,6 +5,9 @@ import com.medicalrep.manager.ui.theme.AppSpacing
 import com.medicalrep.manager.ui.theme.AppMotion
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.material3.Surface
 import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material3.Divider
@@ -133,6 +136,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
     var selectedDay by remember { mutableStateOf(0) }
     var selectedCenterId by remember { mutableStateOf(0L) }
     var selectedSpecialty by remember { mutableStateOf("all") }
+    var appointmentSearch by remember { mutableStateOf("") }
     var dayMenu by remember { mutableStateOf(false) }
     var centerFilterMenu by remember { mutableStateOf(false) }
     var specialtyFilterMenu by remember { mutableStateOf(false) }
@@ -148,13 +152,14 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                 { group -> group.firstOrNull()?.startTime.orEmpty() }
             ))
     }
-    val filteredGroups = remember(groupedSlots, doctorsById, selectedDay, selectedCenterId, selectedSpecialty) {
+    val filteredGroups = remember(groupedSlots, doctorsById, selectedDay, selectedCenterId, selectedSpecialty, appointmentSearch) {
         groupedSlots.mapNotNull { group ->
             val matching = group.filter { slot ->
                 val doctor = doctorsById[slot.doctorId]
                 (selectedDay == 0 || slot.dayOfWeek == selectedDay) &&
                 (selectedCenterId == 0L || slot.centerId == selectedCenterId) &&
-                (selectedSpecialty == "all" || doctor?.specialty.equals(selectedSpecialty, ignoreCase = true))
+                (selectedSpecialty == "all" || doctor?.specialty.equals(selectedSpecialty, ignoreCase = true)) &&
+                (appointmentSearch.isBlank() || normalizePickerSearch(doctor?.name.orEmpty()).contains(normalizePickerSearch(appointmentSearch)))
             }
             matching.takeIf { it.isNotEmpty() }
         }
@@ -189,21 +194,58 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                     Icon(Icons.Outlined.HelpOutline, contentDescription = if (isArabic) "عن جدول المواعيد" else "About availability", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            Surface(
-                onClick = { showFilters = !showFilters },
-                shape = MaterialTheme.shapes.small,
-                color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                modifier = Modifier.fillMaxWidth()
+            Row(
+                modifier = Modifier.fillMaxWidth().height(60.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+                Surface(
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+                    modifier = Modifier.weight(1f).fillMaxSize()
                 ) {
-                    Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(20.dp))
-                    Text(if (isArabic) "الفلاتر" else "Filters", modifier = Modifier.padding(horizontal = AppSpacing.md), style = MaterialTheme.typography.labelLarge)
-                    Icon(if (showFilters) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Search, contentDescription = if (isArabic) "بحث" else "Search", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(24.dp))
+                        BasicTextField(
+                            value = appointmentSearch,
+                            onValueChange = { appointmentSearch = it },
+                            modifier = Modifier.weight(1f).padding(start = 12.dp),
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.onSurface),
+                            decorationBox = { innerTextField ->
+                                Box(contentAlignment = Alignment.CenterStart) {
+                                    if (appointmentSearch.isEmpty()) Text(if (isArabic) "ابحث عن مواعيد باسم الطبيب..." else "Search appointments by doctor...", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    innerTextField()
+                                }
+                            }
+                        )
+                    }
+                }
+                val filterIconColor = MaterialTheme.colorScheme.onSurface
+                Surface(
+                    onClick = { showFilters = !showFilters },
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+                    modifier = Modifier.size(60.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Canvas(Modifier.size(28.dp)) {
+                            val stroke = 2.dp.toPx()
+                            val left = 2.dp.toPx()
+                            val right = size.width - 2.dp.toPx()
+                            val railYs = listOf(6.dp.toPx(), 14.dp.toPx(), 22.dp.toPx())
+                            val knobXs = listOf(17.dp.toPx(), 9.dp.toPx(), 20.dp.toPx())
+                            railYs.forEachIndexed { index, y ->
+                                val knobX = knobXs[index]
+                                val gap = 2.4.dp.toPx()
+                                drawLine(filterIconColor, androidx.compose.ui.geometry.Offset(left, y), androidx.compose.ui.geometry.Offset(knobX - gap, y), stroke, cap = StrokeCap.Round)
+                                drawLine(filterIconColor, androidx.compose.ui.geometry.Offset(knobX + gap, y), androidx.compose.ui.geometry.Offset(right, y), stroke, cap = StrokeCap.Round)
+                                drawLine(filterIconColor, androidx.compose.ui.geometry.Offset(knobX, y - 3.dp.toPx()), androidx.compose.ui.geometry.Offset(knobX, y + 3.dp.toPx()), stroke, cap = StrokeCap.Round)
+                            }
+                        }
+                    }
                 }
             }
             AnimatedVisibility(

@@ -189,14 +189,13 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
     ) { inner ->
         val listState = rememberLazyListState()
         var searchHeaderExpanded by remember { mutableStateOf(true) }
-        var scheduleTitleVisible by remember { mutableStateOf(true) }
         val scrollDirectionThreshold = with(LocalDensity.current) { 8.dp.roundToPx() }
         LaunchedEffect(listState) {
             var previousPosition: Int? = null
             var accumulatedDelta = 0
             snapshotFlow {
                 listState.layoutInfo.visibleItemsInfo
-                    .firstOrNull()
+                    .firstOrNull { it.index > 1 }
                     ?.let { it.index * 100000 - it.offset }
                     ?: 0
             }.distinctUntilChanged().collect { position ->
@@ -209,16 +208,13 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                 accumulatedDelta += position - previous
                 if (accumulatedDelta >= scrollDirectionThreshold) {
                     searchHeaderExpanded = false
-                    scheduleTitleVisible = false
                     accumulatedDelta = 0
                 } else if (accumulatedDelta <= -scrollDirectionThreshold) {
                     searchHeaderExpanded = true
-                    scheduleTitleVisible = true
                     accumulatedDelta = 0
                 }
                 if (position == 0) {
                     searchHeaderExpanded = true
-                    scheduleTitleVisible = true
                     accumulatedDelta = 0
                 }
                 previousPosition = position

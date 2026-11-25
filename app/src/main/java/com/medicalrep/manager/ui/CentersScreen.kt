@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.LocalHospital
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -372,8 +373,27 @@ private fun CenterFormDialog(
     var editCenterLocation by remember { mutableStateOf(false) }
     var locationSectionExpanded by remember(initial) { mutableStateOf(false) }
     var nameError by remember { mutableStateOf(false) }
+    var showWorkingHoursInfo by remember { mutableStateOf(false) }
 
     val dialogMaxHeight = LocalConfiguration.current.screenHeightDp.dp * 0.88f
+
+    if (showWorkingHoursInfo) {
+        AlertDialog(
+            onDismissRequest = { showWorkingHoursInfo = false },
+            title = { Text(if (isArabic) "مواعيد عمل المركز" else "Center working hours") },
+            text = {
+                Text(
+                    if (isArabic) "المواعيد دي تخص المركز نفسه، ومش محتاجة ملفات أطباء. تقدر تضيف أكتر من فترة عمل، وتحدد أيام وساعات مستقلة لكل فترة."
+                    else "These hours belong to the center itself and do not require doctor profiles. You can add multiple working periods, each with its own days and hours."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showWorkingHoursInfo = false }) {
+                    Text(if (isArabic) "تمام" else "OK")
+                }
+            }
+        )
+    }
 
     AlertDialog(
         modifier = Modifier.fillMaxWidth().widthIn(max = 560.dp).heightIn(max = dialogMaxHeight),
@@ -409,8 +429,26 @@ private fun CenterFormDialog(
                 }
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(if (isArabic) "مواعيد عمل المركز" else "Center working hours", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                        Text(if (isArabic) "المواعيد دي تخص المركز نفسه، ومش محتاجة ملفات أطباء. تقدر تضيف أكتر من فترة." else "These hours belong to the center itself; no doctor profiles are required. Add multiple time slots if needed.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedButton(
+                                onClick = { workSlots = workSlots + CenterWorkingHoursDraft() },
+                                modifier = Modifier.weight(1f),
+                                shape = MaterialTheme.shapes.small
+                            ) {
+                                Text(if (isArabic) "+ إضافة فترة عمل" else "+ Add working-hours slot")
+                            }
+                            IconButton(onClick = { showWorkingHoursInfo = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = if (isArabic) "معلومات مواعيد العمل" else "Working hours information",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                         workSlots.forEachIndexed { index, slot ->
                             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
                                 Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -438,9 +476,6 @@ private fun CenterFormDialog(
                                     OutlinedTextField(value = slot.notes, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(notes = value) } }, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.small, label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") })
                                 }
                             }
-                        }
-                        OutlinedButton(onClick = { workSlots = workSlots + CenterWorkingHoursDraft() }, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.small) {
-                            Text(if (isArabic) "+ إضافة فترة عمل" else "+ Add working-hours slot")
                         }
                     }
                 }

@@ -226,13 +226,17 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                 previousPosition = position
             }
         }
-        Column(
-            modifier = Modifier.fillMaxSize().padding(inner).padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize().padding(inner),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
         ) {
+            item {
             AnimatedVisibility(
                 visible = scheduleTitleVisible,
-                enter = slideInVertically(animationSpec = tween(AppMotion.Emphasized)) { -it } +
+                enter = slideInVertically(animationSpec = tween(AppMotion.Emphasized)) { -it }
+            } +
                     expandVertically(animationSpec = tween(AppMotion.Emphasized), expandFrom = Alignment.Top) +
                     fadeIn(animationSpec = tween(AppMotion.Emphasized)),
                 exit = slideOutVertically(animationSpec = tween(AppMotion.Emphasized)) { -it } +
@@ -254,7 +258,8 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                     }
                 }
             }
-            BoxWithConstraints(Modifier.fillMaxWidth()) {
+            stickyHeader {
+                BoxWithConstraints(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(vertical = 4.dp)) {            BoxWithConstraints(Modifier.fillMaxWidth()) {
                 val filterWidth by animateDpAsState(if (searchHeaderExpanded) 60.dp else 0.dp, tween(AppMotion.Emphasized), label = "scheduleFilterWidth")
                 val filterAlpha by animateFloatAsState(if (searchHeaderExpanded) 1f else 0f, tween(AppMotion.Fast), label = "scheduleFilterAlpha")
                 val searchWidth by animateDpAsState(if (searchHeaderExpanded) maxWidth - 68.dp else 44.dp, tween(AppMotion.Emphasized), label = "scheduleSearchWidth")
@@ -325,6 +330,8 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                     }
                 }
             }
+            }
+            item {
             AnimatedVisibility(
                 visible = showFilters,
                 enter = expandVertically(animationSpec = tween(AppMotion.Emphasized)) + fadeIn(animationSpec = tween(AppMotion.Standard)),
@@ -343,6 +350,8 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
 
                 }
             }
+            }
+            item {
             if (activeFilterSheet != null) {
                 ModalBottomSheet(
                     onDismissRequest = { activeFilterSheet = null },
@@ -431,14 +440,17 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                     }
                 }
             }
+            }
+            item {
             if (doctors.isEmpty()) {
                 Text(if (isArabic) "أضف طبيباً أولاً حتى تتمكن من تحديد مواعيده." else "Add a doctor first to define their availability.", modifier = Modifier.padding(top = 20.dp))
+            }
             } else if (groupedSlots.isEmpty()) {
                 Text(if (isArabic) "لم تتم إضافة مواعيد متاحة بعد. اضغط + للبدء." else "No availability added yet. Tap + to get started.", modifier = Modifier.padding(top = 20.dp))
             } else if (filteredGroups.isEmpty()) {
                 Text(if (isArabic) "لا توجد مواعيد مطابقة للاختيارات." else "No availability matches these filters.", modifier = Modifier.padding(top = 20.dp))
             } else {
-                LazyColumn(state = listState, modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
+                
                     items(filteredGroups, key = { group -> group.first().id }) { group ->
                         val slot = group.first()
                         val groupKey = slot.slotGroupId.ifBlank { "legacy-${slot.id}" }
@@ -524,7 +536,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                             }
                         }
                     }
-                }
+                
             }
         }
     }

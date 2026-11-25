@@ -88,6 +88,7 @@ import com.medicalrep.manager.data.DoctorCenterLinkEntity
 import com.medicalrep.manager.data.MedicalRepDatabase
 import java.util.UUID
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 private val weekDays = listOf(
     6 to ("Saturday" to "السبت"),

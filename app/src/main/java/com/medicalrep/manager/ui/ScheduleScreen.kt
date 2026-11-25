@@ -137,9 +137,8 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
     var selectedCenterId by remember { mutableStateOf(0L) }
     var selectedSpecialty by remember { mutableStateOf("all") }
     var appointmentSearch by remember { mutableStateOf("") }
-    var dayMenu by remember { mutableStateOf(false) }
-    var centerFilterMenu by remember { mutableStateOf(false) }
-    var specialtyFilterMenu by remember { mutableStateOf(false) }
+    var activeFilterSheet by remember { mutableStateOf<String?>(null) }
+    var filterSearch by remember { mutableStateOf("") }
     var showFilters by remember { mutableStateOf(false) }
     var showPageDescription by remember { mutableStateOf(false) }
     var expandedAvailabilityGroups by remember { mutableStateOf(emptySet<String>()) }
@@ -256,26 +255,102 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                 Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
-                    OutlinedSelectionField(label = if (isArabic) "اليوم" else "Day", value = if (selectedDay == 0) { if (isArabic) "كل الأيام" else "All days" } else weekDays.firstOrNull { it.first == selectedDay }?.second?.let { if (isArabic) it.second else it.first }.orEmpty(), onClick = { dayMenu = true })
-                    DropdownMenu(expanded = dayMenu, onDismissRequest = { dayMenu = false }) {
-                        DropdownMenuItem(text = { Text(if (isArabic) "كل الأيام" else "All days") }, onClick = { selectedDay = 0; dayMenu = false })
-                        weekDays.forEach { (day, names) -> DropdownMenuItem(text = { Text(if (isArabic) names.second else names.first) }, onClick = { selectedDay = day; dayMenu = false }) }
-                    }
+                    OutlinedSelectionField(label = if (isArabic) "اليوم" else "Day", value = if (selectedDay == 0) { if (isArabic) "كل الأيام" else "All days" } else weekDays.firstOrNull { it.first == selectedDay }?.second?.let { if (isArabic) it.second else it.first }.orEmpty(), onClick = { filterSearch = ""; activeFilterSheet = "day" })
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    OutlinedSelectionField(label = if (isArabic) "التخصص" else "Specialty", value = if (selectedSpecialty == "all") { if (isArabic) "كل التخصصات" else "All specialties" } else selectedSpecialty, onClick = { specialtyFilterMenu = true })
-                    DropdownMenu(expanded = specialtyFilterMenu, onDismissRequest = { specialtyFilterMenu = false }) {
-                        DropdownMenuItem(text = { Text(if (isArabic) "كل التخصصات" else "All specialties") }, onClick = { selectedSpecialty = "all"; specialtyFilterMenu = false })
-                        specialties.map { it.name }.distinct().sorted().forEach { name -> DropdownMenuItem(text = { Text(name) }, onClick = { selectedSpecialty = name; specialtyFilterMenu = false }) }
-                    }
+                    OutlinedSelectionField(label = if (isArabic) "التخصص" else "Specialty", value = if (selectedSpecialty == "all") { if (isArabic) "كل التخصصات" else "All specialties" } else selectedSpecialty, onClick = { filterSearch = ""; activeFilterSheet = "specialty" })
                 }
             }
-            OutlinedSelectionField(label = if (isArabic) "المركز" else "Center", value = if (selectedCenterId == 0L) { if (isArabic) "كل المراكز" else "All centers" } else centers.firstOrNull { it.id == selectedCenterId }?.name.orEmpty(), onClick = { centerFilterMenu = true })
-            DropdownMenu(expanded = centerFilterMenu, onDismissRequest = { centerFilterMenu = false }) {
-                DropdownMenuItem(text = { Text(if (isArabic) "كل المراكز" else "All centers") }, onClick = { selectedCenterId = 0L; centerFilterMenu = false })
-                centers.forEach { center -> DropdownMenuItem(text = { Text(center.name) }, onClick = { selectedCenterId = center.id; centerFilterMenu = false }) }
-            }
+            OutlinedSelectionField(label = if (isArabic) "المركز" else "Center", value = if (selectedCenterId == 0L) { if (isArabic) "كل المراكز" else "All centers" } else centers.firstOrNull { it.id == selectedCenterId }?.name.orEmpty(), onClick = { filterSearch = ""; activeFilterSheet = "center" })
 
+                }
+            }
+            if (activeFilterSheet != null) {
+                ModalBottomSheet(
+                    onDismissRequest = { activeFilterSheet = null },
+                    sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                    containerColor = MaterialTheme.colorScheme.surface
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        val sheetTitle = when (activeFilterSheet) {
+                            "day" -> if (isArabic) "اختيار اليوم" else "Choose day"
+                            "specialty" -> if (isArabic) "اختيار التخصص" else "Choose specialty"
+                            else -> if (isArabic) "اختيار المركز" else "Choose center"
+                        }
+                        Text(sheetTitle, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        OutlinedTextField(
+                            value = filterSearch,
+                            onValueChange = { filterSearch = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            placeholder = {
+                                Text(
+                                    when (activeFilterSheet) {
+                                        "day" -> if (isArabic) "ابحث عن يوم..." else "Search days..."
+                                        "specialty" -> if (isArabic) "ابحث عن تخصص..." else "Search specialties..."
+                                        else -> if (isArabic) "ابحث عن مركز..." else "Search centers..."
+                                    }
+                                )
+                            },
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
+                        )
+                        LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp)) {
+                            when (activeFilterSheet) {
+                                "day" -> {
+                                    item {
+                                        FilterPickerRow(if (isArabic) "كل الأيام" else "All days") {
+                                            selectedDay = 0
+                                            activeFilterSheet = null
+                                        }
+                                    }
+                                    items(weekDays.filter { (_, names) ->
+                                        normalizePickerSearch(if (isArabic) names.second else names.first).contains(normalizePickerSearch(filterSearch))
+                                    }, key = { it.first }) { (day, names) ->
+                                        FilterPickerRow(if (isArabic) names.second else names.first) {
+                                            selectedDay = day
+                                            activeFilterSheet = null
+                                        }
+                                    }
+                                }
+                                "specialty" -> {
+                                    item {
+                                        FilterPickerRow(if (isArabic) "كل التخصصات" else "All specialties") {
+                                            selectedSpecialty = "all"
+                                            activeFilterSheet = null
+                                        }
+                                    }
+                                    items(specialties.map { it.name }.distinct().sorted().filter {
+                                        normalizePickerSearch(it).contains(normalizePickerSearch(filterSearch))
+                                    }) { name ->
+                                        FilterPickerRow(name) {
+                                            selectedSpecialty = name
+                                            activeFilterSheet = null
+                                        }
+                                    }
+                                }
+                                "center" -> {
+                                    item {
+                                        FilterPickerRow(if (isArabic) "كل المراكز" else "All centers") {
+                                            selectedCenterId = 0L
+                                            activeFilterSheet = null
+                                        }
+                                    }
+                                    items(centers.filter {
+                                        normalizePickerSearch(it.name).contains(normalizePickerSearch(filterSearch))
+                                    }, key = { it.id }) { center ->
+                                        FilterPickerRow(center.name) {
+                                            selectedCenterId = center.id
+                                            activeFilterSheet = null
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             if (doctors.isEmpty()) {
@@ -813,6 +888,23 @@ private fun AvailabilityFormDialog(
                     timePickerTarget = null
                 }
             )
+        }
+    }
+}
+
+@Composable
+private fun FilterPickerRow(label: String, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = RoundedCornerShape(10.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 15.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(label, textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
         }
     }
 }

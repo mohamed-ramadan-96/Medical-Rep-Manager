@@ -24,7 +24,6 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
-import kotlinx.coroutines.launch
 import java.time.LocalTime
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -87,7 +86,6 @@ import com.medicalrep.manager.data.DoctorEntity
 import com.medicalrep.manager.data.MedicalCenterEntity
 import com.medicalrep.manager.data.DoctorCenterLinkEntity
 import com.medicalrep.manager.data.MedicalRepDatabase
-import kotlinx.coroutines.launch
 import java.util.UUID
 import java.util.Locale
 
@@ -411,6 +409,7 @@ private fun AvailabilityFormDialog(
         doctorCenterLinks.any { it.doctorId == selectedDoctorId && it.centerId == center.id } ||
             (doctorCenterLinks.none { it.doctorId == selectedDoctorId } && doctors.firstOrNull { it.id == selectedDoctorId }?.centerId == center.id)
     }
+    val selectableCenters = linkedCenters.ifEmpty { centers }
     val validTime = Regex("(?:[01]\\d|2[0-3]):[0-5]\\d")
     val hasInvalidDays = drafts.any { it.days.isEmpty() }
     val hasInvalidTime = drafts.any { !validTime.matches(it.startTime) || !validTime.matches(it.endTime) || it.endTime <= it.startTime }
@@ -448,7 +447,7 @@ private fun AvailabilityFormDialog(
                 modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedSelectionField(
+                AvailabilitySelectionField(
                     label = if (isArabic) "الطبيب" else "Doctor",
                     value = doctors.firstOrNull { it.id == selectedDoctorId }?.name ?: if (isArabic) "اختر الطبيب" else "Choose doctor",
                     onClick = { doctorMenu = true }
@@ -466,15 +465,16 @@ private fun AvailabilityFormDialog(
                         )
                     }
                 }
-                OutlinedSelectionField(
-                    label = if (isArabic) "المركز • مطلوب" else "Center • Required",
-                    value = linkedCenters.firstOrNull { it.id == selectedCenterId }?.name
+                AvailabilitySelectionField(
+                    label = if (isArabic) "المركز * مطلوب" else "Center * Required",
+                    value = selectableCenters.firstOrNull { it.id == selectedCenterId }?.name
                         ?: if (isArabic) "اختر المركز" else "Choose center",
                     onClick = { centerMenu = true },
-                    enabled = linkedCenters.isNotEmpty()
+                    isError = centerError,
+                    isRequired = selectedCenterId == null
                 )
                 DropdownMenu(expanded = centerMenu, onDismissRequest = { centerMenu = false }) {
-                    linkedCenters.forEach { center ->
+                    selectableCenters.forEach { center ->
                         DropdownMenuItem(text = { Text(center.name) }, onClick = { selectedCenterId = center.id; centerError = false; centerMenu = false })
                     }
                 }
@@ -716,6 +716,41 @@ private fun AvailabilitySelectionField(
         Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+@Composable
+private fun AvailabilitySelectionField(
+    label: String,
+    value: String,
+    onClick: () -> Unit,
+    isError: Boolean = false,
+    isRequired: Boolean = false
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        border = BorderStroke(
+            if (isError || isRequired) 1.5.dp else 1.dp,
+            when {
+                isError -> MaterialTheme.colorScheme.error
+                isRequired -> MaterialTheme.colorScheme.primary
+                else -> MaterialTheme.colorScheme.outlineVariant
+            }
+        )
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(label, style = MaterialTheme.typography.labelSmall, color = if (isRequired) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
+            }
+            Icon(Icons.Default.ExpandMore, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

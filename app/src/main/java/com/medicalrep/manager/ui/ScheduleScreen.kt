@@ -404,7 +404,6 @@ private fun AvailabilityFormDialog(
         mutableStateOf(initial?.centerId ?: doctorCenterLinks.firstOrNull { it.doctorId == selectedDoctorId }?.centerId ?: doctors.firstOrNull { it.id == selectedDoctorId }?.centerId)
     }
     var error by remember { mutableStateOf<String?>(null) }
-    var centerError by remember { mutableStateOf(false) }
     var timePickerTarget by remember { mutableStateOf<Pair<Int, Boolean>?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -425,13 +424,11 @@ private fun AvailabilityFormDialog(
     }
     val formError = when {
         selectedDoctorId == null -> if (isArabic) "اختر الطبيب أولاً" else "Choose a doctor first"
-        selectedCenterId == null || selectableCenters.none { it.id == selectedCenterId } -> if (isArabic) "اختر المركز أولاً" else "Choose a center first"
         hasInvalidDays -> if (isArabic) "اختر يومًا واحدًا على الأقل لكل فترة" else "Select at least one day for each period"
         hasInvalidTime -> if (isArabic) "وقت النهاية لازم يكون بعد البداية" else "End time must be after start time"
         else -> null
     }
-    val centerMissing = selectedCenterId == null || selectableCenters.none { it.id == selectedCenterId }
-    val canSave = formError == null || (centerMissing && !centerError && selectedDoctorId != null && !hasInvalidDays && !hasInvalidTime)
+    val canSave = formError == null
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -462,29 +459,22 @@ private fun AvailabilityFormDialog(
                             onClick = {
                                 selectedDoctorId = doctor.id
                                 selectedCenterId = doctorCenterLinks.firstOrNull { it.doctorId == doctor.id }?.centerId ?: doctor.centerId
-                                centerError = false
                                 doctorMenu = false
                             }
                         )
                     }
                 }
                 AvailabilitySelectionField(
-                    label = if (isArabic) "المركز * مطلوب" else "Center * Required",
+                    label = if (isArabic) "المركز" else "Center",
                     value = selectableCenters.firstOrNull { it.id == selectedCenterId }?.name
                         ?: if (isArabic) "اختر المركز" else "Choose center",
                     onClick = { centerMenu = true },
-                    isError = centerError,
-                    isRequired = selectedCenterId == null
                 )
                 DropdownMenu(expanded = centerMenu, onDismissRequest = { centerMenu = false }) {
                     selectableCenters.forEach { center ->
-                        DropdownMenuItem(text = { Text(center.name) }, onClick = { selectedCenterId = center.id; centerError = false; centerMenu = false })
+                        DropdownMenuItem(text = { Text(center.name) }, onClick = { selectedCenterId = center.id; centerMenu = false })
                     }
                 }
-                if (centerError) {
-                    Text(if (isArabic) "اختر المركز أولا" else "Choose a center first", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                }
-
                 drafts.forEachIndexed { index, draft ->
                     val overlap = drafts.indices.any { otherIndex ->
                         otherIndex != index && draft.days.intersect(drafts[otherIndex].days).isNotEmpty() &&
@@ -654,10 +644,6 @@ private fun AvailabilityFormDialog(
                 Button(
                     enabled = canSave,
                     onClick = {
-                        if (selectedCenterId == null || selectableCenters.none { it.id == selectedCenterId }) {
-                            centerError = true
-                            error = if (isArabic) "اختر المركز أولا" else "Choose a center first"
-                        } else {
                             val oldByDay = initialGroup.associateBy { it.dayOfWeek }
                             val result = drafts.flatMap { draft ->
                                 draft.days.sorted().map { day ->
@@ -676,7 +662,6 @@ private fun AvailabilityFormDialog(
                                 }
                             }
                             onSave(result)
-                        }
                     },
                     modifier = Modifier.weight(1f).height(48.dp),
                     shape = RoundedCornerShape(10.dp)

@@ -129,6 +129,7 @@ private data class AvailabilityDraft(
     val groupId: String = UUID.randomUUID().toString()
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.PaddingValues) {
     val context = LocalContext.current

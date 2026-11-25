@@ -56,7 +56,6 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -494,10 +493,11 @@ private fun AvailabilityFormDialog(
                                         shape = RoundedCornerShape(10.dp),
                                         modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                                     ) {
-                                        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 15.dp), verticalAlignment = Alignment.CenterVertically) {
-                                            Text(doctor.name, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyLarge)
-                                            Spacer(modifier = Modifier.width(12.dp))
-                                            Icon(Icons.Default.RadioButtonUnchecked, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 15.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(doctor.name, textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
                                         }
                                     }
                                 }
@@ -543,10 +543,11 @@ private fun AvailabilityFormDialog(
                                         shape = RoundedCornerShape(10.dp),
                                         modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                                     ) {
-                                        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 15.dp), verticalAlignment = Alignment.CenterVertically) {
-                                            Text(center.name, modifier = Modifier.weight(1f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodyLarge)
-                                            Spacer(modifier = Modifier.width(12.dp))
-                                            Icon(Icons.Default.RadioButtonUnchecked, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 15.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(center.name, textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
                                         }
                                     }
                                 }

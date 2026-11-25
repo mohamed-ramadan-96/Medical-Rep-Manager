@@ -14,6 +14,7 @@ import androidx.compose.animation.core.animateFloatAsState
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -368,6 +369,7 @@ private fun CenterFormDialog(
     var mapUrl by remember(initial) { mutableStateOf(initial?.mapUrl) }
     var showMapPicker by remember { mutableStateOf(false) }
     var editCenterLocation by remember { mutableStateOf(false) }
+    var locationSectionExpanded by remember(initial) { mutableStateOf(false) }
     var nameError by remember { mutableStateOf(false) }
 
     val dialogMaxHeight = LocalConfiguration.current.screenHeightDp.dp * 0.88f
@@ -449,76 +451,107 @@ private fun CenterFormDialog(
                     )
                 }
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(if (isArabic) "موقع المركز على الخريطة" else "Center map location", style = MaterialTheme.typography.labelLarge)
-                        if (latitude != null && longitude != null) {
-                            CenterMapPreview(
-                                latitude = latitude,
-                                longitude = longitude,
-                                modifier = Modifier.fillMaxWidth().height(150.dp)
-                            )
-                            Text(
-                                String.format(java.util.Locale.US, "%.6f, %.6f", latitude, longitude),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            OutlinedButton(
-                                modifier = Modifier.fillMaxWidth(),
-                                onClick = { openSavedMapLocation(context, latitude, longitude, mapUrl) }
-                            ) {
-                                Text(if (isArabic) "عرض المكان على الخريطة" else "View place on map")
+                    val hasCenterLocation = (latitude != null && longitude != null) || !mapUrl.isNullOrBlank()
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                locationSectionExpanded = !locationSectionExpanded
+                            }.padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(
+                                    if (isArabic) "موقع المركز على الخريطة" else "Center map location",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    when {
+                                        latitude != null && longitude != null ->
+                                            String.format(java.util.Locale.US, "%.5f, %.5f", latitude, longitude)
+                                        hasCenterLocation -> if (isArabic) "موقع محفوظ" else "Location saved"
+                                        else -> if (isArabic) "لم يتم تحديد موقع" else "No location selected"
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
+                                )
                             }
-                        } else if (!mapUrl.isNullOrBlank()) {
-                            OutlinedButton(
-                                modifier = Modifier.fillMaxWidth(),
-                                onClick = { openSavedMapLocation(context, latitude, longitude, mapUrl) }
-                            ) {
-                                Text(if (isArabic) "عرض المكان على الخريطة" else "View place on map")
-                            }
-                        } else {
-                            Text(
-                                if (isArabic) "لم يتم تحديد موقع لهذا المركز بعد." else "No map location has been set for this center.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            Icon(
+                                imageVector = if (locationSectionExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = if (isArabic) "تفاصيل الموقع" else "Location details"
                             )
                         }
-                        val hasCenterLocation = (latitude != null && longitude != null) || !mapUrl.isNullOrBlank()
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        AnimatedVisibility(
+                            visible = locationSectionExpanded,
+                            enter = expandVertically(animationSpec = tween(AppMotion.Standard)) + fadeIn(animationSpec = tween(AppMotion.Standard)),
+                            exit = shrinkVertically(animationSpec = tween(AppMotion.Standard)) + fadeOut(animationSpec = tween(AppMotion.Fast))
                         ) {
-                            if (hasCenterLocation) {
-                                OutlinedButton(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    onClick = {
-                                        latitude = null
-                                        longitude = null
-                                        mapUrl = null
-                                        editCenterLocation = false
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                if (latitude != null && longitude != null) {
+                                    CenterMapPreview(
+                                        latitude = latitude,
+                                        longitude = longitude,
+                                        modifier = Modifier.fillMaxWidth().height(120.dp)
+                                    )
+                                    OutlinedButton(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        onClick = { openSavedMapLocation(context, latitude, longitude, mapUrl) },
+                                        shape = MaterialTheme.shapes.small
+                                    ) {
+                                        Text(if (isArabic) "عرض المكان على الخريطة" else "View place on map")
                                     }
-                                ) {
-                                    Text(if (isArabic) "مسح الموقع" else "Clear location")
+                                } else if (hasCenterLocation) {
+                                    OutlinedButton(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        onClick = { openSavedMapLocation(context, latitude, longitude, mapUrl) },
+                                        shape = MaterialTheme.shapes.small
+                                    ) {
+                                        Text(if (isArabic) "عرض المكان على الخريطة" else "View place on map")
+                                    }
+                                } else {
+                                    Text(
+                                        if (isArabic) "لم يتم تحديد موقع لهذا المركز بعد." else "No map location has been set for this center.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
-                                OutlinedButton(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    onClick = { editCenterLocation = !editCenterLocation }
-                                ) {
-                                    Text(if (isArabic) "تعديل الموقع" else "Edit location")
-                                }
-                            }
-                            AnimatedLocationActions(visible = !hasCenterLocation || editCenterLocation) {
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    CurrentLocationButton(isArabic = isArabic) { lat, lon ->
-                                        latitude = lat
-                                        longitude = lon
-                                        mapUrl = null
-                                        editCenterLocation = false
+                                if (hasCenterLocation) {
+                                    OutlinedButton(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        onClick = {
+                                            latitude = null
+                                            longitude = null
+                                            mapUrl = null
+                                            editCenterLocation = false
+                                        },
+                                        shape = MaterialTheme.shapes.small
+                                    ) {
+                                        Text(if (isArabic) "مسح الموقع" else "Clear location")
                                     }
                                     OutlinedButton(
                                         modifier = Modifier.fillMaxWidth(),
-                                        onClick = { showMapPicker = true }
+                                        onClick = { editCenterLocation = !editCenterLocation },
+                                        shape = MaterialTheme.shapes.small
                                     ) {
-                                        Text(if (isArabic) "اختيار من الخريطة" else "Choose on map")
+                                        Text(if (isArabic) "تعديل الموقع" else "Edit location")
+                                    }
+                                }
+                                AnimatedLocationActions(visible = !hasCenterLocation || editCenterLocation) {
+                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        CurrentLocationButton(isArabic = isArabic) { lat, lon ->
+                                            latitude = lat
+                                            longitude = lon
+                                            mapUrl = null
+                                            editCenterLocation = false
+                                        }
+                                        OutlinedButton(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            onClick = { showMapPicker = true },
+                                            shape = MaterialTheme.shapes.small
+                                        ) {
+                                            Text(if (isArabic) "اختيار من الخريطة" else "Choose on map")
+                                        }
                                     }
                                 }
                             }

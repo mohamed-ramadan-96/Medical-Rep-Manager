@@ -231,14 +231,6 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
             verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
         ) {
             item {
- -it 
-            } +
-                    expandVertically(animationSpec = tween(AppMotion.Emphasized), expandFrom = Alignment.Top) +
-                    fadeIn(animationSpec = tween(AppMotion.Emphasized)),
-                exit = slideOutVertically(animationSpec = tween(AppMotion.Emphasized)) { -it } +
-                    shrinkVertically(animationSpec = tween(AppMotion.Emphasized), shrinkTowards = Alignment.Top) +
-                    fadeOut(animationSpec = tween(AppMotion.Emphasized))
-            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -438,11 +430,17 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
             }
             }
             if (doctors.isEmpty()) {
-                Text(if (isArabic) "أضف طبيباً أولاً حتى تتمكن من تحديد مواعيده." else "Add a doctor first to define their availability.", modifier = Modifier.padding(top = 20.dp))
+                item {
+                    Text(if (isArabic) "أضف طبيباً أولاً حتى تتمكن من تحديد مواعيده." else "Add a doctor first to define their availability.", modifier = Modifier.padding(top = 20.dp))
+                }
             } else if (groupedSlots.isEmpty()) {
-                Text(if (isArabic) "لم تتم إضافة مواعيد متاحة بعد. اضغط + للبدء." else "No availability added yet. Tap + to get started.", modifier = Modifier.padding(top = 20.dp))
+                item {
+                    Text(if (isArabic) "لم تتم إضافة مواعيد متاحة بعد. اضغط + للبدء." else "No availability added yet. Tap + to get started.", modifier = Modifier.padding(top = 20.dp))
+                }
             } else if (filteredGroups.isEmpty()) {
-                Text(if (isArabic) "لا توجد مواعيد مطابقة للاختيارات." else "No availability matches these filters.", modifier = Modifier.padding(top = 20.dp))
+                item {
+                    Text(if (isArabic) "لا توجد مواعيد مطابقة للاختيارات." else "No availability matches these filters.", modifier = Modifier.padding(top = 20.dp))
+                }
             } else {
 
                     items(filteredGroups, key = { group -> group.first().id }) { group ->

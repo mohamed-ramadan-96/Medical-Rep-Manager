@@ -700,30 +700,6 @@ private fun AvailabilitySelectionField(
     label: String,
     value: String,
     onClick: () -> Unit,
-    isError: Boolean = false
-) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(10.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        border = BorderStroke(
-            if (isError) 1.5.dp else 1.dp,
-            if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant
-        )
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
-        }
-    }
-}
-
-@Composable
-private fun AvailabilitySelectionField(
-    label: String,
-    value: String,
-    onClick: () -> Unit,
     isError: Boolean = false,
     isRequired: Boolean = false
 ) {

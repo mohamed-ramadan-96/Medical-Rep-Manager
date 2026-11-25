@@ -556,6 +556,11 @@ private fun AvailabilityFormDialog(
                                 }
                             }
                             if (draft.days.isEmpty()) Text(if (isArabic) "اختر يوم واحد على الأقل" else "Select at least one day", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 2.dp),
+                                thickness = 1.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.28f)
+                            )
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 val workDays = setOf(6, 7, 1, 2, 3, 4)
                                 val quickOptions = listOf(
@@ -580,7 +585,6 @@ private fun AvailabilityFormDialog(
                             }
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                                    Text(if (isArabic) "من" else "From", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     AvailabilitySelectionField(
                                         label = if (isArabic) "من" else "From",
                                         value = displayAvailabilityTime(draft.startTime, isArabic),
@@ -588,7 +592,6 @@ private fun AvailabilityFormDialog(
                                     )
                                 }
                                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                                    Text(if (isArabic) "إلى" else "To", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     AvailabilitySelectionField(
                                         label = if (isArabic) "إلى" else "To",
                                         value = displayAvailabilityTime(draft.endTime, isArabic),

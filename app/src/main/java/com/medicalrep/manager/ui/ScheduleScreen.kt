@@ -9,6 +9,22 @@ import androidx.compose.material3.Surface
 import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material3.Divider
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import kotlinx.coroutines.launch
+import java.time.LocalTime
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -386,30 +402,71 @@ private fun AvailabilityFormDialog(
         mutableStateOf(initial?.centerId ?: doctorCenterLinks.firstOrNull { it.doctorId == selectedDoctorId }?.centerId ?: doctors.firstOrNull { it.id == selectedDoctorId }?.centerId)
     }
     var error by remember { mutableStateOf<String?>(null) }
+    var centerError by remember { mutableStateOf(false) }
     var timePickerTarget by remember { mutableStateOf<Pair<Int, Boolean>?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     val linkedCenters = centers.filter { center ->
         doctorCenterLinks.any { it.doctorId == selectedDoctorId && it.centerId == center.id } ||
             (doctorCenterLinks.none { it.doctorId == selectedDoctorId } && doctors.firstOrNull { it.id == selectedDoctorId }?.centerId == center.id)
     }
+    val validTime = Regex("(?:[01]\\d|2[0-3]):[0-5]\\d")
+    val hasInvalidDays = drafts.any { it.days.isEmpty() }
+    val hasInvalidTime = drafts.any { !validTime.matches(it.startTime) || !validTime.matches(it.endTime) || it.endTime <= it.startTime }
+    val overlappingPeriod = drafts.indices.firstOrNull { index ->
+        val current = drafts[index]
+        drafts.indices.any { otherIndex ->
+            otherIndex != index && current.days.intersect(drafts[otherIndex].days).isNotEmpty() &&
+                current.startTime < drafts[otherIndex].endTime && drafts[otherIndex].startTime < current.endTime
+        }
+    }
+    val formError = when {
+        selectedDoctorId == null -> if (isArabic) "اختر الطبيب أولاً" else "Choose a doctor first"
+        selectedCenterId == null || linkedCenters.none { it.id == selectedCenterId } -> if (isArabic) "اختر المركز أولاً" else "Choose a center first"
+        hasInvalidDays -> if (isArabic) "اختر يومًا واحدًا على الأقل لكل فترة" else "Select at least one day for each period"
+        hasInvalidTime -> if (isArabic) "وقت النهاية لازم يكون بعد البداية" else "End time must be after start time"
+        overlappingPeriod != null -> if (isArabic) "يوجد تداخل في مواعيد الفترة ${overlappingPeriod + 1}" else "Time overlap in period ${overlappingPeriod + 1}"
+        else -> null
+    }
+    val canSave = formError == null
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (initialGroup.isEmpty()) { if (isArabic) "إضافة مواعيد للطبيب" else "Add doctor availability" } else { if (isArabic) "تعديل الفترة" else "Edit time slot" }) },
+        title = {
+            Text(
+                if (initialGroup.isEmpty()) { if (isArabic) "إضافة مواعيد للطبيب" else "Add doctor availability" }
+                else { if (isArabic) "تعديل المواعيد" else "Edit availability" },
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 OutlinedSelectionField(
                     label = if (isArabic) "الطبيب" else "Doctor",
-                    value = doctors.firstOrNull { it.id == selectedDoctorId }?.name
-                        ?: if (isArabic) "اختر الطبيب" else "Choose doctor",
+                    value = doctors.firstOrNull { it.id == selectedDoctorId }?.name ?: if (isArabic) "اختر الطبيب" else "Choose doctor",
                     onClick = { doctorMenu = true }
                 )
                 DropdownMenu(expanded = doctorMenu, onDismissRequest = { doctorMenu = false }) {
                     doctors.forEach { doctor ->
-                        DropdownMenuItem(text = { Text(doctor.name) }, onClick = { selectedDoctorId = doctor.id; selectedCenterId = doctorCenterLinks.firstOrNull { it.doctorId == doctor.id }?.centerId ?: doctor.centerId; doctorMenu = false })
+                        DropdownMenuItem(
+                            text = { Text(doctor.name) },
+                            onClick = {
+                                selectedDoctorId = doctor.id
+                                selectedCenterId = doctorCenterLinks.firstOrNull { it.doctorId == doctor.id }?.centerId ?: doctor.centerId
+                                centerError = false
+                                doctorMenu = false
+                            }
+                        )
                     }
                 }
                 OutlinedSelectionField(
-                    label = if (isArabic) "المركز" else "Center",
+                    label = if (isArabic) "المركز • مطلوب" else "Center • Required",
                     value = linkedCenters.firstOrNull { it.id == selectedCenterId }?.name
                         ?: if (isArabic) "اختر المركز" else "Choose center",
                     onClick = { centerMenu = true },
@@ -417,118 +474,195 @@ private fun AvailabilityFormDialog(
                 )
                 DropdownMenu(expanded = centerMenu, onDismissRequest = { centerMenu = false }) {
                     linkedCenters.forEach { center ->
-                        DropdownMenuItem(text = { Text(center.name) }, onClick = { selectedCenterId = center.id; centerMenu = false })
+                        DropdownMenuItem(text = { Text(center.name) }, onClick = { selectedCenterId = center.id; centerError = false; centerMenu = false })
                     }
                 }
-                Text(
-                    if (isArabic) "كل فترة لها أيامها وساعاتها المستقلة" else "Each time slot has its own days and hours",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f, fill = false)) {
-                    items(drafts.size) { index ->
-                        val draft = drafts[index]
-                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
-                            Column(modifier = Modifier.fillMaxWidth().padding(AppSpacing.md), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        (if (isArabic) "الفترة " else "Time slot ") + (index + 1),
-                                        modifier = Modifier.weight(1f),
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    if (drafts.size > 1) {
-                                        TextButton(onClick = { drafts = drafts.filterIndexed { i, _ -> i != index }; error = null }) {
-                                            Text(if (isArabic) "حذف الفترة" else "Remove")
+                if (centerError) {
+                    Text(if (isArabic) "اختر المركز أولا" else "Choose a center first", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
+
+                drafts.forEachIndexed { index, draft ->
+                    val overlap = drafts.indices.any { otherIndex ->
+                        otherIndex != index && draft.days.intersect(drafts[otherIndex].days).isNotEmpty() &&
+                            draft.startTime < drafts[otherIndex].endTime && drafts[otherIndex].startTime < draft.endTime
+                    }
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Text((if (isArabic) "الفترة " else "Period ") + (index + 1), modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                                if (drafts.size > 1) {
+                                    TextButton(onClick = {
+                                        val removed = drafts[index]
+                                        drafts = drafts.filterIndexed { i, _ -> i != index }
+                                        error = null
+                                        scope.launch {
+                                            val result = snackbarHostState.showSnackbar(
+                                                message = if (isArabic) "تم حذف الفترة ${index + 1}" else "Period ${index + 1} deleted",
+                                                actionLabel = if (isArabic) "تراجع" else "Undo",
+                                                withDismissAction = true
+                                            )
+                                            if (result == SnackbarResult.ActionPerformed) drafts = (drafts.toMutableList().also { it.add(index.coerceAtMost(it.size), removed) })
                                         }
+                                    }) {
+                                        Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف الفترة" else "Delete period", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                                        Text(if (isArabic) "حذف" else "Delete", color = MaterialTheme.colorScheme.error)
                                     }
                                 }
-                                Text(if (isArabic) "أيام التواجد" else "Available days", style = MaterialTheme.typography.labelMedium)
-                                weekDays.chunked(2).forEach { dayPair ->
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        dayPair.forEach { (number, names) ->
-                                            Row(
-                                                modifier = Modifier.weight(1f),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Checkbox(
-                                                    checked = number in draft.days,
-                                                    onCheckedChange = { checked ->
-                                                        val updated = if (checked) draft.days + number else draft.days - number
-                                                        drafts = drafts.toMutableList().also { it[index] = draft.copy(days = updated) }
-                                                        error = null
-                                                    }
-                                                )
-                                                Text(if (isArabic) names.second else names.first)
-                                            }
-                                        }
-                                        if (dayPair.size == 1) Spacer(Modifier.weight(1f))
-                                    }
-                                }
-                                OutlinedSelectionField(
-                                    label = if (isArabic) "من" else "From",
-                                    value = displayAvailabilityTime(draft.startTime),
-                                    onClick = { timePickerTarget = index to true }
-                                )
-                                OutlinedSelectionField(
-                                    label = if (isArabic) "إلى" else "To",
-                                    value = displayAvailabilityTime(draft.endTime),
-                                    onClick = { timePickerTarget = index to false }
-                                )
-                                OutlinedTextField(
-                                    value = draft.notes,
-                                    onValueChange = { value -> drafts = drafts.toMutableList().also { it[index] = draft.copy(notes = value) } },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    label = { Text(if (isArabic) "ملاحظات للفترة (اختياري)" else "Slot notes (optional)") }
-                                )
                             }
+                            Text(if (isArabic) "أيام التواجد" else "Available days", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                                weekDays.forEach { (day, names) ->
+                                    val selected = day in draft.days
+                                    Surface(
+                                        modifier = Modifier.weight(1f).height(36.dp),
+                                        onClick = {
+                                            val updated = if (selected) draft.days - day else draft.days + day
+                                            drafts = drafts.toMutableList().also { it[index] = draft.copy(days = updated) }
+                                            error = null
+                                        },
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                        border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                            Text(
+                                                if (isArabic) names.second else names.first.take(3),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            if (draft.days.isEmpty()) Text(if (isArabic) "اختر يوم واحد على الأقل" else "Select at least one day", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                val workDays = setOf(6, 7, 1, 2, 3, 4)
+                                val quickOptions = listOf(
+                                    (if (isArabic) "أيام العمل" else "Work days") to workDays,
+                                    (if (isArabic) "كل الأيام" else "All days") to weekDays.map { it.first }.toSet(),
+                                    (if (isArabic) "مسح" else "Clear") to emptySet()
+                                )
+                                quickOptions.forEach { (label, days) ->
+                                    val active = draft.days == days
+                                    Surface(
+                                        modifier = Modifier.weight(1f).height(36.dp),
+                                        onClick = { drafts = drafts.toMutableList().also { it[index] = draft.copy(days = days) }; error = null },
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = if (active) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text(label, style = MaterialTheme.typography.labelSmall, color = if (active) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                                        }
+                                    }
+                                }
+                            }
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                    Text(if (isArabic) "من" else "From", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    OutlinedSelectionField(label = "", value = displayAvailabilityTime(draft.startTime, isArabic), onClick = { timePickerTarget = index to true })
+                                }
+                                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                    Text(if (isArabic) "إلى" else "To", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    OutlinedSelectionField(label = "", value = displayAvailabilityTime(draft.endTime, isArabic), onClick = { timePickerTarget = index to false }, isError = draft.endTime <= draft.startTime)
+                                }
+                            }
+                            if (draft.endTime <= draft.startTime) Text(if (isArabic) "وقت النهاية لازم يكون بعد البداية" else "End time must be after start time", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                            if (overlap) Text(if (isArabic) "تحذير: هذه الفترة تتداخل مع فترة أخرى في نفس اليوم" else "Warning: this period overlaps another period on the same day", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                            val startMinutes = draft.startTime.split(":").let { (it.getOrNull(0)?.toIntOrNull() ?: 9) * 60 + (it.getOrNull(1)?.toIntOrNull() ?: 0) }
+                            val endMinutes = draft.endTime.split(":").let { (it.getOrNull(0)?.toIntOrNull() ?: 17) * 60 + (it.getOrNull(1)?.toIntOrNull() ?: 0) }
+                            val hours = (endMinutes - startMinutes) / 60.0
+                            val daySummary = when (draft.days) {
+                                weekDays.map { it.first }.toSet() -> if (isArabic) "كل الأيام" else "All days"
+                                setOf(6, 7, 1, 2, 3, 4) -> if (isArabic) "أيام العمل" else "Work days"
+                                else -> weekDays.filter { it.first in draft.days }.joinToString("، ") { if (isArabic) it.second.second else it.second.first }
+                            }
+                            if (!overlap && draft.days.isNotEmpty() && draft.endTime > draft.startTime) {
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.secondaryContainer,
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f))
+                                ) {
+                                    Text(
+                                        "✓ $daySummary، ${if (isArabic) "من" else "from"} ${displayAvailabilityTime(draft.startTime, isArabic)} ${if (isArabic) "إلى" else "to"} ${displayAvailabilityTime(draft.endTime, isArabic)} (${String.format(Locale.US, "%.1f", hours).trimEnd('0').trimEnd('.')} ${if (isArabic) "ساعات" else "hours"})",
+                                        modifier = Modifier.padding(8.dp),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                }
+                            }
+                            OutlinedTextField(
+                                value = draft.notes,
+                                onValueChange = { value -> drafts = drafts.toMutableList().also { it[index] = draft.copy(notes = value) } },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                shape = RoundedCornerShape(10.dp),
+                                label = { Text(if (isArabic) "ملاحظات الفترة (اختياري)" else "Period notes (optional)") },
+                                placeholder = { Text(if (isArabic) "مثال: بالحجز فقط" else "e.g. By appointment only") }
+                            )
                         }
                     }
                 }
-                TextButton(onClick = { drafts = drafts + AvailabilityDraft(); error = null }) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(20.dp))
-                    Text(if (isArabic) "إضافة فترة بمواعيد مختلفة" else "Add another time slot")
+                OutlinedButton(
+                    onClick = { drafts = drafts + AvailabilityDraft(); error = null },
+                    modifier = Modifier.fillMaxWidth().height(46.dp),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(if (isArabic) "إضافة فترة بمواعيد مختلفة" else "Add period with different hours")
                 }
-                error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                SnackbarHost(hostState = snackbarHostState)
+                if (error != null) Text(error.orEmpty(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                val validTime = Regex("(?:[01]\\d|2[0-3]):[0-5]\\d")
-                when {
-                    selectedDoctorId == null -> error = if (isArabic) "اختر الطبيب." else "Choose a doctor."
-                    linkedCenters.isNotEmpty() && selectedCenterId == null -> error = if (isArabic) "اختر المركز." else "Choose a center."
-                    drafts.isEmpty() -> error = if (isArabic) "أضف فترة واحدة على الأقل." else "Add at least one time slot."
-                    drafts.any { it.days.isEmpty() } -> error = if (isArabic) "اختار يومًا واحدًا على الأقل لكل فترة." else "Select at least one day for every time slot."
-                    drafts.any { !validTime.matches(it.startTime) || !validTime.matches(it.endTime) } -> error = if (isArabic) "اكتب كل الأوقات بصيغة HH:MM." else "Enter every time in HH:MM format."
-                    drafts.any { it.endTime <= it.startTime } -> error = if (isArabic) "وقت النهاية يجب أن يكون بعد البداية في كل فترة." else "Each end time must be after its start time."
-                    else -> {
-                        val oldByDay = initialGroup.associateBy { it.dayOfWeek }
-                        val result = drafts.flatMap { draft ->
-                            draft.days.sorted().map { day ->
-                                val old = oldByDay[day].takeIf { drafts.size == 1 }
-                                DoctorAvailabilityEntity(
-                                    id = old?.id ?: 0L,
-                                    doctorId = selectedDoctorId!!,
-                                    dayOfWeek = day,
-                                    startTime = draft.startTime,
-                                    endTime = draft.endTime,
-                                    notes = draft.notes.trim(),
-                                    createdAt = old?.createdAt ?: System.currentTimeMillis(),
-                                    slotGroupId = draft.groupId,
-                                    centerId = selectedCenterId
-                                )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Button(
+                    enabled = canSave,
+                    onClick = {
+                        if (selectedCenterId == null || linkedCenters.none { it.id == selectedCenterId }) {
+                            centerError = true
+                            error = if (isArabic) "اختر المركز أولا" else "Choose a center first"
+                        } else {
+                            val oldByDay = initialGroup.associateBy { it.dayOfWeek }
+                            val result = drafts.flatMap { draft ->
+                                draft.days.sorted().map { day ->
+                                    val old = oldByDay[day].takeIf { drafts.size == 1 }
+                                    DoctorAvailabilityEntity(
+                                        id = old?.id ?: 0L,
+                                        doctorId = selectedDoctorId!!,
+                                        dayOfWeek = day,
+                                        startTime = draft.startTime,
+                                        endTime = draft.endTime,
+                                        notes = draft.notes.trim(),
+                                        createdAt = old?.createdAt ?: System.currentTimeMillis(),
+                                        slotGroupId = draft.groupId,
+                                        centerId = selectedCenterId
+                                    )
+                                }
                             }
+                            onSave(result)
                         }
-                        onSave(result)
-                    }
+                    },
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    shape = RoundedCornerShape(10.dp)
+                ) { Text(if (isArabic) "حفظ المواعيد" else "Save availability", fontWeight = FontWeight.Bold) }
+                OutlinedButton(onClick = onDismiss, modifier = Modifier.height(48.dp), shape = RoundedCornerShape(10.dp)) {
+                    Text(if (isArabic) "إلغاء" else "Cancel")
                 }
-            }) { Text(if (isArabic) "حفظ" else "Save") }
+            }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(if (isArabic) "إلغاء" else "Cancel") } }
+        dismissButton = {}
     )
 
     timePickerTarget?.let { (draftIndex, isStart) ->
@@ -552,12 +686,13 @@ private fun AvailabilityFormDialog(
     }
 }
 
-private fun displayAvailabilityTime(value: String): String {
+private fun displayAvailabilityTime(value: String, isArabic: Boolean): String {
     val pieces = value.split(":")
     val hour = pieces.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 23) ?: 9
     val minute = pieces.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 59) ?: 0
+    val suffix = if (hour < 12) (if (isArabic) "ص" else "AM") else (if (isArabic) "م" else "PM")
     val displayHour = when (hour % 12) { 0 -> 12; else -> hour % 12 }
-    return String.format(Locale.US, "%02d:%02d", displayHour, minute)
+    return String.format(Locale.US, "%02d:%02d %s", displayHour, minute, suffix)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

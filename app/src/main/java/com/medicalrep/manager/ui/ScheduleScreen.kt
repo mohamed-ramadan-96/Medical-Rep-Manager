@@ -510,7 +510,31 @@ private fun AvailabilityFormDialog(
                                     }
                                 }
                             }
-                            Text(if (isArabic) "أيام التواجد" else "Available days", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(if (isArabic) "أيام التواجد" else "Available days", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                TextButton(
+                                    onClick = {
+                                        val allDays = weekDays.map { it.first }.toSet()
+                                        val updated = if (draft.days == allDays) emptySet() else allDays
+                                        drafts = drafts.toMutableList().also { it[index] = draft.copy(days = updated) }
+                                        error = null
+                                    },
+                                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                                ) {
+                                    Text(
+                                        if (draft.days == weekDays.map { it.first }.toSet()) {
+                                            if (isArabic) "إلغاء تحديد الكل" else "Clear all"
+                                        } else {
+                                            if (isArabic) "تحديد الكل" else "Select all"
+                                        },
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
+                            }
                             FlowRow(
                                 modifier = Modifier.fillMaxWidth(),
                                 maxItemsInEachRow = 4,
@@ -546,33 +570,6 @@ private fun AvailabilityFormDialog(
                                 }
                             }
                             if (draft.days.isEmpty()) Text(if (isArabic) "اختر يوم واحد على الأقل" else "Select at least one day", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                            HorizontalDivider(
-                                modifier = Modifier.padding(vertical = 2.dp),
-                                thickness = 1.dp,
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.28f)
-                            )
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                val workDays = setOf(6, 7, 1, 2, 3, 4)
-                                val quickOptions = listOf(
-                                    (if (isArabic) "أيام العمل" else "Work days") to workDays,
-                                    (if (isArabic) "كل الأيام" else "All days") to weekDays.map { it.first }.toSet(),
-                                    (if (isArabic) "مسح" else "Clear") to emptySet()
-                                )
-                                quickOptions.forEach { (label, days) ->
-                                    val active = draft.days == days
-                                    Surface(
-                                        modifier = Modifier.weight(1f).height(40.dp),
-                                        onClick = { drafts = drafts.toMutableList().also { it[index] = draft.copy(days = days) }; error = null },
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = if (active) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
-                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp)) {
-                                            Text(label, style = MaterialTheme.typography.labelSmall, color = if (active) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
-                                        }
-                                    }
-                                }
-                            }
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                                     AvailabilitySelectionField(

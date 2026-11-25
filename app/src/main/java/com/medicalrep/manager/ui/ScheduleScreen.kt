@@ -427,7 +427,8 @@ private fun AvailabilityFormDialog(
         hasInvalidTime -> if (isArabic) "وقت النهاية لازم يكون بعد البداية" else "End time must be after start time"
         else -> null
     }
-    val canSave = formError == null || ((selectedCenterId == null || selectableCenters.none { it.id == selectedCenterId }) && !centerError)
+    val centerMissing = selectedCenterId == null || selectableCenters.none { it.id == selectedCenterId }
+    val canSave = formError == null || (centerMissing && !centerError && selectedDoctorId != null && !hasInvalidDays && !hasInvalidTime)
 
     AlertDialog(
         onDismissRequest = onDismiss,

@@ -422,13 +422,12 @@ private fun AvailabilityFormDialog(
     }
     val formError = when {
         selectedDoctorId == null -> if (isArabic) "اختر الطبيب أولاً" else "Choose a doctor first"
-        selectedCenterId == null || linkedCenters.none { it.id == selectedCenterId } -> if (isArabic) "اختر المركز أولاً" else "Choose a center first"
+        selectedCenterId == null || selectableCenters.none { it.id == selectedCenterId } -> if (isArabic) "اختر المركز أولاً" else "Choose a center first"
         hasInvalidDays -> if (isArabic) "اختر يومًا واحدًا على الأقل لكل فترة" else "Select at least one day for each period"
         hasInvalidTime -> if (isArabic) "وقت النهاية لازم يكون بعد البداية" else "End time must be after start time"
-        overlappingPeriod != null -> if (isArabic) "يوجد تداخل في مواعيد الفترة ${overlappingPeriod + 1}" else "Time overlap in period ${overlappingPeriod + 1}"
         else -> null
     }
-    val canSave = formError == null || ((selectedCenterId == null || linkedCenters.none { it.id == selectedCenterId }) && !centerError)
+    val canSave = formError == null || ((selectedCenterId == null || selectableCenters.none { it.id == selectedCenterId }) && !centerError)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -640,7 +639,7 @@ private fun AvailabilityFormDialog(
                 Button(
                     enabled = canSave,
                     onClick = {
-                        if (selectedCenterId == null || linkedCenters.none { it.id == selectedCenterId }) {
+                        if (selectedCenterId == null || selectableCenters.none { it.id == selectedCenterId }) {
                             centerError = true
                             error = if (isArabic) "اختر المركز أولا" else "Choose a center first"
                         } else {

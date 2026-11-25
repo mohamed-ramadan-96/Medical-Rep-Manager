@@ -24,6 +24,7 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import java.time.LocalTime
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow

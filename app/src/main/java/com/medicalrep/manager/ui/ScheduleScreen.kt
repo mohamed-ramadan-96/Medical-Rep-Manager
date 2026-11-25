@@ -55,7 +55,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.snapshotFlow
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items

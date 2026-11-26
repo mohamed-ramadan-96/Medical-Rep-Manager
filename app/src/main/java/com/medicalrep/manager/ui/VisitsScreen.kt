@@ -360,7 +360,7 @@ private fun VisitFormDialog(
                     label = { Text(if (isArabic) "تاريخ الزيارة (YYYY-MM-DD)" else "Visit date (YYYY-MM-DD)") }
                 )
                 OutlinedTextField(
-                    shape = MaterialTheme.shapes.small,
+                    shape = RoundedCornerShape(10.dp),
                     value = time,
                     onValueChange = { time = it; error = null },
                     modifier = Modifier.fillMaxWidth(),
@@ -368,7 +368,7 @@ private fun VisitFormDialog(
                     label = { Text(if (isArabic) "الوقت (HH:MM)" else "Time (HH:MM)") }
                 )
                 OutlinedTextField(
-                    shape = MaterialTheme.shapes.small,
+                    shape = RoundedCornerShape(10.dp),
                     value = outcome,
                     onValueChange = { outcome = it },
                     modifier = Modifier.fillMaxWidth(),
@@ -376,14 +376,14 @@ private fun VisitFormDialog(
                     label = { Text(if (isArabic) "نتيجة الزيارة" else "Visit outcome") }
                 )
                 OutlinedTextField(
-                    shape = MaterialTheme.shapes.small,
+                    shape = RoundedCornerShape(10.dp),
                     value = notes,
                     onValueChange = { notes = it },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(if (isArabic) "ملاحظات الزيارة" else "Visit notes") }
                 )
                 OutlinedTextField(
-                    shape = MaterialTheme.shapes.small,
+                    shape = RoundedCornerShape(10.dp),
                     value = followUpDate,
                     onValueChange = { followUpDate = it; error = null },
                     modifier = Modifier.fillMaxWidth(),

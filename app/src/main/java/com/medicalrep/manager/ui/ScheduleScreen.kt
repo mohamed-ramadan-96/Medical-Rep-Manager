@@ -685,8 +685,7 @@ private fun AvailabilityFormDialog(
                 AvailabilitySelectionField(
                     label = if (isArabic) "الطبيب" else "Doctor",
                     value = doctors.firstOrNull { it.id == selectedDoctorId }?.name ?: if (isArabic) "اختر الطبيب" else "Choose doctor",
-                    onClick = { doctorSearch = ""; doctorMenu = true },
-                    largeCardStyle = true
+                    onClick = { doctorSearch = ""; doctorMenu = true }
                 )
                 if (doctorMenu) {
                     ModalBottomSheet(
@@ -741,8 +740,7 @@ private fun AvailabilityFormDialog(
                     label = if (isArabic) "المركز" else "Center",
                     value = selectableCenters.firstOrNull { it.id == selectedCenterId }?.name
                         ?: if (isArabic) "اختر المركز" else "Choose center",
-                    onClick = { centerSearch = ""; centerMenu = true },
-                    largeCardStyle = true
+                    onClick = { centerSearch = ""; centerMenu = true }
                 )
                 if (centerMenu) {
                     ModalBottomSheet(
@@ -1034,23 +1032,14 @@ private fun AvailabilitySelectionField(
     onClick: () -> Unit,
     isError: Boolean = false,
     isRequired: Boolean = false,
-    isTimeField: Boolean = false,
-    largeCardStyle: Boolean = false
+    isTimeField: Boolean = false
 ) {
     Surface(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(10.dp),
-        color = when {
-            isTimeField -> MaterialTheme.colorScheme.surfaceContainerHigh
-            largeCardStyle -> AppLargeCardContainerColor()
-            else -> AppCardContainerColor()
-        },
-        border = when {
-            isTimeField -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-            largeCardStyle -> AppLargeCardBorder()
-            else -> null
-        }
+        color = if (isTimeField) MaterialTheme.colorScheme.surfaceContainerHigh else AppCardContainerColor(),
+        border = if (isTimeField) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),

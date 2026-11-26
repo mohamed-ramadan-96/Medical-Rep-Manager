@@ -200,7 +200,7 @@ private fun FormExpandableSection(
 ) {
     Surface(
         shape = RoundedCornerShape(10.dp),
-        color = AppCardContainerColor(),
+        color = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier
             .fillMaxWidth()
     ) {

@@ -1,6 +1,7 @@
 package com.medicalrep.manager.ui
 
 import com.medicalrep.manager.ui.theme.AppSpacing
+import com.medicalrep.manager.ui.theme.AppDialogContainerColor
 
 import com.medicalrep.manager.ui.theme.AppMotion
 import com.medicalrep.manager.ui.theme.AppCardContainerColor
@@ -77,6 +78,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -667,6 +669,7 @@ private fun AvailabilityFormDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
         title = {
             Text(
                 if (initialGroup.isEmpty()) { if (isArabic) "إضافة مواعيد للطبيب" else "Add doctor availability" }

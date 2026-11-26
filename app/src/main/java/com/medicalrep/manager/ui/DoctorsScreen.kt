@@ -1413,8 +1413,7 @@ private fun DoctorFormDialog(
                         label = if (isArabic) "التخصص" else "Specialty",
                         value = specialties.firstOrNull { it.id == selectedSpecialtyId }?.name
                             ?: if (isArabic) "بدون تخصص — اختر من القائمة" else "No specialty — choose one",
-                        onClick = { showSpecialtyPicker = true },
-                        largeCardStyle = true
+                        onClick = { showSpecialtyPicker = true }
                     )
                 }
                 item {
@@ -1460,8 +1459,7 @@ private fun DoctorFormDialog(
                         value = if (selectedAreas.isEmpty()) {
                             if (isArabic) "اختر منطقة أو أكثر" else "Choose one or more areas"
                         } else selectedAreas.sorted().joinToString("، "),
-                        onClick = { showAreaPicker = true },
-                        largeCardStyle = true
+                        onClick = { showAreaPicker = true }
                     )
                 }
                 if (showAreaPicker) item {
@@ -1519,8 +1517,7 @@ private fun DoctorFormDialog(
                             label = if (isArabic) "المراكز المرتبط بها" else "Linked centers",
                             value = if (selectedCenterIds.isEmpty()) if (isArabic) "بدون مركز مسجل" else "No linked center"
                                 else centers.filter { it.id in selectedCenterIds }.joinToString("، ") { it.name },
-                            onClick = { showCenterPicker = true },
-                            largeCardStyle = true
+                            onClick = { showCenterPicker = true }
                         )
                         Text(if (isArabic) "يمكن إضافة مواعيد عامة حتى لو الطبيب غير مرتبط بمركز." else "General availability is allowed even when no center is linked.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }

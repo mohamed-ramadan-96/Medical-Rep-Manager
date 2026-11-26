@@ -18,6 +18,8 @@ import androidx.compose.material3.TextFieldColors
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.medicalrep.manager.ui.theme.AppCardContainerColor
+import com.medicalrep.manager.ui.theme.AppLargeCardBorder
+import com.medicalrep.manager.ui.theme.AppLargeCardContainerColor
 
 @Composable
 fun OutlinedSelectionField(
@@ -26,14 +28,16 @@ fun OutlinedSelectionField(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    containerColor: Color = AppCardContainerColor()
+    containerColor: Color = AppCardContainerColor(),
+    largeCardStyle: Boolean = false
 ) {
     Surface(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier.fillMaxWidth().heightIn(min = 56.dp),
         shape = RoundedCornerShape(10.dp),
-        color = containerColor
+        color = if (largeCardStyle) AppLargeCardContainerColor() else containerColor,
+        border = if (largeCardStyle) AppLargeCardBorder() else null
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),

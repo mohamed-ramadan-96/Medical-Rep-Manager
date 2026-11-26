@@ -3,6 +3,7 @@ package com.medicalrep.manager.ui.theme
 import android.app.Activity
 import android.content.ContextWrapper
 import android.os.Build
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
@@ -54,6 +55,23 @@ private val LocalAppCardContainerColor = compositionLocalOf { Color(0xFFE7EDF5) 
 
 @Composable
 fun AppCardContainerColor(): Color = LocalAppCardContainerColor.current
+
+/**
+ * Container color for large, nested form cards. Keep small fields and selection
+ * rows on AppCardContainerColor; only large containers become AMOLED black.
+ */
+@Composable
+fun AppLargeCardContainerColor(): Color =
+    if (MaterialTheme.colorScheme.surface == Color.Black) Color.Black else AppCardContainerColor()
+
+/** A subtle separator keeps AMOLED-black cards visible on black dialog surfaces. */
+@Composable
+fun AppLargeCardBorder(): BorderStroke? =
+    if (MaterialTheme.colorScheme.surface == Color.Black) {
+        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    } else {
+        null
+    }
 
 // One consistent semi-rounded language for cards, dialogs, menus, fields and buttons.
 private val AppShapes = Shapes(

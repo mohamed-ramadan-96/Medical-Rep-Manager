@@ -14,6 +14,13 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateDpAsState
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.clickable
@@ -88,6 +95,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.PaddingValues) {
     val context = LocalContext.current
@@ -105,6 +113,16 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     var attachmentsCenter by remember { mutableStateOf<MedicalCenterEntity?>(null) }
     var directionsCenter by remember { mutableStateOf<MedicalCenterEntity?>(null) }
     var expandedCenterIds by remember { mutableStateOf(emptySet<Long>()) }
+    var centerSearch by remember { mutableStateOf("") }
+    var selectedArea by remember { mutableStateOf("all") }
+    var showAreaFilter by remember { mutableStateOf(false) }
+    val centerAreas = remember(centers) { centers.map { it.area.trim() }.filter { it.isNotBlank() }.distinctBy { it.lowercase() }.sorted() }
+    val filteredCenters = remember(centers, centerSearch, selectedArea) {
+        centers.filter { center ->
+            (selectedArea == "all" || center.area.equals(selectedArea, ignoreCase = true)) &&
+                (centerSearch.isBlank() || listOf(center.name, center.address, center.phone).any { it.contains(centerSearch.trim(), ignoreCase = true) })
+        }
+    }
     val centerListState = rememberLazyListState()
     var centerHeaderExpanded by remember { mutableStateOf(true) }
     val centerScrollThreshold = with(LocalDensity.current) { 8.dp.roundToPx() }
@@ -136,6 +154,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     }
     val centerHeaderHeight by animateDpAsState(if (centerHeaderExpanded) 76.dp else 48.dp, animationSpec = tween(AppMotion.Emphasized), label = "centersHeaderHeight")
 
+    val centerFadeColor = MaterialTheme.colorScheme.background
     Scaffold(
         modifier = Modifier.padding(padding),
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
@@ -145,168 +164,94 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             }
         }
     ) { inner ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(inner).padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth().height(centerHeaderHeight).padding(top = if (centerHeaderExpanded) 8.dp else 0.dp),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    if (isArabic) "المراكز والعيادات" else "Medical centers",
-                    style = if (centerHeaderExpanded) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                AnimatedVisibility(
-                    visible = centerHeaderExpanded,
-                    enter = fadeIn(animationSpec = tween(AppMotion.Fast)) + expandVertically(animationSpec = tween(AppMotion.Emphasized)),
-                    exit = fadeOut(animationSpec = tween(AppMotion.Fast)) + shrinkVertically(animationSpec = tween(AppMotion.Standard))
-                ) {
-                    Text(
-                        if (isArabic) "عدد المراكز: ${centers.size}" else "Centers: ${centers.size}",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+        LazyColumn(
+            state = centerListState,
+            modifier = Modifier.fillMaxSize().padding(inner).drawWithContent {
+                drawContent()
+                val stickyHeader = centerListState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }
+                if (stickyHeader != null) {
+                    val fadeTop = (stickyHeader.offset + stickyHeader.size).toFloat()
+                    val fadeHeight = 36.dp.toPx()
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            0f to centerFadeColor,
+                            1f to centerFadeColor.copy(alpha = 0f),
+                            startY = fadeTop,
+                            endY = fadeTop + fadeHeight
+                        ),
+                        topLeft = androidx.compose.ui.geometry.Offset(0f, fadeTop),
+                        size = androidx.compose.ui.geometry.Size(size.width, fadeHeight)
                     )
                 }
+            },
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
+        ) {
+            item {
+                Column(Modifier.fillMaxWidth().height(centerHeaderHeight), verticalArrangement = Arrangement.Center) {
+                    Text(
+                        if (isArabic) "المراكز والعيادات" else "Medical centers",
+                        style = if (centerHeaderExpanded) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    AnimatedVisibility(
+                        visible = centerHeaderExpanded,
+                        enter = fadeIn(animationSpec = tween(AppMotion.Fast)) + expandVertically(animationSpec = tween(AppMotion.Emphasized)),
+                        exit = fadeOut(animationSpec = tween(AppMotion.Fast)) + shrinkVertically(animationSpec = tween(AppMotion.Standard))
+                    ) {
+                        Text(if (isArabic) "عدد المراكز: ${centers.size}" else "Centers: ${centers.size}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
             }
-            if (centers.isEmpty()) {
-                Text(
-                    if (isArabic) "لم تتم إضافة مراكز بعد. اضغط + لإضافة أول مركز." else "No centers yet. Tap + to add your first center.",
-                    modifier = Modifier.padding(top = 24.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else {
-                LazyColumn(
-                    state = centerListState,
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
+            stickyHeader {
+                Row(
+                    modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    items(centers, key = { it.id }) { center ->
-                        val expanded = center.id in expandedCenterIds
-                        val centerSlots = centerAvailability.filter { it.centerId == center.id }
-                        val expandRotation by animateFloatAsState(targetValue = if (expanded) 180f else 0f, animationSpec = tween(AppMotion.Standard), label = "centerExpandRotation")
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = MaterialTheme.shapes.small,
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-                        ) {
-                            Column(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = AppSpacing.md),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Surface(
-                                        modifier = Modifier.size(36.dp),
-                                        shape = MaterialTheme.shapes.small,
-                                        color = MaterialTheme.colorScheme.primaryContainer
-                                    ) {
-                                        Canvas(Modifier.padding(8.dp).fillMaxSize()) {
-                                            val unit = size.minDimension / 48f
-                                            androidx.compose.ui.graphics.drawscope.scale(unit, pivot = androidx.compose.ui.geometry.Offset.Zero) {
-                                                val stroke = Stroke(width = 2.8f, cap = StrokeCap.Round, join = StrokeJoin.Round)
-                                                drawPath(Path().apply {
-                                                    moveTo(18f, 4f); lineTo(31f, 4f); quadraticTo(34f, 4f, 34f, 7f); lineTo(34f, 41f); quadraticTo(34f, 44f, 31f, 44f); lineTo(18f, 44f); quadraticTo(15f, 44f, 15f, 41f); lineTo(15f, 7f); quadraticTo(15f, 4f, 18f, 4f); close()
-                                                }, MaterialTheme.colorScheme.onPrimaryContainer, style = stroke)
-                                                drawPath(Path().apply {
-                                                    moveTo(15f, 16f); lineTo(10f, 16f); quadraticTo(6f, 16f, 6f, 20f)
-                                                    lineTo(6f, 39f); quadraticTo(6f, 43f, 10f, 43f); lineTo(15f, 43f)
-                                                    moveTo(34f, 16f); lineTo(38f, 16f); quadraticTo(42f, 16f, 42f, 20f)
-                                                    lineTo(42f, 39f); quadraticTo(42f, 43f, 38f, 43f); lineTo(34f, 43f)
-                                                }, MaterialTheme.colorScheme.onPrimaryContainer, style = stroke)
-                                                drawLine(MaterialTheme.colorScheme.onPrimaryContainer, androidx.compose.ui.geometry.Offset(20f, 28f), androidx.compose.ui.geometry.Offset(29f, 28f), 2.8f, cap = StrokeCap.Round)
-                                                drawLine(MaterialTheme.colorScheme.onPrimaryContainer, androidx.compose.ui.geometry.Offset(20f, 35f), androidx.compose.ui.geometry.Offset(29f, 35f), 2.8f, cap = StrokeCap.Round)
-                                            }
-                                        }
-                                    }
-                                    Column(
-                                        modifier = Modifier.weight(1f),
-                                        verticalArrangement = Arrangement.spacedBy(2.dp)
-                                    ) {
-                                        Text(center.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, maxLines = 1)
-                                        if (center.address.isNotBlank()) {
-                                            Text(center.address, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
-                                        }
-                                        if (center.phone.isNotBlank()) {
-                                            Text(center.phone, style = MaterialTheme.typography.bodySmall, maxLines = 1)
-                                        }
-                                    }
-                                    IconButton(
-                                        modifier = Modifier.size(34.dp),
-                                        onClick = { expandedCenterIds = if (expanded) expandedCenterIds - center.id else expandedCenterIds + center.id }
-                                    ) {
-                                        Icon(
-                                            Icons.Default.ExpandMore,
-                                            contentDescription = if (isArabic) {
-                                                if (expanded) "إخفاء التفاصيل" else "عرض التفاصيل"
-                                            } else {
-                                                if (expanded) "Hide details" else "Show details"
-                                            },
-                                            modifier = Modifier.size(20.dp).rotate(expandRotation)
-                                        )
-                                    }
-                                }
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    if ((center.latitude != null && center.longitude != null) || !center.mapUrl.isNullOrBlank()) {
-                                        IconButton(modifier = Modifier.size(32.dp), onClick = { directionsCenter = center }) {
-                                            Icon(Icons.Default.LocationOn, contentDescription = if (isArabic) "الاتجاهات إلى المركز" else "Directions to center", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                                        }
-                                    }
-                                    IconButton(modifier = Modifier.size(32.dp), onClick = { attachmentsCenter = center }) {
-                                        Icon(Icons.Default.AttachFile, contentDescription = if (isArabic) "المرفقات" else "Attachments", modifier = Modifier.size(18.dp))
-                                    }
-                                    IconButton(modifier = Modifier.size(32.dp), onClick = { editing = center; showForm = true }) {
-                                        Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit", modifier = Modifier.size(18.dp))
-                                    }
-                                    IconButton(modifier = Modifier.size(32.dp), onClick = { pendingDelete = center }) {
-                                        Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete", modifier = Modifier.size(18.dp))
-                                    }
-                                }
-                                AnimatedVisibility(
-                                    visible = expanded,
-                                    enter = expandVertically(animationSpec = tween(AppMotion.Emphasized)) + fadeIn(animationSpec = tween(AppMotion.Standard)),
-                                    exit = shrinkVertically(animationSpec = tween(AppMotion.Standard)) + fadeOut(animationSpec = tween(AppMotion.Fast))
-                                ) {
-                                    Column(
-                                        modifier = Modifier.fillMaxWidth().padding(start = 28.dp, top = 4.dp, bottom = 4.dp),
-                                        verticalArrangement = Arrangement.spacedBy(5.dp)
-                                    ) {
-                                        if (center.notes.isNotBlank()) Text(center.notes, style = MaterialTheme.typography.bodySmall)
-                                        Text(
-                                            (if (isArabic) "عدد الأطباء غير المسجلين: " else "Unregistered doctors: ") + center.unregisteredDoctorCount,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        Text(
-                                            (if (isArabic) "أطباء بملفات مسجلة: " else "Registered doctor profiles: ") + doctorCenterLinks.count { it.centerId == center.id },
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        if (centerSlots.isNotEmpty()) {
-                                            Text(if (isArabic) "مواعيد عمل المركز" else "Center working hours", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                                            centerSlots.groupBy { it.slotGroupId }.values.forEach { group ->
-                                                val first = group.first()
-                                                val daysText = group.map { slot ->
-                                                    mapOf(6 to "السبت", 7 to "الأحد", 1 to "الاثنين", 2 to "الثلاثاء", 3 to "الأربعاء", 4 to "الخميس", 5 to "الجمعة")[slot.dayOfWeek].orEmpty()
-                                                }.joinToString("، ")
-                                                Text(daysText + " • " + first.startTime + " – " + first.endTime, style = MaterialTheme.typography.bodySmall)
-                                                if (first.notes.isNotBlank()) Text(first.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                            }
-                                        }
-                                    }
-                                }
+                    OutlinedTextField(
+                        value = centerSearch,
+                        onValueChange = { centerSearch = it },
+                        modifier = Modifier.weight(1f).height(56.dp),
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.small,
+                        placeholder = { Text(if (isArabic) "ابحث عن مركز..." else "Search centers...") },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
+                    )
+                    androidx.compose.foundation.layout.Box {
+                        IconButton(onClick = { showAreaFilter = true }) {
+                            Icon(Icons.Default.FilterList, contentDescription = if (isArabic) "تصفية حسب المنطقة" else "Filter by area")
+                        }
+                        DropdownMenu(expanded = showAreaFilter, onDismissRequest = { showAreaFilter = false }) {
+                            DropdownMenuItem(
+                                text = { Text(if (isArabic) "كل المناطق" else "All areas") },
+                                onClick = { selectedArea = "all"; showAreaFilter = false }
+                            )
+                            centerAreas.forEach { area ->
+                                DropdownMenuItem(text = { Text(area) }, onClick = { selectedArea = area; showAreaFilter = false })
                             }
                         }
                     }
                 }
             }
+            if (centers.isEmpty()) {
+                item {
+                    Text(
+                        if (isArabic) "لم تتم إضافة مراكز بعد. اضغط + لإضافة أول مركز." else "No centers yet. Tap + to add your first center.",
+                        modifier = Modifier.padding(top = 24.dp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else if (filteredCenters.isEmpty()) {
+                item {
+                    Text(
+                        if (isArabic) "لا توجد مراكز مطابقة للبحث أو المنطقة المحددة." else "No centers match this search or area.",
+                        modifier = Modifier.padding(top = 24.dp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+                    items(centers, key = { it.id }
         }
     }
 

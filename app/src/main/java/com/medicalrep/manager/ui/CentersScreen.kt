@@ -271,10 +271,11 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 val stickyHeader = centerListState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }
                 if (stickyHeader != null) {
                     val fadeTop = (stickyHeader.offset + stickyHeader.size).toFloat()
-                    val fadeHeight = 36.dp.toPx()
+                    val fadeHeight = 72.dp.toPx()
                     drawRect(
                         brush = Brush.verticalGradient(
                             0f to centerFadeColor,
+                            0.65f to centerFadeColor.copy(alpha = 0.96f),
                             1f to centerFadeColor.copy(alpha = 0f),
                             startY = fadeTop,
                             endY = fadeTop + fadeHeight
@@ -304,7 +305,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 }
             }
             stickyHeader {
-                BoxWithConstraints(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(vertical = 4.dp)) {
+                BoxWithConstraints(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(top = 0.dp, bottom = 8.dp)) {
                     val filterWidth by animateDpAsState(if (centerHeaderExpanded) 60.dp else 0.dp, tween(AppMotion.Emphasized), label = "centerFilterWidth")
                     val filterAlpha by animateFloatAsState(if (centerHeaderExpanded) 1f else 0f, tween(AppMotion.Fast), label = "centerFilterAlpha")
                     val searchWidth by animateDpAsState(if (centerHeaderExpanded) maxWidth - 68.dp else 44.dp, tween(AppMotion.Emphasized), label = "centerSearchWidth")

@@ -152,7 +152,7 @@ private fun CenterSearchField(
     Surface(
         onClick = if (compact) onExpand else ({ }),
         shape = RoundedCornerShape(10.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = AppCardContainerColor(),
         modifier = Modifier.fillMaxWidth().height(height)
     ) {
         Row(
@@ -772,7 +772,7 @@ private fun CenterFormDialog(
                 item {
                     androidx.compose.foundation.layout.Box {
                         OutlinedTextField(
-                    colors = AppFilledTextFieldColors(),
+                    colors = AppFilledTextFieldColors(AppCardContainerColor()),
                     value = area,
                     onValueChange = {},
                     readOnly = true,
@@ -854,7 +854,7 @@ private fun CenterFormDialog(
                             onClick = { workSlots = workSlots + CenterWorkingHoursDraft() },
                             modifier = Modifier.fillMaxWidth().height(46.dp),
                             shape = RoundedCornerShape(10.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainer
+                            color = AppCardContainerColor()
                         ) {
                             Box(
                                 modifier = Modifier.fillMaxSize(),
@@ -920,7 +920,7 @@ private fun CenterFormDialog(
                                                     workSlots = workSlots.toMutableList().also { it[index] = slot.copy(days = days) }
                                                 },
                                                 shape = RoundedCornerShape(8.dp),
-                                                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                                color = if (selected) MaterialTheme.colorScheme.primary else AppCardContainerColor(),
                                                 border = BorderStroke(
                                                     1.dp,
                                                     if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
@@ -1073,7 +1073,7 @@ private fun CenterFormDialog(
                                             CurrentLocationButton(
                                                 isArabic = isArabic,
                                                 modifier = Modifier.fillMaxWidth().height(48.dp),
-                                                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                                                containerColor = AppCardContainerColor()
                                             ) { lat, lon ->
                                                 latitude = lat
                                                 longitude = lon
@@ -1085,7 +1085,7 @@ private fun CenterFormDialog(
                                                 onClick = { showMapPicker = true },
                                                 shape = RoundedCornerShape(10.dp),
                                                 colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                                                    containerColor = AppCardContainerColor()
                                                 )
                                             ) {
                                                 Text(if (isArabic) "اختيار من الخريطة" else "Choose on map")

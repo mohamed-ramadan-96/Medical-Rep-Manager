@@ -3,6 +3,7 @@ package com.medicalrep.manager.ui
 import com.medicalrep.manager.ui.theme.AppSpacing
 
 import com.medicalrep.manager.ui.theme.AppMotion
+import com.medicalrep.manager.ui.theme.AppCardContainerColor
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -481,7 +482,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = MaterialTheme.shapes.small,
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                            colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())
                         ) {
                             Column(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = AppSpacing.md),
@@ -792,7 +793,7 @@ private fun AvailabilityFormDialog(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                        colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())
                     ) {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -884,7 +885,8 @@ private fun AvailabilityFormDialog(
                                     AvailabilitySelectionField(
                                         label = if (isArabic) "من" else "From",
                                         value = displayAvailabilityTime(draft.startTime, isArabic),
-                                        onClick = { timePickerTarget = index to true }
+                                        onClick = { timePickerTarget = index to true },
+                                        isTimeField = true
                                     )
                                 }
                                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -892,7 +894,8 @@ private fun AvailabilityFormDialog(
                                         label = if (isArabic) "إلى" else "To",
                                         value = displayAvailabilityTime(draft.endTime, isArabic),
                                         isError = draft.endTime <= draft.startTime,
-                                        onClick = { timePickerTarget = index to false }
+                                        onClick = { timePickerTarget = index to false },
+                                        isTimeField = true
                                     )
                                 }
                             }
@@ -1025,13 +1028,15 @@ private fun AvailabilitySelectionField(
     value: String,
     onClick: () -> Unit,
     isError: Boolean = false,
-    isRequired: Boolean = false
+    isRequired: Boolean = false,
+    isTimeField: Boolean = false
 ) {
     Surface(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(10.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer
+        color = if (isTimeField) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer,
+        border = if (isTimeField) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
@@ -1045,7 +1050,9 @@ private fun AvailabilitySelectionField(
                 })
                 Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
             }
-            Icon(Icons.Default.ExpandMore, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (!isTimeField) {
+                Icon(Icons.Default.ExpandMore, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 }

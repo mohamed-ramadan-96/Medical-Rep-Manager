@@ -1474,7 +1474,6 @@ private fun DoctorFormDialog(
                                     Surface(
                                         color = MaterialTheme.colorScheme.surfaceContainer,
                                         shape = RoundedCornerShape(10.dp),
-                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                                         modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                                     ) {
                                         Row(
@@ -1818,7 +1817,6 @@ private fun DoctorFormDialog(
                             onClick = { selectedSpecialtyId = null; showSpecialtyPicker = false },
                             color = MaterialTheme.colorScheme.surfaceContainer,
                             shape = RoundedCornerShape(10.dp),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                             modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                         ) {
                             Box(
@@ -1838,7 +1836,6 @@ private fun DoctorFormDialog(
                             onClick = { selectedSpecialtyId = specialty.id; showSpecialtyPicker = false },
                             color = MaterialTheme.colorScheme.surfaceContainer,
                             shape = RoundedCornerShape(10.dp),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                             modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                         ) {
                             Box(
@@ -1888,7 +1885,6 @@ private fun DoctorFormDialog(
                             onClick = { selectedCenterIds = emptySet() },
                             color = MaterialTheme.colorScheme.surfaceContainer,
                             shape = RoundedCornerShape(10.dp),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                             modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                         ) {
                             Row(
@@ -1956,7 +1952,6 @@ private fun DoctorFormDialog(
                         Surface(
                             color = MaterialTheme.colorScheme.surfaceContainer,
                             shape = RoundedCornerShape(10.dp),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                             modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                         ) {
                             Row(

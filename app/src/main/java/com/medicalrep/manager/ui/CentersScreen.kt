@@ -269,7 +269,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             modifier = Modifier.fillMaxSize().padding(inner).drawWithContent {
                 drawContent()
                 val stickyHeader = centerListState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }
-                if (stickyHeader != null) {
+                if (stickyHeader != null && stickyHeader.offset <= 0) {
                     val fadeTop = (stickyHeader.offset + stickyHeader.size).toFloat()
                     val fadeHeight = 72.dp.toPx()
                     drawRect(

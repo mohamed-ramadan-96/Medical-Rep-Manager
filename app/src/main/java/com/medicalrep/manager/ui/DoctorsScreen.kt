@@ -1315,7 +1315,6 @@ private fun DoctorFormDialog(
                 }
         )
     }
-    var centerMenuForIndex by remember { mutableStateOf<Int?>(null) }
     var notes by remember(initial) { mutableStateOf(initial?.notes.orEmpty()) }
     var photoUri by remember(initial) { mutableStateOf(initial?.photoUri) }
     var latitude by remember(initial) { mutableStateOf(initial?.latitude) }
@@ -1561,24 +1560,6 @@ private fun DoctorFormDialog(
                                                     Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
                                                     Text(if (isArabic) "حذف" else "Remove", color = MaterialTheme.colorScheme.error)
                                                 }
-                                            }
-                                        }
-                                        OutlinedSelectionField(
-                                            label = if (isArabic) "نوع الموعد / المركز" else "Availability type / center",
-                                            value = draft.centerId?.let { id -> centers.firstOrNull { it.id == id }?.name }
-                                                ?: if (isArabic) "موعد عام — بدون مركز" else "General — no center",
-                                            onClick = { centerMenuForIndex = index }
-                                        )
-                                        DropdownMenu(expanded = centerMenuForIndex == index, onDismissRequest = { centerMenuForIndex = null }) {
-                                            DropdownMenuItem(text = { Text(if (isArabic) "موعد عام — بدون مركز" else "General — no center") }, onClick = {
-                                                availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(centerId = null) }
-                                                centerMenuForIndex = null
-                                            })
-                                            centers.filter { it.id in selectedCenterIds }.forEach { center ->
-                                                DropdownMenuItem(text = { Text(center.name) }, onClick = {
-                                                    availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(centerId = center.id) }
-                                                    centerMenuForIndex = null
-                                                })
                                             }
                                         }
                                         Text(

@@ -319,11 +319,8 @@ private fun VisitFormDialog(
     }
     var doctorMenu by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    val dialogMaxHeight = LocalConfiguration.current.screenHeightDp.dp * 0.88f
 
     AlertDialog(
-        modifier = Modifier.fillMaxWidth().widthIn(max = 560.dp).heightIn(max = dialogMaxHeight),
-        properties = DialogProperties(usePlatformDefaultWidth = false),
         onDismissRequest = onDismiss,
         title = {
             Text(
@@ -332,11 +329,14 @@ private fun VisitFormDialog(
                 } else {
                     if (isArabic) "تعديل الزيارة" else "Edit visit"
                 },
-                style = MaterialTheme.typography.titleLarge
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
             )
         },
         text = {
-            Column(modifier = Modifier.fillMaxWidth().heightIn(max = dialogMaxHeight - 150.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
+            Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedSelectionField(
                     label = if (isArabic) "الطبيب" else "Doctor",
                     value = doctors.firstOrNull { it.id == selectedDoctorId }?.name
@@ -352,7 +352,7 @@ private fun VisitFormDialog(
                     }
                 }
                 OutlinedTextField(
-                    shape = MaterialTheme.shapes.small,
+                    shape = RoundedCornerShape(10.dp),
                     value = date,
                     onValueChange = { date = it; error = null },
                     modifier = Modifier.fillMaxWidth(),
@@ -394,7 +394,7 @@ private fun VisitFormDialog(
             }
         },
         confirmButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Button(onClick = {
                 val visitedAt = parseVisitDate(date, time)
                 val followUpAt = if (followUpDate.isBlank()) null else parseVisitDate(followUpDate, "09:00")
@@ -416,8 +416,8 @@ private fun VisitFormDialog(
                         )
                     )
                 }
-                }, shape = MaterialTheme.shapes.small) { Text(if (isArabic) "حفظ" else "Save") }
-                OutlinedButton(onClick = onDismiss, shape = MaterialTheme.shapes.small) { Text(if (isArabic) "إلغاء" else "Cancel") }
+                }, modifier = Modifier.height(48.dp), shape = RoundedCornerShape(10.dp)) { Text(if (isArabic) "حفظ" else "Save") }
+                OutlinedButton(onClick = onDismiss, modifier = Modifier.height(48.dp), shape = RoundedCornerShape(10.dp)) { Text(if (isArabic) "إلغاء" else "Cancel") }
             }
         },
         dismissButton = { }

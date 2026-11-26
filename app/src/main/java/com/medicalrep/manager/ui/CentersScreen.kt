@@ -883,7 +883,7 @@ private fun CenterFormDialog(
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(10.dp),
-                                colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                             ) {
                                 Column(
                                     modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -994,7 +994,7 @@ private fun CenterFormDialog(
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
-                        color = AppCardContainerColor()
+                        color = MaterialTheme.colorScheme.surfaceContainer
                     ) {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(12.dp),

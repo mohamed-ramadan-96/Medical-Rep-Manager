@@ -279,7 +279,7 @@ private fun DoctorSearchField(
     Surface(
         onClick = if (compact) onExpand else ({ }),
         shape = RoundedCornerShape(10.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = AppCardContainerColor(),
         modifier = Modifier.fillMaxWidth().height(height)
     ) {
         Row(
@@ -1487,7 +1487,7 @@ private fun DoctorFormDialog(
                                 }
                             }
                             OutlinedTextField(
-                    colors = AppFilledTextFieldColors(),
+                    colors = AppFilledTextFieldColors(AppCardContainerColor()),
                     shape = RoundedCornerShape(10.dp),
                     value = newArea,
                     onValueChange = { newArea = it },
@@ -1577,7 +1577,7 @@ private fun DoctorFormDialog(
                                                         availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(days = next) }
                                                     },
                                                     shape = RoundedCornerShape(8.dp),
-                                                    color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                                    color = if (selected) MaterialTheme.colorScheme.primary else AppCardContainerColor(),
                                                     border = BorderStroke(
                                                         1.dp,
                                                         if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
@@ -1666,7 +1666,7 @@ private fun DoctorFormDialog(
                         }
                         CurrentLocationButton(
                             isArabic = isArabic,
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                            containerColor = AppCardContainerColor()
                         ) { lat, lon ->
                             latitude = lat
                             longitude = lon
@@ -1909,7 +1909,7 @@ private fun DoctorFormDialog(
                     if (centerSearchExpanded) {
                         item {
                             OutlinedTextField(
-                    colors = AppFilledTextFieldColors(),
+                    colors = AppFilledTextFieldColors(AppCardContainerColor()),
                     value = centerSearchQuery,
                     onValueChange = { centerSearchQuery = it },
                     modifier = Modifier.fillMaxWidth(),

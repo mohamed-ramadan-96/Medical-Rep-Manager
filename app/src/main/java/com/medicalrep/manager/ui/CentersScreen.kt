@@ -666,6 +666,7 @@ private fun CenterFormDialog(
             ) {
                 item {
                     OutlinedTextField(
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
                         value = name, onValueChange = { name = it; nameError = false },
                         modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(10.dp),
                         label = { Text(if (isArabic) "اسم المركز *" else "Center name *") },
@@ -675,6 +676,7 @@ private fun CenterFormDialog(
                 item {
                     androidx.compose.foundation.layout.Box {
                         OutlinedTextField(
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
                             value = area,
                             onValueChange = {},
                             readOnly = true,
@@ -708,6 +710,7 @@ private fun CenterFormDialog(
                 }
                 item {
                     OutlinedTextField(
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
                         value = address, onValueChange = { address = it },
                         modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp),
                         label = { Text(if (isArabic) "العنوان" else "Address") }
@@ -715,6 +718,7 @@ private fun CenterFormDialog(
                 }
                 item {
                     OutlinedTextField(
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
                         value = phone, onValueChange = { phone = it },
                         modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(10.dp),
                         label = { Text(if (isArabic) "رقم الهاتف" else "Phone") }
@@ -772,6 +776,7 @@ private fun CenterFormDialog(
                                     }
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         OutlinedTextField(
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
                                             value = slot.startTime,
                                             onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(startTime = value) } },
                                             modifier = Modifier.weight(1f),
@@ -780,6 +785,7 @@ private fun CenterFormDialog(
                                             label = { Text(if (isArabic) "من" else "From") }
                                         )
                                         OutlinedTextField(
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
                                             value = slot.endTime,
                                             onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(endTime = value) } },
                                             modifier = Modifier.weight(1f),
@@ -789,6 +795,7 @@ private fun CenterFormDialog(
                                         )
                                     }
                                     OutlinedTextField(
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
                                         value = slot.notes,
                                         onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(notes = value) } },
                                         modifier = Modifier.fillMaxWidth(),
@@ -802,6 +809,7 @@ private fun CenterFormDialog(
                 }
                 item {
                     OutlinedTextField(
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
                         value = notes, onValueChange = { notes = it },
                         modifier = Modifier.fillMaxWidth(), singleLine = false, minLines = 1, shape = RoundedCornerShape(10.dp),
                         label = { Text(if (isArabic) "ملاحظات" else "Notes") }
@@ -812,7 +820,7 @@ private fun CenterFormDialog(
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
-                        color = MaterialTheme.colorScheme.surface,
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                     ) {
                         Column(
@@ -856,7 +864,7 @@ private fun CenterFormDialog(
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .background(MaterialTheme.colorScheme.surface),
+                                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
                                     verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     if (hasCenterLocation) {

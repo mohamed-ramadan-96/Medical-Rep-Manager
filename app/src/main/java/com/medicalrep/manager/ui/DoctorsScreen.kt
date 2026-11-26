@@ -137,7 +137,7 @@ private fun FormExpandableSection(
 ) {
     Surface(
         shape = MaterialTheme.shapes.small,
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
         border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier
             .fillMaxWidth()
@@ -1344,6 +1344,7 @@ private fun DoctorFormDialog(
                 }
                 item {
                     OutlinedTextField(
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
                         shape = RoundedCornerShape(10.dp),
                         value = name, onValueChange = { name = it; nameError = false },
                         modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), singleLine = true,
@@ -1367,6 +1368,7 @@ private fun DoctorFormDialog(
                     ) {
                         phoneNumbers.forEachIndexed { index, phone ->
                             OutlinedTextField(
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
                         shape = RoundedCornerShape(10.dp),
                         value = phone,
                                 onValueChange = { value ->
@@ -1431,6 +1433,7 @@ private fun DoctorFormDialog(
                                     }
                                 }
                                 OutlinedTextField(
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
                         shape = RoundedCornerShape(10.dp),
                         value = newArea,
                                     onValueChange = { newArea = it },
@@ -1479,7 +1482,7 @@ private fun DoctorFormDialog(
                     ) {
                             Text(if (isArabic) "كل فترة مستقلة: عامة أو مرتبطة بمركز من المراكز المختارة." else "Each slot is independent: general or linked to one of the selected centers.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             availabilityDrafts.forEachIndexed { index, draft ->
-                                Card(shape = RoundedCornerShape(10.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                                Card(shape = RoundedCornerShape(10.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)) {
                                     Column(Modifier.fillMaxWidth().padding(AppSpacing.md), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                         Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                                             Text((if (isArabic) "الفترة " else "Slot ") + (index + 1), modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
@@ -1533,6 +1536,7 @@ private fun DoctorFormDialog(
                                             }
                                         }
                                         OutlinedTextField(
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
                                             value = draft.notes,
                                             onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(notes = value) } },
                                             modifier = Modifier.fillMaxWidth(),
@@ -1594,6 +1598,7 @@ private fun DoctorFormDialog(
                 }
                 item {
                     OutlinedTextField(
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
                         shape = RoundedCornerShape(10.dp),
                         value = notes, onValueChange = { notes = it },
                         modifier = Modifier.fillMaxWidth(), minLines = 2,

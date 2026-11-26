@@ -247,7 +247,7 @@ fun WeeklyPlanScreen(
                                             .clip(CircleShape)
                                             .background(
                                                 if (date == selectedDate) MaterialTheme.colorScheme.primary
-                                                else if (count > 0) MaterialTheme.colorScheme.secondaryContainer
+                                                else if (count > 0) MaterialTheme.colorScheme.surfaceContainerHighest
                                                 else MaterialTheme.colorScheme.surface
                                             )
                                             .clickable {
@@ -263,7 +263,7 @@ fun WeeklyPlanScreen(
                                             )
                                             if (count > 0) Text(
                                                 count.toString(),
-                                                color = if (date == selectedDate) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+                                                color = if (date == selectedDate) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                                                 style = MaterialTheme.typography.labelSmall
                                             )
                                         }
@@ -291,6 +291,7 @@ fun WeeklyPlanScreen(
                 Box {
                     OutlinedSelectionField(
                         label = if (isArabic) "المنطقة الجغرافية" else "Geographic area",
+                        containerColor = AppCardContainerColor(),
                         value = when (selectedRegion) {
                             ALL_REGIONS -> if (isArabic) "كل المناطق" else "All areas"
                             "" -> if (isArabic) "اختر المنطقة" else "Choose area"
@@ -319,6 +320,7 @@ fun WeeklyPlanScreen(
                 Box {
                     OutlinedSelectionField(
                         label = if (isArabic) "الأطباء المتاحون" else "Available doctors",
+                        containerColor = AppCardContainerColor(),
                         value = when {
                             selectedDoctorIds.isEmpty() -> if (isArabic) "اضغط لاختيار الأطباء" else "Tap to choose doctors"
                             else -> doctors.filter { it.id in selectedDoctorIds }.joinToString("، ") { it.name }
@@ -406,7 +408,7 @@ fun WeeklyPlanScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.medium,
                         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                        colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 9.dp),

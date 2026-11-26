@@ -665,8 +665,9 @@ private fun CenterFormDialog(
             ) {
                 item {
                     OutlinedTextField(
-                        value = name, onValueChange = { name = it; nameError = false },
-                        modifier = Modifier.fillMaxWidth(), singleLine = true, shape = MaterialTheme.shapes.small,
+                        shape = RoundedCornerShape(10.dp),
+value = name, onValueChange = { name = it; nameError = false },
+                        modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(10.dp),
                         label = { Text(if (isArabic) "اسم المركز *" else "Center name *") },
                         isError = nameError
                     )
@@ -674,12 +675,13 @@ private fun CenterFormDialog(
                 item {
                     androidx.compose.foundation.layout.Box {
                         OutlinedTextField(
-                            value = area,
+                        shape = RoundedCornerShape(10.dp),
+value = area,
                             onValueChange = {},
                             readOnly = true,
                             modifier = Modifier.fillMaxWidth().clickable { showAreaPicker = true },
                             singleLine = true,
-                            shape = MaterialTheme.shapes.small,
+                            shape = RoundedCornerShape(10.dp),
                             label = { Text(if (isArabic) "المنطقة *" else "Area *") },
                             isError = areaError,
                             trailingIcon = { Icon(Icons.Default.ExpandMore, contentDescription = null) }
@@ -707,15 +709,17 @@ private fun CenterFormDialog(
                 }
                 item {
                     OutlinedTextField(
-                        value = address, onValueChange = { address = it },
-                        modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.small,
+                        shape = RoundedCornerShape(10.dp),
+value = address, onValueChange = { address = it },
+                        modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp),
                         label = { Text(if (isArabic) "العنوان" else "Address") }
                     )
                 }
                 item {
                     OutlinedTextField(
-                        value = phone, onValueChange = { phone = it },
-                        modifier = Modifier.fillMaxWidth(), singleLine = true, shape = MaterialTheme.shapes.small,
+                        shape = RoundedCornerShape(10.dp),
+value = phone, onValueChange = { phone = it },
+                        modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(10.dp),
                         label = { Text(if (isArabic) "رقم الهاتف" else "Phone") }
                     )
                 }
@@ -729,7 +733,7 @@ private fun CenterFormDialog(
                             OutlinedButton(
                                 onClick = { workSlots = workSlots + CenterWorkingHoursDraft() },
                                 modifier = Modifier.weight(1f),
-                                shape = MaterialTheme.shapes.small
+                                shape = RoundedCornerShape(10.dp)
                             ) {
                                 Text(if (isArabic) "+ إضافة فترة عمل" else "+ Add working-hours slot")
                             }
@@ -762,10 +766,16 @@ private fun CenterFormDialog(
                                         }
                                     }
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        OutlinedTextField(value = slot.startTime, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(startTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, shape = MaterialTheme.shapes.small, label = { Text(if (isArabic) "من" else "From") })
-                                        OutlinedTextField(value = slot.endTime, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(endTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, shape = MaterialTheme.shapes.small, label = { Text(if (isArabic) "إلى" else "To") })
+                                        OutlinedTextField(
+                        shape = RoundedCornerShape(10.dp),
+value = slot.startTime, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(startTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(10.dp), label = { Text(if (isArabic) "من" else "From") })
+                                        OutlinedTextField(
+                        shape = RoundedCornerShape(10.dp),
+value = slot.endTime, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(endTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(10.dp), label = { Text(if (isArabic) "إلى" else "To") })
                                     }
-                                    OutlinedTextField(value = slot.notes, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(notes = value) } }, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.small, label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") })
+                                    OutlinedTextField(
+                        shape = RoundedCornerShape(10.dp),
+value = slot.notes, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(notes = value) } }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp), label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") })
                                 }
                             }
                         }
@@ -773,8 +783,9 @@ private fun CenterFormDialog(
                 }
                 item {
                     OutlinedTextField(
-                        value = notes, onValueChange = { notes = it },
-                        modifier = Modifier.fillMaxWidth(), minLines = 2, shape = MaterialTheme.shapes.small,
+                        shape = RoundedCornerShape(10.dp),
+value = notes, onValueChange = { notes = it },
+                        modifier = Modifier.fillMaxWidth(), minLines = 2, shape = RoundedCornerShape(10.dp),
                         label = { Text(if (isArabic) "ملاحظات" else "Notes") }
                     )
                 }
@@ -782,7 +793,7 @@ private fun CenterFormDialog(
                     val hasCenterLocation = (latitude != null && longitude != null) || !mapUrl.isNullOrBlank()
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.small,
+                        shape = RoundedCornerShape(10.dp),
                         color = MaterialTheme.colorScheme.surface,
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                     ) {
@@ -829,7 +840,7 @@ private fun CenterFormDialog(
                                         OutlinedButton(
                                             modifier = Modifier.fillMaxWidth(),
                                             onClick = { openSavedMapLocation(context, latitude, longitude, mapUrl) },
-                                            shape = MaterialTheme.shapes.small
+                                            shape = RoundedCornerShape(10.dp)
                                         ) {
                                             Text(if (isArabic) "عرض المكان على الخريطة" else "View place on map")
                                         }
@@ -841,14 +852,14 @@ private fun CenterFormDialog(
                                                 mapUrl = null
                                                 editCenterLocation = false
                                             },
-                                            shape = MaterialTheme.shapes.small
+                                            shape = RoundedCornerShape(10.dp)
                                         ) {
                                             Text(if (isArabic) "مسح الموقع" else "Clear location")
                                         }
                                         OutlinedButton(
                                             modifier = Modifier.fillMaxWidth(),
                                             onClick = { editCenterLocation = !editCenterLocation },
-                                            shape = MaterialTheme.shapes.small
+                                            shape = RoundedCornerShape(10.dp)
                                         ) {
                                             Text(if (isArabic) "تعديل الموقع" else "Edit location")
                                         }
@@ -864,7 +875,7 @@ private fun CenterFormDialog(
                                             OutlinedButton(
                                                 modifier = Modifier.fillMaxWidth(),
                                                 onClick = { showMapPicker = true },
-                                                shape = MaterialTheme.shapes.small
+                                                shape = RoundedCornerShape(10.dp)
                                             ) {
                                                 Text(if (isArabic) "اختيار من الخريطة" else "Choose on map")
                                             }

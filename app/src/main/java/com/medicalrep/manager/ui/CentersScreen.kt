@@ -764,12 +764,29 @@ private fun CenterFormDialog(
                                     }
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         OutlinedTextField(
-                            value = slot.startTime, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(startTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(10.dp), label = { Text(if (isArabic) "من" else "From") })
+                                            value = slot.startTime,
+                                            onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(startTime = value) } },
+                                            modifier = Modifier.weight(1f),
+                                            singleLine = true,
+                                            shape = RoundedCornerShape(10.dp),
+                                            label = { Text(if (isArabic) "من" else "From") }
+                                        )
                                         OutlinedTextField(
-                            value = slot.endTime, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(endTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(10.dp), label = { Text(if (isArabic) "إلى" else "To") })
+                                            value = slot.endTime,
+                                            onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(endTime = value) } },
+                                            modifier = Modifier.weight(1f),
+                                            singleLine = true,
+                                            shape = RoundedCornerShape(10.dp),
+                                            label = { Text(if (isArabic) "إلى" else "To") }
+                                        )
                                     }
                                     OutlinedTextField(
-                            value = slot.notes, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(notes = value) } }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp), label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") })
+                                        value = slot.notes,
+                                        onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(notes = value) } },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(10.dp),
+                                        label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") }
+                                    )
                                 }
                             }
                         }

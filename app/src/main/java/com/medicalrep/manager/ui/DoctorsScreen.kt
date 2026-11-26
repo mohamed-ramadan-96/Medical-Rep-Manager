@@ -1,6 +1,7 @@
 package com.medicalrep.manager.ui
 
 import com.medicalrep.manager.ui.theme.AppSpacing
+import com.medicalrep.manager.ui.theme.AppDialogContainerColor
 import com.medicalrep.manager.ui.theme.AppCardContainerColor
 import com.medicalrep.manager.ui.theme.AppLargeCardBorder
 import com.medicalrep.manager.ui.theme.AppLargeCardContainerColor
@@ -76,6 +77,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -1353,6 +1355,7 @@ private fun DoctorFormDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
         title = { Text(if (initial == null) { if (isArabic) "إضافة طبيب" else "Add doctor" } else { if (isArabic) "تعديل بيانات الطبيب" else "Edit doctor" }, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
         text = {
             LazyColumn(

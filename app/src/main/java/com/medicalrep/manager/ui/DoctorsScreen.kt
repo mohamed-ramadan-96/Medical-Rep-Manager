@@ -373,10 +373,11 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 val stickyHeader = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }
                 if (stickyHeader != null) {
                     val fadeTop = (stickyHeader.offset + stickyHeader.size).toFloat()
-                    val fadeHeight = 36.dp.toPx()
+                    val fadeHeight = 72.dp.toPx()
                     drawRect(
                         brush = Brush.verticalGradient(
                             0f to doctorsFadeColor,
+                            0.65f to doctorsFadeColor.copy(alpha = 0.96f),
                             1f to doctorsFadeColor.copy(alpha = 0f),
                             startY = fadeTop,
                             endY = fadeTop + fadeHeight

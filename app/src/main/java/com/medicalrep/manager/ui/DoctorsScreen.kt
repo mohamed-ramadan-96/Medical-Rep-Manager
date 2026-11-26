@@ -16,9 +16,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.Dialog
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.ui.draw.alpha
@@ -83,6 +80,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -92,6 +90,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.room.withTransaction
 import androidx.compose.runtime.collectAsState
@@ -131,31 +130,30 @@ import java.util.UUID
 private fun doctorAreas(value: String): List<String> =
     value.split("|").map { it.trim() }.filter { it.isNotBlank() }.distinctBy { it.lowercase(Locale.ROOT) }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DoctorPickerBottomSheet(
     title: String,
     onDismiss: () -> Unit,
     content: @Composable () -> Unit
 ) {
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-            AnimatedVisibility(
-                visible = true,
-                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(animationSpec = tween(AppMotion.Fast)),
-                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(animationSpec = tween(AppMotion.Fast))
-            ) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.78f).dp),
-                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 8.dp
-                ) {
-                    Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Text(title, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        content()
-                    }
-                }
-            }
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surface
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                title,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            content()
         }
     }
 }
@@ -1482,7 +1480,6 @@ private fun DoctorFormDialog(
                                     }, enabled = newArea.isNotBlank()) { Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة منطقة" else "Add area") }
                                 }
                             )
-                            TextButton(onClick = { showAreaPicker = false }, modifier = Modifier.align(Alignment.End)) { Text(if (isArabic) "تم" else "Done") }
                         }
                     }
                 }
@@ -1743,30 +1740,42 @@ private fun DoctorFormDialog(
     }
 
     if (showCenterPicker) {
-        AlertDialog(
-            onDismissRequest = { showCenterPicker = false },
-            title = { Text(if (isArabic) "اختر مراكز عمل الطبيب" else "Select doctor's centers") },
-            text = {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    item {
-                        TextButton(onClick = { selectedCenterIds = emptySet() }) {
-                            Text(if (isArabic) "مسح الاختيار" else "Clear selection")
-                        }
-                    }
-                    items(centers, key = { it.id }) { center ->
-                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                            Checkbox(checked = center.id in selectedCenterIds, onCheckedChange = { checked -> selectedCenterIds = if (checked) selectedCenterIds + center.id else selectedCenterIds - center.id })
-                            Text(center.name)
-                        }
+        DoctorPickerBottomSheet(
+            title = if (isArabic) "اختر مراكز عمل الطبيب" else "Select doctor's centers",
+            onDismiss = { showCenterPicker = false }
+        ) {
+            LazyColumn(
+                modifier = Modifier.heightIn(max = 360.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                item {
+                    TextButton(
+                        onClick = { selectedCenterIds = emptySet() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(if (isArabic) "مسح الاختيار" else "Clear selection")
                     }
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = { showCenterPicker = false }) {
-                    Text(if (isArabic) "إغلاق" else "Close")
+                items(centers, key = { it.id }) { center ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = center.id in selectedCenterIds,
+                            onCheckedChange = { checked ->
+                                selectedCenterIds = if (checked) {
+                                    selectedCenterIds + center.id
+                                } else {
+                                    selectedCenterIds - center.id
+                                }
+                            }
+                        )
+                        Text(center.name)
+                    }
                 }
             }
-        )
+        }
     }
 
     if (showAreaRequiredDialog) {

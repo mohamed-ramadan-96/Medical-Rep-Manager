@@ -715,7 +715,7 @@ private fun AvailabilityFormDialog(
                                             selectedCenterId = doctorCenterLinks.firstOrNull { it.doctorId == doctor.id }?.centerId ?: doctor.centerId
                                             doctorMenu = false
                                         },
-                                        color = MaterialTheme.colorScheme.surfaceContainer,
+                                        color = AppCardContainerColor(),
                                         shape = RoundedCornerShape(10.dp),
                                         modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                                     ) {
@@ -766,7 +766,7 @@ private fun AvailabilityFormDialog(
                                 items(filteredCenters, key = { it.id }) { center ->
                                     Surface(
                                         onClick = { selectedCenterId = center.id; centerMenu = false },
-                                        color = MaterialTheme.colorScheme.surfaceContainer,
+                                        color = AppCardContainerColor(),
                                         shape = RoundedCornerShape(10.dp),
                                         modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                                     ) {
@@ -793,7 +793,7 @@ private fun AvailabilityFormDialog(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                        colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())
                     ) {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -1009,7 +1009,7 @@ private fun AvailabilityFormDialog(
 private fun FilterPickerRow(label: String, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = AppCardContainerColor(),
         shape = RoundedCornerShape(10.dp),
         modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
     ) {

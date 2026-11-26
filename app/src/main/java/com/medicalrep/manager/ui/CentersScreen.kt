@@ -62,6 +62,9 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -502,7 +505,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
         CenterFormDialog(
             isArabic = isArabic,
             initial = editing,
-            savedAreas = savedAreas + listOfNotNull(editing?.area?.takeIf { it.isNotBlank() }),
+            savedAreas = savedAreas + centers.map { it.area.trim() }.filter { it.isNotBlank() } + listOfNotNull(editing?.area?.takeIf { it.isNotBlank() }),
             initialAvailability = editing?.let { item -> centerAvailability.filter { it.centerId == item.id } }.orEmpty(),
             onDismiss = { showForm = false },
             onSave = { center, slots ->
@@ -596,6 +599,7 @@ private data class CenterWorkingHoursDraft(
     val existing: List<CenterAvailabilityEntity> = emptyList()
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CenterFormDialog(
     isArabic: Boolean,
@@ -609,6 +613,8 @@ private fun CenterFormDialog(
     var name by remember(initial) { mutableStateOf(initial?.name.orEmpty()) }
     var area by remember(initial) { mutableStateOf(initial?.area.orEmpty()) }
     var showAreaPicker by remember { mutableStateOf(false) }
+    var showNewAreaDialog by remember { mutableStateOf(false) }
+    var newAreaName by remember { mutableStateOf("") }
     var address by remember(initial) { mutableStateOf(initial?.address.orEmpty()) }
     var phone by remember(initial) { mutableStateOf(initial?.phone.orEmpty()) }
     var notes by remember(initial) { mutableStateOf(initial?.notes.orEmpty()) }
@@ -700,19 +706,42 @@ private fun CenterFormDialog(
                         androidx.compose.foundation.layout.Box(
                             Modifier.matchParentSize().clickable { showAreaPicker = true }
                         )
-                        DropdownMenu(expanded = showAreaPicker, onDismissRequest = { showAreaPicker = false }) {
-                            if (savedAreas.isEmpty()) {
-                                DropdownMenuItem(
-                                    text = { Text(if (isArabic) "لا توجد مناطق محفوظة في بيانات الأطباء" else "No saved areas in doctor records") },
-                                    onClick = { showAreaPicker = false },
-                                    enabled = false
-                                )
-                            } else {
-                                savedAreas.distinct().forEach { areaOption ->
-                                    DropdownMenuItem(
-                                        text = { Text(areaOption) },
-                                        onClick = { area = areaOption; areaError = false; showAreaPicker = false }
+                        if (showAreaPicker) {
+                            ModalBottomSheet(
+                                onDismissRequest = { showAreaPicker = false },
+                                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                                containerColor = MaterialTheme.colorScheme.surface
+                            ) {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Text(
+                                        if (isArabic) "اختيار المنطقة" else "Choose area",
+                                        modifier = Modifier.fillMaxWidth(),
+                                        textAlign = TextAlign.Center,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Bold
                                     )
+                                    LazyColumn(
+                                        modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp),
+                                        verticalArrangement = Arrangement.spacedBy(3.dp)
+                                    ) {
+                                        items(savedAreas.distinct().sorted(), key = { it.lowercase(java.util.Locale.ROOT) }) { areaOption ->
+                                            FilterPickerRow(areaOption) {
+                                                area = areaOption
+                                                areaError = false
+                                                showAreaPicker = false
+                                            }
+                                        }
+                                        item {
+                                            FilterPickerRow(if (isArabic) "＋ إضافة منطقة جديدة" else "＋ Add new area") {
+                                                newAreaName = ""
+                                                showAreaPicker = false
+                                                showNewAreaDialog = true
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -939,7 +968,8 @@ private fun CenterFormDialog(
                                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                             CurrentLocationButton(
                                                 isArabic = isArabic,
-                                                modifier = Modifier.fillMaxWidth().height(48.dp)
+                                                modifier = Modifier.fillMaxWidth().height(48.dp),
+                                                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
                                             ) { lat, lon ->
                                                 latitude = lat
                                                 longitude = lon
@@ -949,7 +979,10 @@ private fun CenterFormDialog(
                                             OutlinedButton(
                                                 modifier = Modifier.fillMaxWidth().height(48.dp),
                                                 onClick = { showMapPicker = true },
-                                                shape = RoundedCornerShape(10.dp)
+                                                shape = RoundedCornerShape(10.dp),
+                                                colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                                                )
                                             ) {
                                                 Text(if (isArabic) "اختيار من الخريطة" else "Choose on map")
                                             }
@@ -1007,6 +1040,38 @@ private fun CenterFormDialog(
         },
         dismissButton = { }
     )
+
+    if (showNewAreaDialog) {
+        AlertDialog(
+            onDismissRequest = { showNewAreaDialog = false },
+            title = { Text(if (isArabic) "إضافة منطقة جديدة" else "Add new area") },
+            text = {
+                OutlinedTextField(
+                    value = newAreaName,
+                    onValueChange = { newAreaName = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp),
+                    label = { Text(if (isArabic) "اسم المنطقة" else "Area name") }
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = newAreaName.isNotBlank(),
+                    onClick = {
+                        area = newAreaName.trim()
+                        areaError = false
+                        showNewAreaDialog = false
+                    }
+                ) { Text(if (isArabic) "إضافة" else "Add") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNewAreaDialog = false }) {
+                    Text(if (isArabic) "إلغاء" else "Cancel")
+                }
+            }
+        )
+    }
 
     if (showMapPicker) {
         CenterMapPickerDialog(

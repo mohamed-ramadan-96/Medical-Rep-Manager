@@ -35,7 +35,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -775,12 +774,11 @@ private fun CenterFormDialog(
                 item {
                     androidx.compose.foundation.layout.Box {
                         OutlinedTextField(
-                    colors = AppFilledTextFieldColors(AppLargeCardContainerColor()),
+                    colors = AppFilledTextFieldColors(AppCardContainerColor()),
                     value = area,
                     onValueChange = {},
                     readOnly = true,
-                    modifier = Modifier.fillMaxWidth().clickable { showAreaPicker = true }
-                        .then(AppLargeCardBorder()?.let { Modifier.border(it, RoundedCornerShape(10.dp)) } ?: Modifier),
+                    modifier = Modifier.fillMaxWidth().clickable { showAreaPicker = true },
                     singleLine = true,
                     shape = RoundedCornerShape(10.dp),
                     label = { Text(if (isArabic) "المنطقة *" else "Area *") },

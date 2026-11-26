@@ -273,6 +273,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             items(filteredCenters, key = { it.id }) { center ->
                         val expanded = center.id in expandedCenterIds
                         val centerSlots = centerAvailability.filter { it.centerId == center.id }
+                        val centerIconColor = MaterialTheme.colorScheme.onPrimaryContainer
                         val expandRotation by animateFloatAsState(targetValue = if (expanded) 180f else 0f, animationSpec = tween(AppMotion.Standard), label = "centerExpandRotation")
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -295,19 +296,19 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                     ) {
                                         Canvas(Modifier.padding(8.dp).fillMaxSize()) {
                                             val unit = size.minDimension / 48f
-                                            androidx.compose.ui.graphics.drawscope.scale(unit, pivot = androidx.compose.ui.geometry.Offset.Zero) {
+                                            scale(scaleX = unit, scaleY = unit, pivot = androidx.compose.ui.geometry.Offset.Zero) {
                                                 val stroke = Stroke(width = 2.8f, cap = StrokeCap.Round, join = StrokeJoin.Round)
                                                 drawPath(Path().apply {
                                                     moveTo(18f, 4f); lineTo(31f, 4f); quadraticTo(34f, 4f, 34f, 7f); lineTo(34f, 41f); quadraticTo(34f, 44f, 31f, 44f); lineTo(18f, 44f); quadraticTo(15f, 44f, 15f, 41f); lineTo(15f, 7f); quadraticTo(15f, 4f, 18f, 4f); close()
-                                                }, MaterialTheme.colorScheme.onPrimaryContainer, style = stroke)
+                                                }, centerIconColor, style = stroke)
                                                 drawPath(Path().apply {
                                                     moveTo(15f, 16f); lineTo(10f, 16f); quadraticTo(6f, 16f, 6f, 20f)
                                                     lineTo(6f, 39f); quadraticTo(6f, 43f, 10f, 43f); lineTo(15f, 43f)
                                                     moveTo(34f, 16f); lineTo(38f, 16f); quadraticTo(42f, 16f, 42f, 20f)
                                                     lineTo(42f, 39f); quadraticTo(42f, 43f, 38f, 43f); lineTo(34f, 43f)
-                                                }, MaterialTheme.colorScheme.onPrimaryContainer, style = stroke)
-                                                drawLine(MaterialTheme.colorScheme.onPrimaryContainer, androidx.compose.ui.geometry.Offset(20f, 28f), androidx.compose.ui.geometry.Offset(29f, 28f), 2.8f, cap = StrokeCap.Round)
-                                                drawLine(MaterialTheme.colorScheme.onPrimaryContainer, androidx.compose.ui.geometry.Offset(20f, 35f), androidx.compose.ui.geometry.Offset(29f, 35f), 2.8f, cap = StrokeCap.Round)
+                                                }, centerIconColor, style = stroke)
+                                                drawLine(centerIconColor, androidx.compose.ui.geometry.Offset(20f, 28f), androidx.compose.ui.geometry.Offset(29f, 28f), 2.8f, cap = StrokeCap.Round)
+                                                drawLine(centerIconColor, androidx.compose.ui.geometry.Offset(20f, 35f), androidx.compose.ui.geometry.Offset(29f, 35f), 2.8f, cap = StrokeCap.Round)
                                             }
                                         }
                                     }

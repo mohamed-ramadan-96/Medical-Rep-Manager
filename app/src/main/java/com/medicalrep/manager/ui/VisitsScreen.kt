@@ -354,7 +354,6 @@ private fun VisitFormDialog(
                 }
                 OutlinedTextField(
                         shape = RoundedCornerShape(10.dp),
- shape = RoundedCornerShape(10.dp),
                     value = date,
                     onValueChange = { date = it; error = null },
                     modifier = Modifier.fillMaxWidth(),
@@ -363,7 +362,6 @@ private fun VisitFormDialog(
                 )
                 OutlinedTextField(
                         shape = RoundedCornerShape(10.dp),
- shape = RoundedCornerShape(10.dp),
                     value = time,
                     onValueChange = { time = it; error = null },
                     modifier = Modifier.fillMaxWidth(),
@@ -372,7 +370,6 @@ private fun VisitFormDialog(
                 )
                 OutlinedTextField(
                         shape = RoundedCornerShape(10.dp),
- shape = RoundedCornerShape(10.dp),
                     value = outcome,
                     onValueChange = { outcome = it },
                     modifier = Modifier.fillMaxWidth(),
@@ -381,7 +378,6 @@ private fun VisitFormDialog(
                 )
                 OutlinedTextField(
                         shape = RoundedCornerShape(10.dp),
- shape = RoundedCornerShape(10.dp),
                     value = notes,
                     onValueChange = { notes = it },
                     modifier = Modifier.fillMaxWidth(),
@@ -389,7 +385,6 @@ private fun VisitFormDialog(
                 )
                 OutlinedTextField(
                         shape = RoundedCornerShape(10.dp),
- shape = RoundedCornerShape(10.dp),
                     value = followUpDate,
                     onValueChange = { followUpDate = it; error = null },
                     modifier = Modifier.fillMaxWidth(),

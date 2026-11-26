@@ -1344,7 +1344,6 @@ private fun DoctorFormDialog(
                 item {
                     OutlinedTextField(
                         shape = RoundedCornerShape(10.dp),
- shape = RoundedCornerShape(10.dp),
                         value = name, onValueChange = { name = it; nameError = false },
                         modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), singleLine = true,
                         label = { Text(if (isArabic) "اسم الطبيب *" else "Doctor name *") },
@@ -1368,7 +1367,6 @@ private fun DoctorFormDialog(
                         phoneNumbers.forEachIndexed { index, phone ->
                             OutlinedTextField(
                         shape = RoundedCornerShape(10.dp),
- shape = RoundedCornerShape(10.dp),
                         value = phone,
                                 onValueChange = { value ->
                                     phoneNumbers = phoneNumbers.toMutableList().also { it[index] = value }                                },                                modifier = Modifier.fillMaxWidth(),
@@ -1433,7 +1431,6 @@ private fun DoctorFormDialog(
                                 }
                                 OutlinedTextField(
                         shape = RoundedCornerShape(10.dp),
- shape = RoundedCornerShape(10.dp),
                         value = newArea,
                                     onValueChange = { newArea = it },
                                     modifier = Modifier.fillMaxWidth(),
@@ -1598,7 +1595,6 @@ value = draft.notes,
                 item {
                     OutlinedTextField(
                         shape = RoundedCornerShape(10.dp),
- shape = RoundedCornerShape(10.dp),
                         value = notes, onValueChange = { notes = it },
                         modifier = Modifier.fillMaxWidth(), minLines = 2,
                         label = { Text(if (isArabic) "ملاحظات" else "Notes") }

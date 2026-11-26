@@ -144,7 +144,7 @@ fun VisitsScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             OutlinedTextField(
-                    colors = AppFilledTextFieldColors(),
+                    colors = AppFilledTextFieldColors(AppCardContainerColor()),
                     value = search,
                     onValueChange = { search = it },
                     modifier = Modifier.fillMaxWidth(),

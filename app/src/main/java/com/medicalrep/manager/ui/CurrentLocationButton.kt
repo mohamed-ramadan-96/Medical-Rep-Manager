@@ -94,7 +94,7 @@ internal fun CurrentLocationButton(
 
     OutlinedButton(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(50),
+        shape = RoundedCornerShape(10.dp),
         colors = ButtonDefaults.outlinedButtonColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface),
         onClick = {
             val fine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED

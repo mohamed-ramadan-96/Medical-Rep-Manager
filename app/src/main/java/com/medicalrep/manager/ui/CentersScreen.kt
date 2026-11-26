@@ -732,14 +732,22 @@ private fun CenterFormDialog(
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(10.dp)
                             ) {
-                                Text(if (isArabic) "+ إضافة فترة عمل" else "+ Add working-hours slot")
-                            }
-                            IconButton(onClick = { showWorkingHoursInfo = true }) {
-                                Icon(
-                                    imageVector = Icons.Default.Info,
-                                    contentDescription = if (isArabic) "معلومات مواعيد العمل" else "Working hours information",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Row(
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(if (isArabic) "+ إضافة فترة عمل" else "+ Add working-hours slot")
+                                    IconButton(
+                                        onClick = { showWorkingHoursInfo = true },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Info,
+                                            contentDescription = if (isArabic) "معلومات مواعيد العمل" else "Working hours information",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
                             }
                         }
                         workSlots.forEachIndexed { index, slot ->
@@ -795,7 +803,7 @@ private fun CenterFormDialog(
                 item {
                     OutlinedTextField(
                         value = notes, onValueChange = { notes = it },
-                        modifier = Modifier.fillMaxWidth(), minLines = 2, shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth(), singleLine = false, minLines = 1, shape = RoundedCornerShape(10.dp),
                         label = { Text(if (isArabic) "ملاحظات" else "Notes") }
                     )
                 }
@@ -845,7 +853,12 @@ private fun CenterFormDialog(
                                 enter = expandVertically(animationSpec = tween(AppMotion.Standard)) + fadeIn(animationSpec = tween(AppMotion.Standard)),
                                 exit = shrinkVertically(animationSpec = tween(AppMotion.Standard)) + fadeOut(animationSpec = tween(AppMotion.Fast))
                             ) {
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(MaterialTheme.colorScheme.surface),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
                                     if (hasCenterLocation) {
                                         OutlinedButton(
                                             modifier = Modifier.fillMaxWidth(),
@@ -876,14 +889,17 @@ private fun CenterFormDialog(
                                     }
                                     AnimatedLocationActions(visible = !hasCenterLocation || editCenterLocation) {
                                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            CurrentLocationButton(isArabic = isArabic) { lat, lon ->
+                                            CurrentLocationButton(
+                                                isArabic = isArabic,
+                                                modifier = Modifier.fillMaxWidth().height(48.dp)
+                                            ) { lat, lon ->
                                                 latitude = lat
                                                 longitude = lon
                                                 mapUrl = null
                                                 editCenterLocation = false
                                             }
                                             OutlinedButton(
-                                                modifier = Modifier.fillMaxWidth(),
+                                                modifier = Modifier.fillMaxWidth().height(48.dp),
                                                 onClick = { showMapPicker = true },
                                                 shape = RoundedCornerShape(10.dp)
                                             ) {

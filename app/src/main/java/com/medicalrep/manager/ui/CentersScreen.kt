@@ -254,7 +254,14 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val centerHeaderHeight by animateDpAsState(if (centerHeaderExpanded) 76.dp else 48.dp, animationSpec = tween(AppMotion.Emphasized), label = "centersHeaderHeight")
     val centerSearchHeight by animateDpAsState(if (centerHeaderExpanded) 60.dp else 44.dp, animationSpec = tween(AppMotion.Emphasized), label = "centersSearchHeight")
 
-    val centerFadeColor = MaterialTheme.colorScheme.background
+    val fadeHeaderOffset = centerListState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }?.offset ?: Int.MAX_VALUE
+        val fadeStartOffset = with(LocalDensity.current) { 48.dp.roundToPx() }
+        val fadeAlpha by animateFloatAsState(
+            targetValue = ((fadeStartOffset - fadeHeaderOffset).toFloat() / fadeStartOffset).coerceIn(0f, 1f),
+            animationSpec = tween(AppMotion.Emphasized),
+            label = "centersFadeAlpha"
+        )
+        val centerFadeColor = MaterialTheme.colorScheme.background
     Scaffold(
         modifier = Modifier.padding(padding),
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
@@ -269,13 +276,13 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             modifier = Modifier.fillMaxSize().padding(inner).drawWithContent {
                 drawContent()
                 val stickyHeader = centerListState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }
-                if (stickyHeader != null && stickyHeader.offset <= 0) {
+                if (stickyHeader != null && fadeAlpha > 0f) {
                     val fadeTop = (stickyHeader.offset + stickyHeader.size).toFloat()
                     val fadeHeight = 72.dp.toPx()
                     drawRect(
                         brush = Brush.verticalGradient(
-                            0f to centerFadeColor,
-                            0.65f to centerFadeColor.copy(alpha = 0.96f),
+                            0f to centerFadeColor.copy(alpha = fadeAlpha),
+                            0.65f to centerFadeColor.copy(alpha = 0.96f * fadeAlpha),
                             1f to centerFadeColor.copy(alpha = 0f),
                             startY = fadeTop,
                             endY = fadeTop + fadeHeight

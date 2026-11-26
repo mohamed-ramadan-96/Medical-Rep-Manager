@@ -636,7 +636,6 @@ private fun CenterFormDialog(
     var areaError by remember { mutableStateOf(false) }
     var showWorkingHoursInfo by remember { mutableStateOf(false) }
 
-    val dialogMaxHeight = LocalConfiguration.current.screenHeightDp.dp * 0.88f
 
     if (showWorkingHoursInfo) {
         AlertDialog(
@@ -657,14 +656,12 @@ private fun CenterFormDialog(
     }
 
     AlertDialog(
-        modifier = Modifier.fillMaxWidth().widthIn(max = 560.dp).heightIn(max = dialogMaxHeight),
-        properties = DialogProperties(usePlatformDefaultWidth = false),
         onDismissRequest = onDismiss,
-        title = { Text(if (initial == null) { if (isArabic) "إضافة مركز أو عيادة" else "Add center or clinic" } else { if (isArabic) "تعديل المركز" else "Edit center" }, style = MaterialTheme.typography.titleLarge) },
+        title = { Text(if (initial == null) { if (isArabic) "إضافة مركز أو عيادة" else "Add center or clinic" } else { if (isArabic) "تعديل المركز" else "Edit center" }, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
         text = {
             LazyColumn(
-                modifier = Modifier.fillMaxWidth().heightIn(max = dialogMaxHeight - 150.dp),
-                verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 item {
                     OutlinedTextField(
@@ -881,7 +878,7 @@ private fun CenterFormDialog(
             }
         },
         confirmButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Button(
                 onClick = {
                 if (name.isBlank()) nameError = true
@@ -917,9 +914,10 @@ private fun CenterFormDialog(
                     }
                 )
                 },
-                shape = MaterialTheme.shapes.small
+                modifier = Modifier.height(48.dp),
+                shape = RoundedCornerShape(10.dp)
             ) { Text(if (isArabic) "حفظ" else "Save") }
-            OutlinedButton(onClick = onDismiss, shape = MaterialTheme.shapes.small) { Text(if (isArabic) "إلغاء" else "Cancel") }
+            OutlinedButton(onClick = onDismiss, modifier = Modifier.height(48.dp), shape = RoundedCornerShape(10.dp)) { Text(if (isArabic) "إلغاء" else "Cancel") }
             }
         },
         dismissButton = { }

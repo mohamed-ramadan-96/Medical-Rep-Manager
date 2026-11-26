@@ -673,10 +673,7 @@ private fun AvailabilityFormDialog(
             Text(
                 if (initialGroup.isEmpty()) { if (isArabic) "إضافة مواعيد للطبيب" else "Add doctor availability" }
                 else { if (isArabic) "تعديل المواعيد" else "Edit availability" },
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.titleLarge
             )
         },
         text = {
@@ -975,7 +972,7 @@ private fun AvailabilityFormDialog(
                     modifier = Modifier.weight(1f),
                     shape = MaterialTheme.shapes.small
                 ) { Text(if (isArabic) "حفظ المواعيد" else "Save availability", fontWeight = FontWeight.Bold) }
-                OutlinedButton(onClick = onDismiss, shape = MaterialTheme.shapes.small {
+                OutlinedButton(onClick = onDismiss, shape = MaterialTheme.shapes.small) {
                     Text(if (isArabic) "إلغاء" else "Cancel")
                 }
             }

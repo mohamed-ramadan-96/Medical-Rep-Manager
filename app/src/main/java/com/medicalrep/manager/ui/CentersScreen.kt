@@ -604,7 +604,7 @@ private data class CenterWorkingHoursDraft(
 private fun CenterAreaPickerRow(label: String, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = AppCardContainerColor(),
         shape = RoundedCornerShape(10.dp),
         modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
     ) {
@@ -883,7 +883,7 @@ private fun CenterFormDialog(
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(10.dp),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                                colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())
                             ) {
                                 Column(
                                     modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -994,7 +994,7 @@ private fun CenterFormDialog(
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainer
+                        color = AppCardContainerColor()
                     ) {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(12.dp),

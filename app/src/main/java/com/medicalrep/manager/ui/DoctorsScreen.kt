@@ -1043,7 +1043,7 @@ internal fun DoctorDetailsDialog(
                                     centerGroups.forEach { group ->
                                         val first = group.first()
                                         val dayNames = group.map { slot -> days.firstOrNull { it.first == slot.dayOfWeek }?.second.orEmpty() }.joinToString("، ")
-                                        Text("$dayNames  •  ${doctorDisplayTime(first.startTime)} – ${doctorDisplayTime(first.endTime)}", style = MaterialTheme.typography.bodyMedium)
+                                        Text("$dayNames  •  ${doctorDisplayTime(first.startTime, isArabic)} – ${doctorDisplayTime(first.endTime, isArabic)}", style = MaterialTheme.typography.bodyMedium)
                                         if (first.notes.isNotBlank()) Text(first.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }

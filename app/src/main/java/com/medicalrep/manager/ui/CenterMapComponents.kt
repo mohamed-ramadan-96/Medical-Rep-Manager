@@ -187,7 +187,7 @@ fun CenterMapPickerDialog(
                     Text(if (isArabic) "فتح Google Maps لاختيار الموقع" else "Open Google Maps to choose location")
                 }
                 OutlinedTextField(
-                            colors = AppFilledTextFieldColors(),
+                    colors = AppFilledTextFieldColors(),
                     value = sharedLink,
                     onValueChange = {
                         sharedLink = it
@@ -200,8 +200,7 @@ fun CenterMapPickerDialog(
                     singleLine = true,
                     isError = linkError,
                     label = { Text(if (isArabic) "رابط Google Maps" else "Google Maps link") }
-                
-                        )
+                )
                 OutlinedButton(
                     enabled = sharedLink.isNotBlank() && !resolving,
                     onClick = {

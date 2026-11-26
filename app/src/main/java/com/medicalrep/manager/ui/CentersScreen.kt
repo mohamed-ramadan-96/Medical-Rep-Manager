@@ -249,11 +249,130 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                         modifier = Modifier.padding(top = 24.dp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                }
-            }
-items(filteredCenters, key = { it.id }) { center ->
+                                items(filteredCenters, key = { it.id }) { center ->
                         val expanded = center.id in expandedCenterIds
                         val centerSlots = centerAvailability.filter { it.centerId == center.id }
+                        val expandRotation by animateFloatAsState(targetValue = if (expanded) 180f else 0f, animationSpec = tween(AppMotion.Standard), label = "centerExpandRotation")
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.small,
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = AppSpacing.md),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Surface(
+                                        modifier = Modifier.size(36.dp),
+                                        shape = MaterialTheme.shapes.small,
+                                        color = MaterialTheme.colorScheme.primaryContainer
+                                    ) {
+                                        Canvas(Modifier.padding(8.dp).fillMaxSize()) {
+                                            val unit = size.minDimension / 48f
+                                            androidx.compose.ui.graphics.drawscope.scale(unit, pivot = androidx.compose.ui.geometry.Offset.Zero) {
+                                                val stroke = Stroke(width = 2.8f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                                                drawPath(Path().apply {
+                                                    moveTo(18f, 4f); lineTo(31f, 4f); quadraticTo(34f, 4f, 34f, 7f); lineTo(34f, 41f); quadraticTo(34f, 44f, 31f, 44f); lineTo(18f, 44f); quadraticTo(15f, 44f, 15f, 41f); lineTo(15f, 7f); quadraticTo(15f, 4f, 18f, 4f); close()
+                                                }, MaterialTheme.colorScheme.onPrimaryContainer, style = stroke)
+                                                drawPath(Path().apply {
+                                                    moveTo(15f, 16f); lineTo(10f, 16f); quadraticTo(6f, 16f, 6f, 20f)
+                                                    lineTo(6f, 39f); quadraticTo(6f, 43f, 10f, 43f); lineTo(15f, 43f)
+                                                    moveTo(34f, 16f); lineTo(38f, 16f); quadraticTo(42f, 16f, 42f, 20f)
+                                                    lineTo(42f, 39f); quadraticTo(42f, 43f, 38f, 43f); lineTo(34f, 43f)
+                                                }, MaterialTheme.colorScheme.onPrimaryContainer, style = stroke)
+                                                drawLine(MaterialTheme.colorScheme.onPrimaryContainer, androidx.compose.ui.geometry.Offset(20f, 28f), androidx.compose.ui.geometry.Offset(29f, 28f), 2.8f, cap = StrokeCap.Round)
+                                                drawLine(MaterialTheme.colorScheme.onPrimaryContainer, androidx.compose.ui.geometry.Offset(20f, 35f), androidx.compose.ui.geometry.Offset(29f, 35f), 2.8f, cap = StrokeCap.Round)
+                                            }
+                                        }
+                                    }
+                                    Column(
+                                        modifier = Modifier.weight(1f),
+                                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                                    ) {
+                                        Text(center.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, maxLines = 1)
+                                        if (center.address.isNotBlank()) {
+                                            Text(center.address, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                                        }
+                                        if (center.phone.isNotBlank()) {
+                                            Text(center.phone, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                                        }
+                                    }
+                                    IconButton(
+                                        modifier = Modifier.size(34.dp),
+                                        onClick = { expandedCenterIds = if (expanded) expandedCenterIds - center.id else expandedCenterIds + center.id }
+                                    ) {
+                                        Icon(
+                                            Icons.Default.ExpandMore,
+                                            contentDescription = if (isArabic) {
+                                                if (expanded) "إخفاء التفاصيل" else "عرض التفاصيل"
+                                            } else {
+                                                if (expanded) "Hide details" else "Show details"
+                                            },
+                                            modifier = Modifier.size(20.dp).rotate(expandRotation)
+                                        )
+                                    }
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    if ((center.latitude != null && center.longitude != null) || !center.mapUrl.isNullOrBlank()) {
+                                        IconButton(modifier = Modifier.size(32.dp), onClick = { directionsCenter = center }) {
+                                            Icon(Icons.Default.LocationOn, contentDescription = if (isArabic) "الاتجاهات إلى المركز" else "Directions to center", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                        }
+                                    }
+                                    IconButton(modifier = Modifier.size(32.dp), onClick = { attachmentsCenter = center }) {
+                                        Icon(Icons.Default.AttachFile, contentDescription = if (isArabic) "المرفقات" else "Attachments", modifier = Modifier.size(18.dp))
+                                    }
+                                    IconButton(modifier = Modifier.size(32.dp), onClick = { editing = center; showForm = true }) {
+                                        Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit", modifier = Modifier.size(18.dp))
+                                    }
+                                    IconButton(modifier = Modifier.size(32.dp), onClick = { pendingDelete = center }) {
+                                        Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف" else "Delete", modifier = Modifier.size(18.dp))
+                                    }
+                                }
+                                AnimatedVisibility(
+                                    visible = expanded,
+                                    enter = expandVertically(animationSpec = tween(AppMotion.Emphasized)) + fadeIn(animationSpec = tween(AppMotion.Standard)),
+                                    exit = shrinkVertically(animationSpec = tween(AppMotion.Standard)) + fadeOut(animationSpec = tween(AppMotion.Fast))
+                                ) {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth().padding(start = 28.dp, top = 4.dp, bottom = 4.dp),
+                                        verticalArrangement = Arrangement.spacedBy(5.dp)
+                                    ) {
+                                        if (center.notes.isNotBlank()) Text(center.notes, style = MaterialTheme.typography.bodySmall)
+                                        Text(
+                                            (if (isArabic) "عدد الأطباء غير المسجلين: " else "Unregistered doctors: ") + center.unregisteredDoctorCount,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            (if (isArabic) "أطباء بملفات مسجلة: " else "Registered doctor profiles: ") + doctorCenterLinks.count { it.centerId == center.id },
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        if (centerSlots.isNotEmpty()) {
+                                            Text(if (isArabic) "مواعيد عمل المركز" else "Center working hours", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                            centerSlots.groupBy { it.slotGroupId }.values.forEach { group ->
+                                                val first = group.first()
+                                                val daysText = group.map { slot ->
+                                                    mapOf(6 to "السبت", 7 to "الأحد", 1 to "الاثنين", 2 to "الثلاثاء", 3 to "الأربعاء", 4 to "الخميس", 5 to "الجمعة")[slot.dayOfWeek].orEmpty()
+                                                }.joinToString("، ")
+                                                Text(daysText + " • " + first.startTime + " – " + first.endTime, style = MaterialTheme.typography.bodySmall)
+                                                if (first.notes.isNotBlank()) Text(first.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
         }
     }
 

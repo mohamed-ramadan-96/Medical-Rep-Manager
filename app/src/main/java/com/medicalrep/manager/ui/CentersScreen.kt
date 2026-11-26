@@ -268,7 +268,9 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                         modifier = Modifier.padding(top = 24.dp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                                items(filteredCenters, key = { it.id }) { center ->
+                }
+            }
+            items(filteredCenters, key = { it.id }) { center ->
                         val expanded = center.id in expandedCenterIds
                         val centerSlots = centerAvailability.filter { it.centerId == center.id }
                         val expandRotation by animateFloatAsState(targetValue = if (expanded) 180f else 0f, animationSpec = tween(AppMotion.Standard), label = "centerExpandRotation")

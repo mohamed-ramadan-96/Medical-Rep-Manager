@@ -13,6 +13,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.medicalrep.manager.ui.theme.AppCardContainerColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -89,7 +90,7 @@ fun CenterMapPreview(
     if (latitude != null && longitude != null) {
         androidx.compose.material3.Surface(
             modifier = modifier,
-            color = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
+            color = AppCardContainerColor(),
             shape = MaterialTheme.shapes.medium
         ) {
             Column(

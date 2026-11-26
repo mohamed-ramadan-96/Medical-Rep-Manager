@@ -1,6 +1,7 @@
 package com.medicalrep.manager.ui
 
 import com.medicalrep.manager.ui.theme.AppSpacing
+import com.medicalrep.manager.ui.theme.AppCardContainerColor
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.Alignment
@@ -94,7 +95,7 @@ fun SpecialtiesScreen(isArabic: Boolean, padding: androidx.compose.foundation.la
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = MaterialTheme.shapes.medium,
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                            colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(16.dp),

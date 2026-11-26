@@ -285,9 +285,8 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                     Box(Modifier.width(searchWidth).height(controlHeight)) {
                         Surface(
                             onClick = if (searchHeaderExpanded) ({}) else ({ searchHeaderExpanded = true }),
-                            shape = if (searchHeaderExpanded) MaterialTheme.shapes.extraLarge else MaterialTheme.shapes.medium,
-                            color = MaterialTheme.colorScheme.surface,
-                            border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+                            shape = RoundedCornerShape(10.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainer,
                             modifier = Modifier.fillMaxSize()
                         ) {
                             Row(modifier = Modifier.padding(horizontal = if (searchHeaderExpanded) 18.dp else 10.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -1036,15 +1035,7 @@ private fun AvailabilitySelectionField(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(10.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        border = BorderStroke(
-            if (isError || isRequired) 1.5.dp else 1.dp,
-            when {
-                isError -> MaterialTheme.colorScheme.error
-                isRequired -> MaterialTheme.colorScheme.primary
-                else -> MaterialTheme.colorScheme.outlineVariant
-            }
-        )
+        color = MaterialTheme.colorScheme.surfaceContainer
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),

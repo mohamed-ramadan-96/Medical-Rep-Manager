@@ -200,7 +200,7 @@ private fun FormExpandableSection(
 ) {
     Surface(
         shape = RoundedCornerShape(10.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = AppCardContainerColor(),
         modifier = Modifier
             .fillMaxWidth()
     ) {
@@ -1465,7 +1465,7 @@ private fun DoctorFormDialog(
                             LazyColumn(modifier = Modifier.height(240.dp)) {
                                 items(areaOptions, key = { it }) { areaOption ->
                                     Surface(
-                                        color = MaterialTheme.colorScheme.surfaceContainer,
+                                        color = AppCardContainerColor(),
                                         shape = RoundedCornerShape(10.dp),
                                         modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                                     ) {
@@ -1804,7 +1804,7 @@ private fun DoctorFormDialog(
                     item {
                         Surface(
                             onClick = { selectedSpecialtyId = null; showSpecialtyPicker = false },
-                            color = MaterialTheme.colorScheme.surfaceContainer,
+                            color = AppCardContainerColor(),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                         ) {
@@ -1823,7 +1823,7 @@ private fun DoctorFormDialog(
                     items(specialties, key = { it.id }) { specialty ->
                         Surface(
                             onClick = { selectedSpecialtyId = specialty.id; showSpecialtyPicker = false },
-                            color = MaterialTheme.colorScheme.surfaceContainer,
+                            color = AppCardContainerColor(),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                         ) {
@@ -1872,7 +1872,7 @@ private fun DoctorFormDialog(
                     item {
                         Surface(
                             onClick = { selectedCenterIds = emptySet() },
-                            color = MaterialTheme.colorScheme.surfaceContainer,
+                            color = AppCardContainerColor(),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                         ) {
@@ -1934,7 +1934,7 @@ private fun DoctorFormDialog(
                         key = { it.id }
                     ) { center ->
                         Surface(
-                            color = MaterialTheme.colorScheme.surfaceContainer,
+                            color = AppCardContainerColor(),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                         ) {

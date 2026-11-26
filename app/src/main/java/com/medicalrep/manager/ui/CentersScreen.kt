@@ -848,22 +848,33 @@ private fun CenterFormDialog(
                 }
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(
+                        Surface(
                             onClick = { workSlots = workSlots + CenterWorkingHoursDraft() },
                             modifier = Modifier.fillMaxWidth().height(46.dp),
-                            shape = RoundedCornerShape(10.dp)
+                            shape = RoundedCornerShape(10.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainer
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Text(if (isArabic) "إضافة فترة عمل" else "Add working-hours slot")
-                            IconButton(
-                                onClick = { showWorkingHoursInfo = true },
-                                modifier = Modifier.size(32.dp)
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Info,
-                                    contentDescription = if (isArabic) "معلومات مواعيد العمل" else "Working hours information",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Text(if (isArabic) "إضافة فترة عمل" else "Add working-hours slot")
+                                }
+                                IconButton(
+                                    onClick = { showWorkingHoursInfo = true },
+                                    modifier = Modifier.align(Alignment.CenterEnd).size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = if (isArabic) "معلومات مواعيد العمل" else "Working hours information",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                         workSlots.forEachIndexed { index, slot ->

@@ -371,7 +371,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             LazyColumn(state = listState, modifier = Modifier.fillMaxSize().drawWithContent {
                 drawContent()
                 val stickyHeader = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }
-                if (stickyHeader != null) {
+                if (stickyHeader != null && stickyHeader.offset <= 0) {
                     val fadeTop = (stickyHeader.offset + stickyHeader.size).toFloat()
                     val fadeHeight = 72.dp.toPx()
                     drawRect(

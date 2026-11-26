@@ -198,9 +198,8 @@ private fun FormExpandableSection(
     content: @Composable () -> Unit
 ) {
     Surface(
-        shape = MaterialTheme.shapes.small,
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier
             .fillMaxWidth()
     ) {
@@ -278,9 +277,8 @@ private fun DoctorSearchField(
     val textAlpha by animateFloatAsState(if (compact) 0f else 1f, tween(AppMotion.Fast), label = "searchTextAlpha")
     Surface(
         onClick = if (compact) onExpand else ({ }),
-        shape = if (compact) MaterialTheme.shapes.medium else MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier.fillMaxWidth().height(height)
     ) {
         Row(
@@ -1187,8 +1185,7 @@ private fun DoctorTimeSelectionField(
         onClick = onClick,
         modifier = modifier,
         shape = RoundedCornerShape(10.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        color = MaterialTheme.colorScheme.surfaceContainer
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),

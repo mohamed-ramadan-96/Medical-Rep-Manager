@@ -381,13 +381,13 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                         }
                         Text(sheetTitle, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         OutlinedTextField(
-                            colors = AppFilledTextFieldColors(),
-                            value = filterSearch,
-                            onValueChange = { filterSearch = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                            placeholder = {
+                    colors = AppFilledTextFieldColors(),
+                    value = filterSearch,
+                    onValueChange = { filterSearch = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    placeholder = {
                                 Text(
                                     when (activeFilterSheet) {
                                         "day" -> if (isArabic) "ابحث عن يوم..." else "Search days..."
@@ -396,9 +396,8 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                                     }
                                 )
                             },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
-                        
-                        )
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
+                )
                         LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp)) {
                             when (activeFilterSheet) {
                                 "day" -> {
@@ -697,16 +696,15 @@ private fun AvailabilityFormDialog(
                         ) {
                             Text(if (isArabic) "اختيار الطبيب" else "Choose doctor", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                             OutlinedTextField(
-                            colors = AppFilledTextFieldColors(),
-                                value = doctorSearch,
-                                onValueChange = { doctorSearch = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                shape = RoundedCornerShape(12.dp),
-                                placeholder = { Text(if (isArabic) "ابحث عن دكتور..." else "Search doctors...") },
-                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
-                            
-                        )
+                    colors = AppFilledTextFieldColors(),
+                    value = doctorSearch,
+                    onValueChange = { doctorSearch = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    placeholder = { Text(if (isArabic) "ابحث عن دكتور..." else "Search doctors...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
+                )
                             val filteredDoctors = doctors.filter { normalizePickerSearch(it.name).contains(normalizePickerSearch(doctorSearch)) }
                             LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp)) {
                                 items(filteredDoctors, key = { it.id }) { doctor ->
@@ -753,16 +751,15 @@ private fun AvailabilityFormDialog(
                         ) {
                             Text(if (isArabic) "اختيار المركز" else "Choose center", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                             OutlinedTextField(
-                            colors = AppFilledTextFieldColors(),
-                                value = centerSearch,
-                                onValueChange = { centerSearch = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                shape = RoundedCornerShape(12.dp),
-                                placeholder = { Text(if (isArabic) "ابحث عن مركز..." else "Search centers...") },
-                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
-                            
-                        )
+                    colors = AppFilledTextFieldColors(),
+                    value = centerSearch,
+                    onValueChange = { centerSearch = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    placeholder = { Text(if (isArabic) "ابحث عن مركز..." else "Search centers...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
+                )
                             val filteredCenters = selectableCenters.filter { normalizePickerSearch(it.name).contains(normalizePickerSearch(centerSearch)) }
                             LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp)) {
                                 items(filteredCenters, key = { it.id }) { center ->
@@ -925,16 +922,15 @@ private fun AvailabilityFormDialog(
                                 }
                             }
                             OutlinedTextField(
-                            colors = AppFilledTextFieldColors(),
-                                value = draft.notes,
-                                onValueChange = { value -> drafts = drafts.toMutableList().also { it[index] = draft.copy(notes = value) } },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                shape = RoundedCornerShape(10.dp),
-                                label = { Text(if (isArabic) "ملاحظات الفترة (اختياري)" else "Period notes (optional)") },
-                                placeholder = { Text(if (isArabic) "مثال: بالحجز فقط" else "e.g. By appointment only") }
-                            
-                        )
+                    colors = AppFilledTextFieldColors(),
+                    value = draft.notes,
+                    onValueChange = { value -> drafts = drafts.toMutableList().also { it[index] = draft.copy(notes = value) } },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp),
+                    label = { Text(if (isArabic) "ملاحظات الفترة (اختياري)" else "Period notes (optional)") },
+                    placeholder = { Text(if (isArabic) "مثال: بالحجز فقط" else "e.g. By appointment only") }
+                )
                         }
                     }
                 }

@@ -1884,20 +1884,32 @@ private fun DoctorFormDialog(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        Surface(
+                            onClick = { selectedCenterIds = emptySet() },
+                            color = MaterialTheme.colorScheme.surfaceContainer,
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                         ) {
-                            Surface(
-                                onClick = { selectedCenterIds = emptySet() },
-                                color = MaterialTheme.colorScheme.surfaceContainer,
-                                shape = RoundedCornerShape(10.dp),
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                                modifier = Modifier.weight(1f)
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
+                                IconButton(
+                                    onClick = {
+                                        centerSearchExpanded = !centerSearchExpanded
+                                        if (!centerSearchExpanded) centerSearchQuery = ""
+                                    },
+                                    modifier = Modifier.size(48.dp)
+                                ) {
+                                    Icon(
+                                        if (centerSearchExpanded) Icons.Default.Close else Icons.Default.Search,
+                                        contentDescription = if (isArabic) "بحث في المراكز" else "Search centers",
+                                        tint = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
                                 Box(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 15.dp),
+                                    modifier = Modifier.weight(1f).padding(vertical = 15.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
@@ -1906,19 +1918,6 @@ private fun DoctorFormDialog(
                                         style = MaterialTheme.typography.bodyLarge
                                     )
                                 }
-                            }
-                            IconButton(
-                                onClick = {
-                                    centerSearchExpanded = !centerSearchExpanded
-                                    if (!centerSearchExpanded) centerSearchQuery = ""
-                                },
-                                modifier = Modifier.size(48.dp)
-                            ) {
-                                Icon(
-                                    if (centerSearchExpanded) Icons.Default.Close else Icons.Default.Search,
-                                    contentDescription = if (isArabic) "بحث في المراكز" else "Search centers",
-                                    tint = MaterialTheme.colorScheme.onSurface
-                                )
                             }
                         }
                     }

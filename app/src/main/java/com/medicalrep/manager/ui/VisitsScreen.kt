@@ -1,6 +1,7 @@
 package com.medicalrep.manager.ui
 
 import com.medicalrep.manager.ui.theme.AppSpacing
+import com.medicalrep.manager.ui.theme.AppCardContainerColor
 
 import com.medicalrep.manager.ui.theme.AppMotion
 
@@ -184,7 +185,7 @@ fun VisitsScreen(
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = MaterialTheme.shapes.small,
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                            colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())
                         ) {
                             Column(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = AppSpacing.md),

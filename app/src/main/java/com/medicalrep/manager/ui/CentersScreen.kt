@@ -599,6 +599,23 @@ private data class CenterWorkingHoursDraft(
     val existing: List<CenterAvailabilityEntity> = emptyList()
 )
 
+@Composable
+private fun CenterAreaPickerRow(label: String, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = RoundedCornerShape(10.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+    ) {
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 15.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(label, textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CenterFormDialog(
@@ -727,15 +744,15 @@ private fun CenterFormDialog(
                                         modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp),
                                         verticalArrangement = Arrangement.spacedBy(3.dp)
                                     ) {
-                                        items(savedAreas.distinct().sorted(), key = { it.lowercase(java.util.Locale.ROOT) }) { areaOption ->
-                                            FilterPickerRow(areaOption) {
+                                        items(savedAreas.distinctBy { it.trim().lowercase(java.util.Locale.ROOT) }.sorted(), key = { it.trim().lowercase(java.util.Locale.ROOT) }) { areaOption ->
+                                            CenterAreaPickerRow(areaOption) {
                                                 area = areaOption
                                                 areaError = false
                                                 showAreaPicker = false
                                             }
                                         }
                                         item {
-                                            FilterPickerRow(if (isArabic) "＋ إضافة منطقة جديدة" else "＋ Add new area") {
+                                            CenterAreaPickerRow(if (isArabic) "＋ إضافة منطقة جديدة" else "＋ Add new area") {
                                                 newAreaName = ""
                                                 showAreaPicker = false
                                                 showNewAreaDialog = true

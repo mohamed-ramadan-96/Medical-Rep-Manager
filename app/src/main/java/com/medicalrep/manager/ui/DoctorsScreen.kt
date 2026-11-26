@@ -681,14 +681,13 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             title = { Text(if (isArabic) "إضافة تخصص جديد" else "Add new specialty") },
             text = {
                 OutlinedTextField(
-                            colors = AppFilledTextFieldColors(),
+                    colors = AppFilledTextFieldColors(),
                     value = newSpecialtyName,
                     onValueChange = { newSpecialtyName = it },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     label = { Text(if (isArabic) "اسم التخصص" else "Specialty name") }
-                
-                        )
+                )
             },
             confirmButton = {
                 TextButton(onClick = {
@@ -1394,20 +1393,15 @@ private fun DoctorFormDialog(
                 }
                 item {
                     OutlinedTextField(
-                            colors = AppFilledTextFieldColors(),
-                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                        ),
-                        shape = RoundedCornerShape(10.dp),
-                        value = name, onValueChange = { name = it; nameError = false },
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), singleLine = true,
-                        label = { Text(if (isArabic) "اسم الطبيب *" else "Doctor name *") },
-                        isError = nameError
-                    
-                        )
+                    colors = AppFilledTextFieldColors(),
+                    shape = RoundedCornerShape(10.dp),
+                    value = name,
+                    onValueChange = { name = it; nameError = false },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                    singleLine = true,
+                    label = { Text(if (isArabic) "اسم الطبيب *" else "Doctor name *") },
+                    isError = nameError
+                )
                 }
                 item {
                     OutlinedSelectionField(
@@ -1425,20 +1419,15 @@ private fun DoctorFormDialog(
                     ) {
                         phoneNumbers.forEachIndexed { index, phone ->
                             OutlinedTextField(
-                            colors = AppFilledTextFieldColors(),
-                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                        ),
-                        shape = RoundedCornerShape(10.dp),
-                        value = phone,
-                                onValueChange = { value ->
-                                    phoneNumbers = phoneNumbers.toMutableList().also { it[index] = value }                                },                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                label = { Text(if (isArabic) "رقم الهاتف ${index + 1}" else "Phone number ${index + 1}") },
-                                trailingIcon = {
+                    colors = AppFilledTextFieldColors(),
+                    shape = RoundedCornerShape(10.dp),
+                    value = phone,
+                    onValueChange = { value ->
+                                    phoneNumbers = phoneNumbers.toMutableList().also { it[index] = value }                                },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text(if (isArabic) "رقم الهاتف ${index + 1}" else "Phone number ${index + 1}") },
+                    trailingIcon = {
                                     IconButton(onClick = {
                                         phoneNumbers = phoneNumbers.toMutableList().also { list ->
                                             if (list.size > 1) list.removeAt(index) else list[0] = ""
@@ -1447,8 +1436,7 @@ private fun DoctorFormDialog(
                                         Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف الرقم" else "Delete number")
                                     }
                                 }
-                            
-                        )
+                )
                         }
                         OutlinedButton(
                             onClick = { phoneNumbers = phoneNumbers + "" },
@@ -1497,24 +1485,20 @@ private fun DoctorFormDialog(
                                 }
                             }
                             OutlinedTextField(
-                            colors = AppFilledTextFieldColors(),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                                ),
-                                shape = RoundedCornerShape(10.dp), value = newArea, onValueChange = { newArea = it },
-                                modifier = Modifier.fillMaxWidth(), singleLine = true,
-                                label = { Text(if (isArabic) "إضافة منطقة جديدة" else "Add a new area") },
-                                trailingIcon = {
+                    colors = AppFilledTextFieldColors(),
+                    shape = RoundedCornerShape(10.dp),
+                    value = newArea,
+                    onValueChange = { newArea = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text(if (isArabic) "إضافة منطقة جديدة" else "Add a new area") },
+                    trailingIcon = {
                                     IconButton(onClick = {
                                         val value = newArea.trim()
                                         if (value.isNotBlank() && areaOptions.none { it.equals(value, true) }) { areaOptions = areaOptions + value; newArea = "" }
                                     }, enabled = newArea.isNotBlank()) { Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة منطقة" else "Add area") }
                                 }
-                            
-                        )
+                )
                         }
                     }
                 }
@@ -1630,18 +1614,17 @@ private fun DoctorFormDialog(
                                             )
                                         }
                                         OutlinedTextField(
-                            colors = AppFilledTextFieldColors(),
-                                            value = draft.notes,
-                                            onValueChange = { value ->
+                    colors = AppFilledTextFieldColors(),
+                    value = draft.notes,
+                    onValueChange = { value ->
                                                 availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(notes = value) }
                                             },
-                                            modifier = Modifier.fillMaxWidth(),
-                                            singleLine = true,
-                                            shape = RoundedCornerShape(10.dp),
-                                            label = { Text(if (isArabic) "ملاحظات الفترة (اختياري)" else "Period notes (optional)") },
-                                            placeholder = { Text(if (isArabic) "مثال: بالحجز فقط" else "e.g. By appointment only") }
-                                        
-                        )
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp),
+                    label = { Text(if (isArabic) "ملاحظات الفترة (اختياري)" else "Period notes (optional)") },
+                    placeholder = { Text(if (isArabic) "مثال: بالحجز فقط" else "e.g. By appointment only") }
+                )
                                     }
                                 }
                             }
@@ -1707,19 +1690,14 @@ private fun DoctorFormDialog(
                 }
                 item {
                     OutlinedTextField(
-                            colors = AppFilledTextFieldColors(),
-                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                        ),
-                        shape = RoundedCornerShape(10.dp),
-                        value = notes, onValueChange = { notes = it },
-                        modifier = Modifier.fillMaxWidth(), minLines = 2,
-                        label = { Text(if (isArabic) "ملاحظات" else "Notes") }
-                    
-                        )
+                    colors = AppFilledTextFieldColors(),
+                    shape = RoundedCornerShape(10.dp),
+                    value = notes,
+                    onValueChange = { notes = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                    label = { Text(if (isArabic) "ملاحظات" else "Notes") }
+                )
                 }
             }
         },
@@ -1929,31 +1907,24 @@ private fun DoctorFormDialog(
                     if (centerSearchExpanded) {
                         item {
                             OutlinedTextField(
-                            colors = AppFilledTextFieldColors(),
-                                value = centerSearchQuery,
-                                onValueChange = { centerSearchQuery = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                shape = RoundedCornerShape(10.dp),
-                                placeholder = { Text(if (isArabic) "ابحث في المراكز" else "Search centers") },
-                                leadingIcon = {
+                    colors = AppFilledTextFieldColors(),
+                    value = centerSearchQuery,
+                    onValueChange = { centerSearchQuery = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp),
+                    placeholder = { Text(if (isArabic) "ابحث في المراكز" else "Search centers") },
+                    leadingIcon = {
                                     Icon(Icons.Default.Search, contentDescription = null)
                                 },
-                                trailingIcon = {
+                    trailingIcon = {
                                     if (centerSearchQuery.isNotEmpty()) {
                                         IconButton(onClick = { centerSearchQuery = "" }) {
                                             Icon(Icons.Default.Close, contentDescription = if (isArabic) "مسح البحث" else "Clear search")
                                         }
                                     }
-                                },
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                                )
-                            
-                        )
+                                }
+                )
                         }
                     }
                     items(

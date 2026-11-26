@@ -1,6 +1,7 @@
 package com.medicalrep.manager.ui
 
 import com.medicalrep.manager.ui.theme.AppSpacing
+import com.medicalrep.manager.ui.theme.AppCardContainerColor
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -383,7 +384,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
         }
         item {
             Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium,
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
+                colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(if (isArabic) "نشاط الزيارات - آخر 6 أشهر" else "Visit activity - last 6 months",
                         fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
@@ -448,7 +449,7 @@ private fun MetricCard(
     label: String
 ) {
     Card(modifier = modifier, shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
+        colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             Text(value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
@@ -472,7 +473,7 @@ private fun VisitSummaryCard(visit: DoctorVisitEntity, doctorName: String?, isAr
     val timestamp = if (followUp) visit.nextFollowUpAt ?: visit.visitedAt else visit.visitedAt
     val date = remember(timestamp) { SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(timestamp)) }
     Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
+        colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())) {
         Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
             Icon(if (followUp) Icons.Default.EventRepeat else Icons.Default.CalendarMonth,
                 contentDescription = null, tint = MaterialTheme.colorScheme.primary)

@@ -2,6 +2,8 @@ package com.medicalrep.manager.ui
 
 import com.medicalrep.manager.ui.theme.AppSpacing
 import com.medicalrep.manager.ui.theme.AppCardContainerColor
+import com.medicalrep.manager.ui.theme.AppLargeCardBorder
+import com.medicalrep.manager.ui.theme.AppLargeCardContainerColor
 
 import com.medicalrep.manager.ui.theme.AppMotion
 
@@ -200,7 +202,8 @@ private fun FormExpandableSection(
 ) {
     Surface(
         shape = RoundedCornerShape(10.dp),
-        color = AppCardContainerColor(),
+        color = AppLargeCardContainerColor(),
+        border = AppLargeCardBorder(),
         modifier = Modifier
             .fillMaxWidth()
     ) {
@@ -1530,7 +1533,8 @@ private fun DoctorFormDialog(
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(10.dp),
-                                    colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())
+                                    colors = CardDefaults.cardColors(containerColor = AppLargeCardContainerColor()),
+                                    border = AppLargeCardBorder()
                                 ) {
                                     Column(
                                         modifier = Modifier.fillMaxWidth().padding(12.dp),

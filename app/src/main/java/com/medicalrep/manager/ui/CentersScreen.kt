@@ -251,7 +251,9 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     )
                 }
             }
-                    items(centers, key = { it.id }
+items(filteredCenters, key = { it.id }) { center ->
+                        val expanded = center.id in expandedCenterIds
+                        val centerSlots = centerAvailability.filter { it.centerId == center.id }
         }
     }
 

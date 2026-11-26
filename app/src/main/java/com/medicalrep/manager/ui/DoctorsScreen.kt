@@ -683,12 +683,14 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             title = { Text(if (isArabic) "إضافة تخصص جديد" else "Add new specialty") },
             text = {
                 OutlinedTextField(
+                            colors = AppFilledTextFieldColors(),
                     value = newSpecialtyName,
                     onValueChange = { newSpecialtyName = it },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     label = { Text(if (isArabic) "اسم التخصص" else "Specialty name") }
-                )
+                
+                        )
             },
             confirmButton = {
                 TextButton(onClick = {
@@ -1395,6 +1397,7 @@ private fun DoctorFormDialog(
                 }
                 item {
                     OutlinedTextField(
+                            colors = AppFilledTextFieldColors(),
                         colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -1406,7 +1409,8 @@ private fun DoctorFormDialog(
                         modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), singleLine = true,
                         label = { Text(if (isArabic) "اسم الطبيب *" else "Doctor name *") },
                         isError = nameError
-                    )
+                    
+                        )
                 }
                 item {
                     OutlinedSelectionField(
@@ -1424,6 +1428,7 @@ private fun DoctorFormDialog(
                     ) {
                         phoneNumbers.forEachIndexed { index, phone ->
                             OutlinedTextField(
+                            colors = AppFilledTextFieldColors(),
                         colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -1445,7 +1450,8 @@ private fun DoctorFormDialog(
                                         Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف الرقم" else "Delete number")
                                     }
                                 }
-                            )
+                            
+                        )
                         }
                         OutlinedButton(
                             onClick = { phoneNumbers = phoneNumbers + "" },
@@ -1494,6 +1500,7 @@ private fun DoctorFormDialog(
                                 }
                             }
                             OutlinedTextField(
+                            colors = AppFilledTextFieldColors(),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                                     unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -1509,7 +1516,8 @@ private fun DoctorFormDialog(
                                         if (value.isNotBlank() && areaOptions.none { it.equals(value, true) }) { areaOptions = areaOptions + value; newArea = "" }
                                     }, enabled = newArea.isNotBlank()) { Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة منطقة" else "Add area") }
                                 }
-                            )
+                            
+                        )
                         }
                     }
                 }
@@ -1625,6 +1633,7 @@ private fun DoctorFormDialog(
                                             )
                                         }
                                         OutlinedTextField(
+                            colors = AppFilledTextFieldColors(),
                                             value = draft.notes,
                                             onValueChange = { value ->
                                                 availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(notes = value) }
@@ -1634,7 +1643,8 @@ private fun DoctorFormDialog(
                                             shape = RoundedCornerShape(10.dp),
                                             label = { Text(if (isArabic) "ملاحظات الفترة (اختياري)" else "Period notes (optional)") },
                                             placeholder = { Text(if (isArabic) "مثال: بالحجز فقط" else "e.g. By appointment only") }
-                                        )
+                                        
+                        )
                                     }
                                 }
                             }
@@ -1700,6 +1710,7 @@ private fun DoctorFormDialog(
                 }
                 item {
                     OutlinedTextField(
+                            colors = AppFilledTextFieldColors(),
                         colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -1710,7 +1721,8 @@ private fun DoctorFormDialog(
                         value = notes, onValueChange = { notes = it },
                         modifier = Modifier.fillMaxWidth(), minLines = 2,
                         label = { Text(if (isArabic) "ملاحظات" else "Notes") }
-                    )
+                    
+                        )
                 }
             }
         },
@@ -1920,6 +1932,7 @@ private fun DoctorFormDialog(
                     if (centerSearchExpanded) {
                         item {
                             OutlinedTextField(
+                            colors = AppFilledTextFieldColors(),
                                 value = centerSearchQuery,
                                 onValueChange = { centerSearchQuery = it },
                                 modifier = Modifier.fillMaxWidth(),
@@ -1942,7 +1955,8 @@ private fun DoctorFormDialog(
                                     disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                                     errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
                                 )
-                            )
+                            
+                        )
                         }
                     }
                     items(

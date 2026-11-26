@@ -153,6 +153,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
         }
     }
     val centerHeaderHeight by animateDpAsState(if (centerHeaderExpanded) 76.dp else 48.dp, animationSpec = tween(AppMotion.Emphasized), label = "centersHeaderHeight")
+    val centerSearchHeight by animateDpAsState(if (centerHeaderExpanded) 60.dp else 44.dp, animationSpec = tween(AppMotion.Emphasized), label = "centersSearchHeight")
 
     val centerFadeColor = MaterialTheme.colorScheme.background
     Scaffold(
@@ -205,19 +206,34 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             }
             stickyHeader {
                 Row(
-                    modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(vertical = 4.dp),
+                    modifier = Modifier.fillMaxWidth().height(centerSearchHeight).background(MaterialTheme.colorScheme.background).padding(vertical = 2.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OutlinedTextField(
-                        value = centerSearch,
-                        onValueChange = { centerSearch = it },
-                        modifier = Modifier.weight(1f).height(56.dp),
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.small,
-                        placeholder = { Text(if (isArabic) "ابحث عن مركز..." else "Search centers...") },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
-                    )
+                    if (centerHeaderExpanded) {
+                        OutlinedTextField(
+                            value = centerSearch,
+                            onValueChange = { centerSearch = it },
+                            modifier = Modifier.weight(1f).height(56.dp),
+                            singleLine = true,
+                            shape = MaterialTheme.shapes.small,
+                            placeholder = { Text(if (isArabic) "ابحث عن مركز..." else "Search centers...") },
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
+                        )
+                    } else {
+                        Surface(
+                            onClick = { centerHeaderExpanded = true },
+                            modifier = Modifier.weight(1f).height(44.dp),
+                            shape = MaterialTheme.shapes.small,
+                            color = MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                        ) {
+                            Row(Modifier.padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Search, contentDescription = if (isArabic) "بحث" else "Search", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(if (centerSearch.isBlank()) { if (isArabic) "بحث" else "Search" } else centerSearch, modifier = Modifier.padding(start = 10.dp), maxLines = 1, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
                     androidx.compose.foundation.layout.Box {
                         IconButton(onClick = { showAreaFilter = true }) {
                             Icon(Icons.Default.FilterList, contentDescription = if (isArabic) "تصفية حسب المنطقة" else "Filter by area")
@@ -227,8 +243,8 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                 text = { Text(if (isArabic) "كل المناطق" else "All areas") },
                                 onClick = { selectedArea = "all"; showAreaFilter = false }
                             )
-                            centerAreas.forEach { area ->
-                                DropdownMenuItem(text = { Text(area) }, onClick = { selectedArea = area; showAreaFilter = false })
+                            centerAreas.forEach { areaOption ->
+                                DropdownMenuItem(text = { Text(areaOption) }, onClick = { selectedArea = areaOption; showAreaFilter = false })
                             }
                         }
                     }
@@ -483,6 +499,7 @@ private fun CenterFormDialog(
 ) {
     val context = LocalContext.current
     var name by remember(initial) { mutableStateOf(initial?.name.orEmpty()) }
+    var area by remember(initial) { mutableStateOf(initial?.area.orEmpty()) }
     var address by remember(initial) { mutableStateOf(initial?.address.orEmpty()) }
     var phone by remember(initial) { mutableStateOf(initial?.phone.orEmpty()) }
     var notes by remember(initial) { mutableStateOf(initial?.notes.orEmpty()) }
@@ -546,6 +563,13 @@ private fun CenterFormDialog(
                         modifier = Modifier.fillMaxWidth(), singleLine = true, shape = MaterialTheme.shapes.small,
                         label = { Text(if (isArabic) "اسم المركز *" else "Center name *") },
                         isError = nameError
+                    )
+                }
+                item {
+                    OutlinedTextField(
+                        value = area, onValueChange = { area = it },
+                        modifier = Modifier.fillMaxWidth(), singleLine = true, shape = MaterialTheme.shapes.small,
+                        label = { Text(if (isArabic) "المنطقة" else "Area") }
                     )
                 }
                 item {
@@ -735,7 +759,7 @@ private fun CenterFormDialog(
                         latitude = latitude,
                         longitude = longitude,
                         mapUrl = mapUrl,
-
+                        area = area.trim(),
                         unregisteredDoctorCount = initial?.unregisteredDoctorCount ?: 0
                     ),
                     workSlots.flatMap { slot ->

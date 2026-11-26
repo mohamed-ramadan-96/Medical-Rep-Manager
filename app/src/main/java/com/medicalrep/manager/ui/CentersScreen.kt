@@ -1,6 +1,7 @@
 package com.medicalrep.manager.ui
 
 import com.medicalrep.manager.ui.theme.AppSpacing
+import com.medicalrep.manager.ui.theme.AppCardContainerColor
 
 import com.medicalrep.manager.ui.theme.AppMotion
 
@@ -380,7 +381,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = MaterialTheme.shapes.small,
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                            colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())
                         ) {
                             Column(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = AppSpacing.md),
@@ -882,7 +883,7 @@ private fun CenterFormDialog(
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(10.dp),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                                colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())
                             ) {
                                 Column(
                                     modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -993,7 +994,7 @@ private fun CenterFormDialog(
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainer
+                        color = AppCardContainerColor()
                     ) {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(12.dp),

@@ -143,12 +143,14 @@ fun VisitsScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             OutlinedTextField(
+                            colors = AppFilledTextFieldColors(),
                 value = search,
                 onValueChange = { search = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 label = { Text(if (isArabic) "ابحث باسم الطبيب أو النتيجة" else "Search doctor or outcome") }
-            )
+            
+                        )
             val visibleVisits = visits.filter { visit ->
                 val doctorName = doctors.firstOrNull { it.id == visit.doctorId }?.name.orEmpty()
                 doctorName.contains(search, ignoreCase = true) ||
@@ -354,44 +356,54 @@ private fun VisitFormDialog(
                     }
                 }
                 OutlinedTextField(
+                            colors = AppFilledTextFieldColors(),
                         shape = RoundedCornerShape(10.dp),
                     value = date,
                     onValueChange = { date = it; error = null },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     label = { Text(if (isArabic) "تاريخ الزيارة (YYYY-MM-DD)" else "Visit date (YYYY-MM-DD)") }
-                )
+                
+                        )
                 OutlinedTextField(
+                            colors = AppFilledTextFieldColors(),
                         shape = RoundedCornerShape(10.dp),
                     value = time,
                     onValueChange = { time = it; error = null },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     label = { Text(if (isArabic) "الوقت (HH:MM)" else "Time (HH:MM)") }
-                )
+                
+                        )
                 OutlinedTextField(
+                            colors = AppFilledTextFieldColors(),
                         shape = RoundedCornerShape(10.dp),
                     value = outcome,
                     onValueChange = { outcome = it },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     label = { Text(if (isArabic) "نتيجة الزيارة" else "Visit outcome") }
-                )
+                
+                        )
                 OutlinedTextField(
+                            colors = AppFilledTextFieldColors(),
                         shape = RoundedCornerShape(10.dp),
                     value = notes,
                     onValueChange = { notes = it },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(if (isArabic) "ملاحظات الزيارة" else "Visit notes") }
-                )
+                
+                        )
                 OutlinedTextField(
+                            colors = AppFilledTextFieldColors(),
                         shape = RoundedCornerShape(10.dp),
                     value = followUpDate,
                     onValueChange = { followUpDate = it; error = null },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     label = { Text(if (isArabic) "موعد المتابعة (اختياري YYYY-MM-DD)" else "Follow-up date (optional YYYY-MM-DD)") }
-                )
+                
+                        )
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             }
         },

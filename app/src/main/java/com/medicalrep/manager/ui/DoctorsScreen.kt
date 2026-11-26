@@ -1296,6 +1296,8 @@ private fun DoctorFormDialog(
     var showAreaPicker by remember { mutableStateOf(false) }
     var selectedCenterIds by remember(initial, initialCenterIds, centers) { mutableStateOf(initialCenterIds.ifEmpty { setOfNotNull(initial?.centerId ?: centers.firstOrNull { it.name == initial?.medicalCenter }?.id) }) }
     var showCenterPicker by remember { mutableStateOf(false) }
+    var centerSearchExpanded by remember { mutableStateOf(false) }
+    var centerSearchQuery by remember { mutableStateOf("") }
     var centersExpanded by remember { mutableStateOf(false) }
     var availabilityExpanded by remember(initial, initialAvailability) { mutableStateOf(initialAvailability.isNotEmpty()) }
     var availabilityDrafts by remember(initial, initialAvailability) {
@@ -1858,7 +1860,11 @@ private fun DoctorFormDialog(
 
     if (showCenterPicker) {
         ModalBottomSheet(
-            onDismissRequest = { showCenterPicker = false },
+            onDismissRequest = {
+                showCenterPicker = false
+                centerSearchExpanded = false
+                centerSearchQuery = ""
+            },
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             containerColor = MaterialTheme.colorScheme.surface
         ) {
@@ -1878,26 +1884,76 @@ private fun DoctorFormDialog(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     item {
-                        Surface(
-                            onClick = { selectedCenterIds = emptySet() },
-                            color = MaterialTheme.colorScheme.surfaceContainer,
-                            shape = RoundedCornerShape(10.dp),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 15.dp),
-                                contentAlignment = Alignment.Center
+                            Surface(
+                                onClick = { selectedCenterIds = emptySet() },
+                                color = MaterialTheme.colorScheme.surfaceContainer,
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Text(
-                                    if (isArabic) "مسح الاختيار" else "Clear selection",
-                                    textAlign = TextAlign.Center,
-                                    style = MaterialTheme.typography.bodyLarge
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 15.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        if (isArabic) "مسح الاختيار" else "Clear selection",
+                                        textAlign = TextAlign.Center,
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                }
+                            }
+                            IconButton(
+                                onClick = {
+                                    centerSearchExpanded = !centerSearchExpanded
+                                    if (!centerSearchExpanded) centerSearchQuery = ""
+                                },
+                                modifier = Modifier.size(48.dp)
+                            ) {
+                                Icon(
+                                    if (centerSearchExpanded) Icons.Default.Close else Icons.Default.Search,
+                                    contentDescription = if (isArabic) "بحث في المراكز" else "Search centers",
+                                    tint = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
                     }
-                    items(centers, key = { it.id }) { center ->
+                    if (centerSearchExpanded) {
+                        item {
+                            OutlinedTextField(
+                                value = centerSearchQuery,
+                                onValueChange = { centerSearchQuery = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                shape = RoundedCornerShape(10.dp),
+                                placeholder = { Text(if (isArabic) "ابحث في المراكز" else "Search centers") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Search, contentDescription = null)
+                                },
+                                trailingIcon = {
+                                    if (centerSearchQuery.isNotEmpty()) {
+                                        IconButton(onClick = { centerSearchQuery = "" }) {
+                                            Icon(Icons.Default.Close, contentDescription = if (isArabic) "مسح البحث" else "Clear search")
+                                        }
+                                    }
+                                },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                                )
+                            )
+                        }
+                    }
+                    items(
+                        centers.filter { it.name.contains(centerSearchQuery.trim(), ignoreCase = true) },
+                        key = { it.id }
+                    ) { center ->
                         Surface(
                             color = MaterialTheme.colorScheme.surfaceContainer,
                             shape = RoundedCornerShape(10.dp),

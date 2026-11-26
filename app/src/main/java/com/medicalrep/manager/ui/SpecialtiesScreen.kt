@@ -136,13 +136,15 @@ fun SpecialtiesScreen(isArabic: Boolean, padding: androidx.compose.foundation.la
             },
             text = {
                 OutlinedTextField(
+                            colors = AppFilledTextFieldColors(),
                     value = name,
                     onValueChange = { name = it; nameError = false },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     label = { Text(if (isArabic) "اسم التخصص *" else "Specialty name *") },
                     isError = nameError
-                )
+                
+                        )
             },
             confirmButton = {
                 TextButton(onClick = {

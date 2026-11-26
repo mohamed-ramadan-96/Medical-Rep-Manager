@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateDpAsState
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.BorderStroke
@@ -61,6 +62,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
@@ -93,6 +104,36 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     var attachmentsCenter by remember { mutableStateOf<MedicalCenterEntity?>(null) }
     var directionsCenter by remember { mutableStateOf<MedicalCenterEntity?>(null) }
     var expandedCenterIds by remember { mutableStateOf(emptySet<Long>()) }
+    val centerListState = rememberLazyListState()
+    var centerHeaderExpanded by remember { mutableStateOf(true) }
+    val centerScrollThreshold = with(LocalDensity.current) { 8.dp.roundToPx() }
+    LaunchedEffect(centerListState) {
+        var previousPosition: Int? = null
+        var accumulatedDelta = 0
+        snapshotFlow {
+            centerListState.layoutInfo.visibleItemsInfo.firstOrNull()?.let { it.index * 100000 - it.offset } ?: 0
+        }.distinctUntilChanged().collect { position ->
+            val previous = previousPosition
+            if (previous == null) {
+                previousPosition = position
+                return@collect
+            }
+            accumulatedDelta += position - previous
+            if (accumulatedDelta >= centerScrollThreshold) {
+                centerHeaderExpanded = false
+                accumulatedDelta = 0
+            } else if (accumulatedDelta <= -centerScrollThreshold) {
+                centerHeaderExpanded = true
+                accumulatedDelta = 0
+            }
+            if (position == 0) {
+                centerHeaderExpanded = true
+                accumulatedDelta = 0
+            }
+            previousPosition = position
+        }
+    }
+    val centerHeaderHeight by animateDpAsState(if (centerHeaderExpanded) 76.dp else 48.dp, animationSpec = tween(AppMotion.Emphasized), label = "centersHeaderHeight")
 
     Scaffold(
         modifier = Modifier.padding(padding),
@@ -107,16 +148,26 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             modifier = Modifier.fillMaxSize().padding(inner).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                if (isArabic) "المراكز والعيادات" else "Medical centers",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-            Text(
-                if (isArabic) "عدد المراكز: ${centers.size}" else "Centers: ${centers.size}",
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Column(
+                modifier = Modifier.fillMaxWidth().height(centerHeaderHeight).padding(top = if (centerHeaderExpanded) 8.dp else 0.dp),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    if (isArabic) "المراكز والعيادات" else "Medical centers",
+                    style = if (centerHeaderExpanded) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                AnimatedVisibility(
+                    visible = centerHeaderExpanded,
+                    enter = fadeIn(animationSpec = tween(AppMotion.Fast)) + expandVertically(animationSpec = tween(AppMotion.Emphasized)),
+                    exit = fadeOut(animationSpec = tween(AppMotion.Fast)) + shrinkVertically(animationSpec = tween(AppMotion.Standard))
+                ) {
+                    Text(
+                        if (isArabic) "عدد المراكز: ${centers.size}" else "Centers: ${centers.size}",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
             if (centers.isEmpty()) {
                 Text(
                     if (isArabic) "لم تتم إضافة مراكز بعد. اضغط + لإضافة أول مركز." else "No centers yet. Tap + to add your first center.",
@@ -125,6 +176,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 )
             } else {
                 LazyColumn(
+                    state = centerListState,
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
                 ) {
@@ -151,7 +203,23 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                         shape = MaterialTheme.shapes.small,
                                         color = MaterialTheme.colorScheme.primaryContainer
                                     ) {
-                                        Icon(Icons.Default.LocalHospital, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.padding(8.dp))
+                                        Canvas(Modifier.padding(8.dp).fillMaxSize()) {
+                                            val unit = size.minDimension / 48f
+                                            androidx.compose.ui.graphics.drawscope.scale(unit, pivot = androidx.compose.ui.geometry.Offset.Zero) {
+                                                val stroke = Stroke(width = 2.8f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                                                drawPath(Path().apply {
+                                                    moveTo(18f, 4f); lineTo(31f, 4f); quadraticTo(34f, 4f, 34f, 7f); lineTo(34f, 41f); quadraticTo(34f, 44f, 31f, 44f); lineTo(18f, 44f); quadraticTo(15f, 44f, 15f, 41f); lineTo(15f, 7f); quadraticTo(15f, 4f, 18f, 4f); close()
+                                                }, MaterialTheme.colorScheme.onPrimaryContainer, style = stroke)
+                                                drawPath(Path().apply {
+                                                    moveTo(15f, 16f); lineTo(10f, 16f); quadraticTo(6f, 16f, 6f, 20f)
+                                                    lineTo(6f, 39f); quadraticTo(6f, 43f, 10f, 43f); lineTo(15f, 43f)
+                                                    moveTo(34f, 16f); lineTo(38f, 16f); quadraticTo(42f, 16f, 42f, 20f)
+                                                    lineTo(42f, 39f); quadraticTo(42f, 43f, 38f, 43f); lineTo(34f, 43f)
+                                                }, MaterialTheme.colorScheme.onPrimaryContainer, style = stroke)
+                                                drawLine(MaterialTheme.colorScheme.onPrimaryContainer, androidx.compose.ui.geometry.Offset(20f, 28f), androidx.compose.ui.geometry.Offset(29f, 28f), 2.8f, cap = StrokeCap.Round)
+                                                drawLine(MaterialTheme.colorScheme.onPrimaryContainer, androidx.compose.ui.geometry.Offset(20f, 35f), androidx.compose.ui.geometry.Offset(29f, 35f), 2.8f, cap = StrokeCap.Round)
+                                            }
+                                        }
                                     }
                                     Column(
                                         modifier = Modifier.weight(1f),

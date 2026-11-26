@@ -1535,7 +1535,6 @@ private fun DoctorFormDialog(
                                         OutlinedTextField(
                                             value = draft.notes,
                                             onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(notes = value) } },
-                                            
                                             modifier = Modifier.fillMaxWidth(),
                                             shape = RoundedCornerShape(10.dp),
                                             label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") }

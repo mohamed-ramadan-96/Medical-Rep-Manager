@@ -150,9 +150,8 @@ private fun CenterSearchField(
     val height by animateDpAsState(if (compact) 44.dp else 60.dp, tween(AppMotion.Emphasized), label = "centerSearchHeight")
     Surface(
         onClick = if (compact) onExpand else ({ }),
-        shape = if (compact) MaterialTheme.shapes.medium else MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier.fillMaxWidth().height(height)
     ) {
         Row(

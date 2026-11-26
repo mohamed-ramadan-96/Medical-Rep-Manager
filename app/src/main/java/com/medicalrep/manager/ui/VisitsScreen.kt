@@ -331,7 +331,8 @@ private fun VisitFormDialog(
                     if (isArabic) "تسجيل زيارة جديدة" else "Record a visit"
                 } else {
                     if (isArabic) "تعديل الزيارة" else "Edit visit"
-                }
+                },
+                style = MaterialTheme.typography.titleLarge
             )
         },
         text = {

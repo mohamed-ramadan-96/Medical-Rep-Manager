@@ -1,6 +1,7 @@
 package com.medicalrep.manager.ui
 
 import com.medicalrep.manager.ui.theme.AppSpacing
+import com.medicalrep.manager.ui.theme.AppDialogContainerColor
 import com.medicalrep.manager.ui.theme.AppCardContainerColor
 import com.medicalrep.manager.ui.theme.AppLargeCardBorder
 import com.medicalrep.manager.ui.theme.AppLargeCardContainerColor
@@ -57,6 +58,7 @@ import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -753,6 +755,7 @@ private fun CenterFormDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
         title = { Text(if (initial == null) { if (isArabic) "إضافة مركز أو عيادة" else "Add center or clinic" } else { if (isArabic) "تعديل المركز" else "Edit center" }, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
         text = {
             LazyColumn(

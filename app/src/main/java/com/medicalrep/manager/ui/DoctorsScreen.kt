@@ -34,6 +34,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -100,6 +101,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -364,8 +366,26 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     previousPosition = position
                 }
         }
+        val doctorsFadeColor = MaterialTheme.colorScheme.background
         Column(modifier = Modifier.fillMaxSize().padding(inner)) {
-            LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
+            LazyColumn(state = listState, modifier = Modifier.fillMaxSize().drawWithContent {
+                drawContent()
+                val stickyHeader = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }
+                if (stickyHeader != null) {
+                    val fadeTop = (stickyHeader.offset + stickyHeader.size).toFloat()
+                    val fadeHeight = 36.dp.toPx()
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            0f to doctorsFadeColor,
+                            1f to doctorsFadeColor.copy(alpha = 0f),
+                            startY = fadeTop,
+                            endY = fadeTop + fadeHeight
+                        ),
+                        topLeft = androidx.compose.ui.geometry.Offset(0f, fadeTop),
+                        size = androidx.compose.ui.geometry.Size(size.width, fadeHeight)
+                    )
+                }
+            }, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
                 item {
                     Row(Modifier.fillMaxWidth().padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(if (isArabic) "إدارة الأطباء" else "Doctors", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)

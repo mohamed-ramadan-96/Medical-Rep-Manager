@@ -1,6 +1,7 @@
 package com.medicalrep.manager.ui
 
 import com.medicalrep.manager.ui.theme.AppSpacing
+import com.medicalrep.manager.ui.theme.AppCardContainerColor
 
 import com.medicalrep.manager.ui.theme.AppMotion
 
@@ -199,7 +200,7 @@ private fun FormExpandableSection(
 ) {
     Surface(
         shape = RoundedCornerShape(10.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = AppCardContainerColor(),
         modifier = Modifier
             .fillMaxWidth()
     ) {
@@ -754,7 +755,7 @@ private fun DoctorCard(
         modifier = Modifier.fillMaxWidth()
             .clickable(onClick = onOpen),
         shape = MaterialTheme.shapes.small,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+        colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = AppSpacing.md),
@@ -891,7 +892,7 @@ internal fun DoctorDetailsDialog(
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+                        colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())
                     ) {
                         Column(Modifier.fillMaxWidth().padding(AppSpacing.lg), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             if (doctor.specialty.isNotBlank()) {
@@ -911,7 +912,7 @@ internal fun DoctorDetailsDialog(
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+                        colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())
                     ) {
                         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(if (isArabic) "موقع الطبيب" else "Doctor location", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
@@ -983,7 +984,7 @@ internal fun DoctorDetailsDialog(
                         val centerGroups = centerSlots.groupBy { it.slotGroupId }.values.toList()
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+                            colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())
                         ) {
                             Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text(center.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
@@ -1051,7 +1052,7 @@ internal fun DoctorDetailsDialog(
                     }
                 }
                 if (doctor.notes.isNotBlank()) item {
-                    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())) {
                         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(if (isArabic) "ملاحظات" else "Notes", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                             Text(doctor.notes)
@@ -1067,7 +1068,7 @@ internal fun DoctorDetailsDialog(
                     items(upcomingFollowUps) { visit ->
                         val followUp = visit.nextFollowUpAt
                         if (followUp != null) {
-                            Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                            Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())) {
                                 Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text((if (isArabic) "موعد المتابعة: " else "Follow-up: ") + dateFormat.format(Date(followUp)), fontWeight = FontWeight.SemiBold)
                                     if (visit.notes.isNotBlank()) Text(visit.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1529,7 +1530,7 @@ private fun DoctorFormDialog(
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(10.dp),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                                    colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())
                                 ) {
                                     Column(
                                         modifier = Modifier.fillMaxWidth().padding(12.dp),

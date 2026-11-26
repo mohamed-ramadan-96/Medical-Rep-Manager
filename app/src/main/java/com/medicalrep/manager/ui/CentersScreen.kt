@@ -628,7 +628,8 @@ private fun CenterWorkingHoursTimeField(
         onClick = onClick,
         modifier = modifier,
         shape = RoundedCornerShape(10.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
@@ -847,7 +848,7 @@ private fun CenterFormDialog(
                 )
                 }
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
                         Surface(
                             onClick = { workSlots = workSlots + CenterWorkingHoursDraft() },
                             modifier = Modifier.fillMaxWidth().height(46.dp),
@@ -867,7 +868,7 @@ private fun CenterFormDialog(
                                 }
                                 IconButton(
                                     onClick = { showWorkingHoursInfo = true },
-                                    modifier = Modifier.align(Alignment.CenterEnd).size(32.dp)
+                                    modifier = Modifier.align(Alignment.CenterEnd).padding(end = 14.dp).size(32.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Info,

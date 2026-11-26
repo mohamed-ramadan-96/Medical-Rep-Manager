@@ -1481,16 +1481,26 @@ private fun DoctorFormDialog(
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             LazyColumn(modifier = Modifier.height(240.dp)) {
                                 items(areaOptions, key = { it }) { areaOption ->
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Checkbox(checked = selectedAreas.any { it.equals(areaOption, true) }, onCheckedChange = { checked ->
-                                            selectedAreas = if (checked) selectedAreas + areaOption else selectedAreas.filterNot { it.equals(areaOption, true) }.toSet()
-                                        })
-                                        Text(areaOption, modifier = Modifier.weight(1f))
-                                        IconButton(onClick = {
-                                            areaOptions = areaOptions.filterNot { it.equals(areaOption, true) }
-                                            selectedAreas = selectedAreas.filterNot { it.equals(areaOption, true) }.toSet()
-                                            if (existingAreas.any { it.equals(areaOption, true) }) onDeleteArea(areaOption)
-                                        }) { Icon(Icons.Default.Close, contentDescription = if (isArabic) "حذف المنطقة" else "Delete area") }
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.surfaceContainer,
+                                        shape = RoundedCornerShape(10.dp),
+                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Checkbox(checked = selectedAreas.any { it.equals(areaOption, true) }, onCheckedChange = { checked ->
+                                                selectedAreas = if (checked) selectedAreas + areaOption else selectedAreas.filterNot { it.equals(areaOption, true) }.toSet()
+                                            })
+                                            Text(areaOption, modifier = Modifier.weight(1f))
+                                            IconButton(onClick = {
+                                                areaOptions = areaOptions.filterNot { it.equals(areaOption, true) }
+                                                selectedAreas = selectedAreas.filterNot { it.equals(areaOption, true) }.toSet()
+                                                if (existingAreas.any { it.equals(areaOption, true) }) onDeleteArea(areaOption)
+                                            }) { Icon(Icons.Default.Close, contentDescription = if (isArabic) "حذف المنطقة" else "Delete area") }
+                                        }
                                     }
                                 }
                             }
@@ -1753,19 +1763,67 @@ private fun DoctorFormDialog(
     }
 
     if (showSpecialtyPicker) {
-        DoctorPickerBottomSheet(title = if (isArabic) "اختر التخصص" else "Choose a specialty", onDismiss = { showSpecialtyPicker = false }) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                LazyColumn(modifier = Modifier.heightIn(max = 360.dp)) {
+        ModalBottomSheet(
+            onDismissRequest = { showSpecialtyPicker = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = MaterialTheme.colorScheme.surface
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    if (isArabic) "اختر التخصص" else "Choose a specialty",
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     item {
-                        TextButton(onClick = { selectedSpecialtyId = null; showSpecialtyPicker = false }, modifier = Modifier.fillMaxWidth()) {
-                            Text(if (isArabic) "بدون تخصص" else "No specialty")
+                        Surface(
+                            onClick = { selectedSpecialtyId = null; showSpecialtyPicker = false },
+                            color = MaterialTheme.colorScheme.surfaceContainer,
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 15.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    if (isArabic) "بدون تخصص" else "No specialty",
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
                         }
                     }
                     items(specialties, key = { it.id }) { specialty ->
-                        TextButton(onClick = { selectedSpecialtyId = specialty.id; showSpecialtyPicker = false }, modifier = Modifier.fillMaxWidth()) { Text(specialty.name) }
+                        Surface(
+                            onClick = { selectedSpecialtyId = specialty.id; showSpecialtyPicker = false },
+                            color = MaterialTheme.colorScheme.surfaceContainer,
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 15.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    specialty.name,
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
+                        }
                     }
                 }
-                TextButton(onClick = { showSpecialtyPicker = false }, modifier = Modifier.align(Alignment.End)) { Text(if (isArabic) "إغلاق" else "Close") }
             }
         }
     }

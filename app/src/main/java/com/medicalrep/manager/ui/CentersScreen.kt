@@ -1005,8 +1005,7 @@ private fun CenterFormDialog(
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                        color = MaterialTheme.colorScheme.surfaceContainer
                     ) {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(12.dp),

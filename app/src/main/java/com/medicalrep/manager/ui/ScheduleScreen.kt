@@ -223,18 +223,26 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                 previousPosition = position
             }
         }
+        val fadeHeaderOffset = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }?.offset ?: Int.MAX_VALUE
+        val fadeStartOffset = with(LocalDensity.current) { 48.dp.roundToPx() }
+        val fadeAlpha by animateFloatAsState(
+            targetValue = ((fadeStartOffset - fadeHeaderOffset).toFloat() / fadeStartOffset).coerceIn(0f, 1f),
+            animationSpec = tween(AppMotion.Emphasized),
+            label = "scheduleFadeAlpha"
+        )
         val scheduleFadeColor = MaterialTheme.colorScheme.background
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize().padding(inner).drawWithContent {
                 drawContent()
                 val stickyHeader = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }
-                if (stickyHeader != null) {
+                if (stickyHeader != null && fadeAlpha > 0f) {
                     val fadeTop = (stickyHeader.offset + stickyHeader.size).toFloat()
-                    val fadeHeight = 36.dp.toPx()
+                    val fadeHeight = 72.dp.toPx()
                     drawRect(
                         brush = Brush.verticalGradient(
-                            0f to scheduleFadeColor,
+                            0f to scheduleFadeColor.copy(alpha = fadeAlpha),
+                            0.65f to scheduleFadeColor.copy(alpha = 0.96f * fadeAlpha),
                             1f to scheduleFadeColor.copy(alpha = 0f),
                             startY = fadeTop,
                             endY = fadeTop + fadeHeight

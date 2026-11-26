@@ -754,7 +754,7 @@ private fun CenterFormDialog(
         text = {
             LazyColumn(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
             ) {
                 item {
                     OutlinedTextField(

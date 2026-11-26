@@ -105,6 +105,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -1532,9 +1533,9 @@ private fun DoctorFormDialog(
                                             }
                                         }
                                         OutlinedTextField(
-                        shape = RoundedCornerShape(10.dp),
-value = draft.notes,
+                                            value = draft.notes,
                                             onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(notes = value) } },
+                                            
                                             modifier = Modifier.fillMaxWidth(),
                                             shape = RoundedCornerShape(10.dp),
                                             label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") }

@@ -666,7 +666,7 @@ private fun CenterFormDialog(
             ) {
                 item {
                     OutlinedTextField(
-                            value = name, onValueChange = { name = it; nameError = false },
+                        value = name, onValueChange = { name = it; nameError = false },
                         modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(10.dp),
                         label = { Text(if (isArabic) "اسم المركز *" else "Center name *") },
                         isError = nameError
@@ -708,14 +708,14 @@ private fun CenterFormDialog(
                 }
                 item {
                     OutlinedTextField(
-                            value = address, onValueChange = { address = it },
+                        value = address, onValueChange = { address = it },
                         modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp),
                         label = { Text(if (isArabic) "العنوان" else "Address") }
                     )
                 }
                 item {
                     OutlinedTextField(
-                            value = phone, onValueChange = { phone = it },
+                        value = phone, onValueChange = { phone = it },
                         modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(10.dp),
                         label = { Text(if (isArabic) "رقم الهاتف" else "Phone") }
                     )
@@ -794,7 +794,7 @@ private fun CenterFormDialog(
                 }
                 item {
                     OutlinedTextField(
-                            value = notes, onValueChange = { notes = it },
+                        value = notes, onValueChange = { notes = it },
                         modifier = Modifier.fillMaxWidth(), minLines = 2, shape = RoundedCornerShape(10.dp),
                         label = { Text(if (isArabic) "ملاحظات" else "Notes") }
                     )

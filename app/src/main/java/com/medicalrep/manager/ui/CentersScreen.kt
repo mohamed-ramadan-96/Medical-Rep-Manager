@@ -130,7 +130,10 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
         var previousPosition: Int? = null
         var accumulatedDelta = 0
         snapshotFlow {
-            centerListState.layoutInfo.visibleItemsInfo.firstOrNull()?.let { it.index * 100000 - it.offset } ?: 0
+            centerListState.layoutInfo.visibleItemsInfo
+                .firstOrNull { it.index > 1 }
+                ?.let { it.index * 100000 - it.offset }
+                ?: 0
         }.distinctUntilChanged().collect { position ->
             val previous = previousPosition
             if (previous == null) {

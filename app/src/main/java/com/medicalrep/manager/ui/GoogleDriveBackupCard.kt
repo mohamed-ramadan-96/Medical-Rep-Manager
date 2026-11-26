@@ -358,7 +358,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
                     items(backups, key = { it.id }) { item ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                            colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())
                         ) {
                             Column(Modifier.padding(AppSpacing.md), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text(item.name, style = MaterialTheme.typography.bodyMedium)

@@ -40,6 +40,7 @@ import java.util.Locale
 internal fun CurrentLocationButton(
     isArabic: Boolean,
     modifier: Modifier = Modifier,
+    containerColor: androidx.compose.ui.graphics.Color = androidx.compose.material3.MaterialTheme.colorScheme.surface,
     onLocation: (Double, Double) -> Unit
 ) {
     val context = LocalContext.current
@@ -96,7 +97,7 @@ internal fun CurrentLocationButton(
     OutlinedButton(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(10.dp),
-        colors = ButtonDefaults.outlinedButtonColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface),
+        colors = ButtonDefaults.outlinedButtonColors(containerColor = containerColor),
         onClick = {
             val fine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
             val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED

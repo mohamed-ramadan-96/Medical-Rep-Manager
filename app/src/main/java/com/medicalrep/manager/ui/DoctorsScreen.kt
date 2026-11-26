@@ -18,6 +18,9 @@ import androidx.compose.foundation.background
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.Dialog
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -127,6 +130,35 @@ import java.util.UUID
 
 private fun doctorAreas(value: String): List<String> =
     value.split("|").map { it.trim() }.filter { it.isNotBlank() }.distinctBy { it.lowercase(Locale.ROOT) }
+
+@Composable
+private fun DoctorPickerBottomSheet(
+    title: String,
+    onDismiss: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+            AnimatedVisibility(
+                visible = true,
+                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(animationSpec = tween(AppMotion.Fast)),
+                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(animationSpec = tween(AppMotion.Fast))
+            ) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.78f).dp),
+                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 8.dp
+                ) {
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Text(title, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        content()
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun FormExpandableSection(
@@ -1416,63 +1448,43 @@ private fun DoctorFormDialog(
                     )
                 }
                 if (showAreaPicker) item {
-                    androidx.compose.material3.AlertDialog(
-                        onDismissRequest = { showAreaPicker = false },
-                        title = { Text(if (isArabic) "اختيار المناطق" else "Choose areas") },
-                        text = {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                LazyColumn(modifier = Modifier.height(240.dp)) {
-                                    items(areaOptions, key = { it }) { areaOption ->
-                                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                                            Checkbox(
-                                                checked = selectedAreas.any { it.equals(areaOption, true) },
-                                                onCheckedChange = { checked ->
-                                                    selectedAreas = if (checked) selectedAreas + areaOption
-                                                    else selectedAreas.filterNot { it.equals(areaOption, true) }.toSet()
-                                                }
-                                            )
-                                            Text(areaOption, modifier = Modifier.weight(1f))
-                                            IconButton(onClick = {
-                                                areaOptions = areaOptions.filterNot { it.equals(areaOption, true) }
-                                                selectedAreas = selectedAreas.filterNot { it.equals(areaOption, true) }.toSet()
-                                                if (existingAreas.any { it.equals(areaOption, true) }) onDeleteArea(areaOption)
-                                            }) {
-                                                Icon(Icons.Default.Close, contentDescription = if (isArabic) "حذف المنطقة" else "Delete area")
-                                            }
-                                        }
+                    DoctorPickerBottomSheet(title = if (isArabic) "اختيار المناطق" else "Choose areas", onDismiss = { showAreaPicker = false }) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            LazyColumn(modifier = Modifier.height(240.dp)) {
+                                items(areaOptions, key = { it }) { areaOption ->
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Checkbox(checked = selectedAreas.any { it.equals(areaOption, true) }, onCheckedChange = { checked ->
+                                            selectedAreas = if (checked) selectedAreas + areaOption else selectedAreas.filterNot { it.equals(areaOption, true) }.toSet()
+                                        })
+                                        Text(areaOption, modifier = Modifier.weight(1f))
+                                        IconButton(onClick = {
+                                            areaOptions = areaOptions.filterNot { it.equals(areaOption, true) }
+                                            selectedAreas = selectedAreas.filterNot { it.equals(areaOption, true) }.toSet()
+                                            if (existingAreas.any { it.equals(areaOption, true) }) onDeleteArea(areaOption)
+                                        }) { Icon(Icons.Default.Close, contentDescription = if (isArabic) "حذف المنطقة" else "Delete area") }
                                     }
                                 }
-                                OutlinedTextField(
-                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                        ),
-                        shape = RoundedCornerShape(10.dp),
-                        value = newArea,
-                                    onValueChange = { newArea = it },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    singleLine = true,
-                                    label = { Text(if (isArabic) "إضافة منطقة جديدة" else "Add a new area") },
-                                    trailingIcon = {
-                                        IconButton(onClick = {
-                                            val value = newArea.trim()
-                                            if (value.isNotBlank() && areaOptions.none { it.equals(value, true) }) {
-                                                areaOptions = areaOptions + value
-                                                newArea = ""
-                                            }
-                                        }, enabled = newArea.isNotBlank()) {
-                                            Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة منطقة" else "Add area")
-                                        }
-                                    }
-                                )
                             }
-                        },
-                        confirmButton = {
-                            TextButton(onClick = { showAreaPicker = false }) { Text(if (isArabic) "تم" else "Done") }
+                            OutlinedTextField(
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                                ),
+                                shape = RoundedCornerShape(10.dp), value = newArea, onValueChange = { newArea = it },
+                                modifier = Modifier.fillMaxWidth(), singleLine = true,
+                                label = { Text(if (isArabic) "إضافة منطقة جديدة" else "Add a new area") },
+                                trailingIcon = {
+                                    IconButton(onClick = {
+                                        val value = newArea.trim()
+                                        if (value.isNotBlank() && areaOptions.none { it.equals(value, true) }) { areaOptions = areaOptions + value; newArea = "" }
+                                    }, enabled = newArea.isNotBlank()) { Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة منطقة" else "Add area") }
+                                }
+                            )
+                            TextButton(onClick = { showAreaPicker = false }, modifier = Modifier.align(Alignment.End)) { Text(if (isArabic) "تم" else "Done") }
                         }
-                    )
+                    }
                 }
                 item {
                     FormExpandableSection(
@@ -1593,7 +1605,10 @@ private fun DoctorFormDialog(
                                 }
                             ) { Text(if (isArabic) "مسح الموقع المحدد" else "Clear selected location") }
                         }
-                        CurrentLocationButton(isArabic = isArabic) { lat, lon ->
+                        CurrentLocationButton(
+                            isArabic = isArabic,
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        ) { lat, lon ->
                             latitude = lat
                             longitude = lon
                             mapUrl = null
@@ -1710,29 +1725,21 @@ private fun DoctorFormDialog(
     }
 
     if (showSpecialtyPicker) {
-        AlertDialog(
-            onDismissRequest = { showSpecialtyPicker = false },
-            title = { Text(if (isArabic) "اختر التخصص" else "Choose a specialty") },
-            text = {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        DoctorPickerBottomSheet(title = if (isArabic) "اختر التخصص" else "Choose a specialty", onDismiss = { showSpecialtyPicker = false }) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                LazyColumn(modifier = Modifier.heightIn(max = 360.dp)) {
                     item {
-                        TextButton(onClick = { selectedSpecialtyId = null; showSpecialtyPicker = false }) {
+                        TextButton(onClick = { selectedSpecialtyId = null; showSpecialtyPicker = false }, modifier = Modifier.fillMaxWidth()) {
                             Text(if (isArabic) "بدون تخصص" else "No specialty")
                         }
                     }
                     items(specialties, key = { it.id }) { specialty ->
-                        TextButton(onClick = { selectedSpecialtyId = specialty.id; showSpecialtyPicker = false }) {
-                            Text(specialty.name)
-                        }
+                        TextButton(onClick = { selectedSpecialtyId = specialty.id; showSpecialtyPicker = false }, modifier = Modifier.fillMaxWidth()) { Text(specialty.name) }
                     }
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = { showSpecialtyPicker = false }) {
-                    Text(if (isArabic) "إغلاق" else "Close")
-                }
+                TextButton(onClick = { showSpecialtyPicker = false }, modifier = Modifier.align(Alignment.End)) { Text(if (isArabic) "إغلاق" else "Close") }
             }
-        )
+        }
     }
 
     if (showCenterPicker) {

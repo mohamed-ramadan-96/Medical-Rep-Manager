@@ -13,6 +13,14 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateDpAsState
 
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.drawWithContent
@@ -95,6 +103,88 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
+
+@Composable
+private fun CenterFilterActionButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val iconColor = MaterialTheme.colorScheme.onSurface
+    Surface(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = modifier.size(60.dp)
+    ) {
+        androidx.compose.foundation.layout.Box(contentAlignment = Alignment.Center) {
+            Canvas(Modifier.size(28.dp)) {
+                val stroke = 2.dp.toPx()
+                val left = 2.dp.toPx()
+                val right = size.width - 2.dp.toPx()
+                val railYs = listOf(6.dp.toPx(), 14.dp.toPx(), 22.dp.toPx())
+                val knobXs = listOf(17.dp.toPx(), 9.dp.toPx(), 20.dp.toPx())
+                railYs.forEachIndexed { index, y ->
+                    val knobX = knobXs[index]
+                    val gap = 2.4.dp.toPx()
+                    drawLine(iconColor, androidx.compose.ui.geometry.Offset(left, y), androidx.compose.ui.geometry.Offset(knobX - gap, y), stroke, cap = StrokeCap.Round)
+                    drawLine(iconColor, androidx.compose.ui.geometry.Offset(knobX + gap, y), androidx.compose.ui.geometry.Offset(right, y), stroke, cap = StrokeCap.Round)
+                    drawLine(iconColor, androidx.compose.ui.geometry.Offset(knobX, y - 3.dp.toPx()), androidx.compose.ui.geometry.Offset(knobX, y + 3.dp.toPx()), stroke, cap = StrokeCap.Round)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CenterSearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    isArabic: Boolean,
+    compact: Boolean,
+    onExpand: () -> Unit
+) {
+    val height by animateDpAsState(if (compact) 44.dp else 60.dp, tween(AppMotion.Emphasized), label = "centerSearchHeight")
+    Surface(
+        onClick = if (compact) onExpand else ({ }),
+        shape = if (compact) MaterialTheme.shapes.medium else MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier.fillMaxWidth().height(height)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = if (compact) 10.dp else 18.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Start
+        ) {
+            Icon(
+                Icons.Default.Search,
+                contentDescription = if (isArabic) "بحث" else "Search",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(if (compact) 20.dp else 24.dp)
+            )
+            if (!compact) {
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier = Modifier.weight(1f).padding(start = 12.dp),
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.onSurface),
+                    decorationBox = { innerTextField ->
+                        androidx.compose.foundation.layout.Box(contentAlignment = Alignment.CenterStart) {
+                            if (value.isEmpty()) Text(
+                                if (isArabic) "ابحث عن مركز..." else "Search centers...",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            innerTextField()
+                        }
+                    }
+                )
+            } else {
+                Spacer(Modifier.weight(1f))
+            }
+        }
+    }
+}
+
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.PaddingValues) {
@@ -107,6 +197,11 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val doctorCenterLinks by database.doctorCenterLinkDao().observeAll().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     val centers by dao.observeAll().collectAsState(initial = emptyList())
+    val doctors by doctorDao.observeAll().collectAsState(initial = emptyList())
+    val savedAreas = remember(doctors) {
+        doctors.flatMap { it.area.split("|").map(String::trim).filter(String::isNotBlank) }
+            .distinctBy { it.lowercase(java.util.Locale.ROOT) }.sorted()
+    }
     var editing by remember { mutableStateOf<MedicalCenterEntity?>(null) }
     var showForm by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<MedicalCenterEntity?>(null) }
@@ -208,38 +303,32 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 }
             }
             stickyHeader {
-                Row(
-                    modifier = Modifier.fillMaxWidth().height(centerSearchHeight).background(MaterialTheme.colorScheme.background).padding(vertical = 2.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (centerHeaderExpanded) {
-                        OutlinedTextField(
-                            value = centerSearch,
-                            onValueChange = { centerSearch = it },
-                            modifier = Modifier.weight(1f).height(56.dp),
-                            singleLine = true,
-                            shape = MaterialTheme.shapes.small,
-                            placeholder = { Text(if (isArabic) "ابحث عن مركز..." else "Search centers...") },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
-                        )
-                    } else {
-                        Surface(
-                            onClick = { centerHeaderExpanded = true },
-                            modifier = Modifier.weight(1f).height(44.dp),
-                            shape = MaterialTheme.shapes.small,
-                            color = MaterialTheme.colorScheme.surface,
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-                        ) {
-                            Row(Modifier.padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Search, contentDescription = if (isArabic) "بحث" else "Search", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(if (centerSearch.isBlank()) { if (isArabic) "بحث" else "Search" } else centerSearch, modifier = Modifier.padding(start = 10.dp), maxLines = 1, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
+                BoxWithConstraints(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(vertical = 4.dp)) {
+                    val filterWidth by animateDpAsState(if (centerHeaderExpanded) 60.dp else 0.dp, tween(AppMotion.Emphasized), label = "centerFilterWidth")
+                    val filterAlpha by animateFloatAsState(if (centerHeaderExpanded) 1f else 0f, tween(AppMotion.Fast), label = "centerFilterAlpha")
+                    val searchWidth by animateDpAsState(if (centerHeaderExpanded) maxWidth - 68.dp else 44.dp, tween(AppMotion.Emphasized), label = "centerSearchWidth")
+                    val controlHeight by animateDpAsState(if (centerHeaderExpanded) 60.dp else 44.dp, tween(AppMotion.Emphasized), label = "centerSearchControlHeight")
+                    Row(
+                        Modifier.fillMaxWidth().height(controlHeight),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(Modifier.width(searchWidth).height(controlHeight)) {
+                            CenterSearchField(
+                                value = centerSearch,
+                                onValueChange = { centerSearch = it },
+                                isArabic = isArabic,
+                                compact = !centerHeaderExpanded,
+                                onExpand = { centerHeaderExpanded = true }
+                            )
                         }
-                    }
-                    androidx.compose.foundation.layout.Box {
-                        IconButton(onClick = { showAreaFilter = true }) {
-                            Icon(Icons.Default.FilterList, contentDescription = if (isArabic) "تصفية حسب المنطقة" else "Filter by area")
+                        Box(Modifier.width(filterWidth).height(controlHeight).clipToBounds()) {
+                            if (centerHeaderExpanded) {
+                                CenterFilterActionButton(
+                                    onClick = { showAreaFilter = !showAreaFilter },
+                                    modifier = Modifier.alpha(filterAlpha)
+                                )
+                            }
                         }
                         DropdownMenu(expanded = showAreaFilter, onDismissRequest = { showAreaFilter = false }) {
                             DropdownMenuItem(
@@ -403,6 +492,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
         CenterFormDialog(
             isArabic = isArabic,
             initial = editing,
+            savedAreas = savedAreas + listOfNotNull(editing?.area?.takeIf { it.isNotBlank() }),
             initialAvailability = editing?.let { item -> centerAvailability.filter { it.centerId == item.id } }.orEmpty(),
             onDismiss = { showForm = false },
             onSave = { center, slots ->
@@ -500,6 +590,7 @@ private data class CenterWorkingHoursDraft(
 private fun CenterFormDialog(
     isArabic: Boolean,
     initial: MedicalCenterEntity?,
+    savedAreas: List<String>,
     initialAvailability: List<CenterAvailabilityEntity>,
     onDismiss: () -> Unit,
     onSave: (MedicalCenterEntity, List<CenterAvailabilityEntity>) -> Unit
@@ -507,6 +598,7 @@ private fun CenterFormDialog(
     val context = LocalContext.current
     var name by remember(initial) { mutableStateOf(initial?.name.orEmpty()) }
     var area by remember(initial) { mutableStateOf(initial?.area.orEmpty()) }
+    var showAreaPicker by remember { mutableStateOf(false) }
     var address by remember(initial) { mutableStateOf(initial?.address.orEmpty()) }
     var phone by remember(initial) { mutableStateOf(initial?.phone.orEmpty()) }
     var notes by remember(initial) { mutableStateOf(initial?.notes.orEmpty()) }
@@ -574,12 +666,38 @@ private fun CenterFormDialog(
                     )
                 }
                 item {
-                    OutlinedTextField(
-                        value = area, onValueChange = { area = it; areaError = false },
-                        modifier = Modifier.fillMaxWidth(), singleLine = true, shape = MaterialTheme.shapes.small,
-                        label = { Text(if (isArabic) "المنطقة *" else "Area *") },
-                        isError = areaError
-                    )
+                    androidx.compose.foundation.layout.Box {
+                        OutlinedTextField(
+                            value = area,
+                            onValueChange = {},
+                            readOnly = true,
+                            modifier = Modifier.fillMaxWidth().clickable { showAreaPicker = true },
+                            singleLine = true,
+                            shape = MaterialTheme.shapes.small,
+                            label = { Text(if (isArabic) "المنطقة *" else "Area *") },
+                            isError = areaError,
+                            trailingIcon = { Icon(Icons.Default.ExpandMore, contentDescription = null) }
+                        )
+                        androidx.compose.foundation.layout.Box(
+                            Modifier.matchParentSize().clickable { showAreaPicker = true }
+                        )
+                        DropdownMenu(expanded = showAreaPicker, onDismissRequest = { showAreaPicker = false }) {
+                            if (savedAreas.isEmpty()) {
+                                DropdownMenuItem(
+                                    text = { Text(if (isArabic) "لا توجد مناطق محفوظة في بيانات الأطباء" else "No saved areas in doctor records") },
+                                    onClick = { showAreaPicker = false },
+                                    enabled = false
+                                )
+                            } else {
+                                savedAreas.distinct().forEach { areaOption ->
+                                    DropdownMenuItem(
+                                        text = { Text(areaOption) },
+                                        onClick = { area = areaOption; areaError = false; showAreaPicker = false }
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
                 item {
                     OutlinedTextField(

@@ -229,7 +229,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
             modifier = Modifier.fillMaxSize().padding(inner).drawWithContent {
                 drawContent()
                 val stickyHeader = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }
-                if (stickyHeader != null) {
+                if (stickyHeader != null && stickyHeader.offset <= 0) {
                     val fadeTop = (stickyHeader.offset + stickyHeader.size).toFloat()
                     val fadeHeight = 72.dp.toPx()
                     drawRect(

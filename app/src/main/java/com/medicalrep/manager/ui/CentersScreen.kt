@@ -616,6 +616,74 @@ private fun CenterAreaPickerRow(label: String, onClick: () -> Unit) {
     }
 }
 
+@Composable
+private fun CenterWorkingHoursTimeField(
+    label: String,
+    value: String,
+    isArabic: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                centerDisplayWorkingHoursTime(value, isArabic),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
+
+private fun centerDisplayWorkingHoursTime(value: String, isArabic: Boolean): String {
+    val parts = value.split(":")
+    val hour = parts.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 23) ?: 9
+    val minute = parts.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 59) ?: 0
+    val suffix = if (hour < 12) (if (isArabic) "ص" else "AM") else (if (isArabic) "م" else "PM")
+    val displayHour = when (hour % 12) { 0 -> 12; else -> hour % 12 }
+    return String.format(java.util.Locale.US, "%02d:%02d %s", displayHour, minute, suffix)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CenterWorkingHoursTimePickerDialog(
+    isArabic: Boolean,
+    initialValue: String,
+    onDismiss: () -> Unit,
+    onConfirm: (Int, Int) -> Unit
+) {
+    val parts = initialValue.split(":")
+    val state = androidx.compose.material3.rememberTimePickerState(
+        initialHour = parts.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 23) ?: 9,
+        initialMinute = parts.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 59) ?: 0,
+        is24Hour = false
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (isArabic) "اختيار الوقت" else "Choose time") },
+        text = { androidx.compose.material3.TimePicker(state = state) },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(state.hour, state.minute) }) {
+                Text(if (isArabic) "تأكيد" else "Confirm")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(if (isArabic) "إلغاء" else "Cancel") }
+        }
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CenterFormDialog(
@@ -659,6 +727,7 @@ private fun CenterFormDialog(
     var nameError by remember { mutableStateOf(false) }
     var areaError by remember { mutableStateOf(false) }
     var showWorkingHoursInfo by remember { mutableStateOf(false) }
+    var workingHoursTimePickerTarget by remember { mutableStateOf<Pair<Int, Boolean>?>(null) }
 
 
     if (showWorkingHoursInfo) {
@@ -792,96 +861,115 @@ private fun CenterFormDialog(
                 }
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        OutlinedButton(
+                            onClick = { workSlots = workSlots + CenterWorkingHoursDraft() },
+                            modifier = Modifier.fillMaxWidth().height(46.dp),
+                            shape = RoundedCornerShape(10.dp)
                         ) {
-                            OutlinedButton(
-                                onClick = { workSlots = workSlots + CenterWorkingHoursDraft() },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(10.dp)
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Text(if (isArabic) "إضافة فترة عمل" else "Add working-hours slot")
+                            IconButton(
+                                onClick = { showWorkingHoursInfo = true },
+                                modifier = Modifier.size(32.dp)
                             ) {
-                                Row(
-                                    horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(if (isArabic) "+ إضافة فترة عمل" else "+ Add working-hours slot")
-                                    IconButton(
-                                        onClick = { showWorkingHoursInfo = true },
-                                        modifier = Modifier.size(32.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Info,
-                                            contentDescription = if (isArabic) "معلومات مواعيد العمل" else "Working hours information",
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = if (isArabic) "معلومات مواعيد العمل" else "Working hours information",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
                         workSlots.forEachIndexed { index, slot ->
-                            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
-                                Column(Modifier.fillMaxWidth().padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text((if (isArabic) "فترة عمل " else "Working slot ") + (index + 1), modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                                        TextButton(onClick = { workSlots = workSlots.filterIndexed { i, _ -> i != index } }) { Text(if (isArabic) "حذف" else "Remove") }
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                            ) {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            (if (isArabic) "فترة عمل " else "Working slot ") + (index + 1),
+                                            modifier = Modifier.weight(1f),
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        TextButton(
+                                            onClick = { workSlots = workSlots.filterIndexed { i, _ -> i != index } }
+                                        ) {
+                                            Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                                            Text(if (isArabic) "حذف" else "Remove", color = MaterialTheme.colorScheme.error)
+                                        }
                                     }
-                                    listOf(6 to "السبت", 7 to "الأحد", 1 to "الاثنين", 2 to "الثلاثاء", 3 to "الأربعاء", 4 to "الخميس", 5 to "الجمعة").chunked(2).forEach { pair ->
-                                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                            pair.forEach { (day, label) ->
-                                                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                                                    Checkbox(checked = day in slot.days, onCheckedChange = { checked ->
-                                                        val days = if (checked) slot.days + day else slot.days - day
-                                                        workSlots = workSlots.toMutableList().also { it[index] = slot.copy(days = days) }
-                                                    })
-                                                    Text(if (isArabic) label else listOf("Saturday","Sunday","Monday","Tuesday","Wednesday","Thursday","Friday")[listOf(6,7,1,2,3,4,5).indexOf(day)], style = MaterialTheme.typography.bodySmall)
+                                    androidx.compose.foundation.layout.FlowRow(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        maxItemsInEachRow = 4,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        listOf(
+                                            6 to "السبت", 7 to "الأحد", 1 to "الاثنين", 2 to "الثلاثاء",
+                                            3 to "الأربعاء", 4 to "الخميس", 5 to "الجمعة"
+                                        ).forEach { (day, arabicLabel) ->
+                                            val selected = day in slot.days
+                                            Surface(
+                                                modifier = Modifier.weight(1f).height(40.dp),
+                                                onClick = {
+                                                    val days = if (selected) slot.days - day else slot.days + day
+                                                    workSlots = workSlots.toMutableList().also { it[index] = slot.copy(days = days) }
+                                                },
+                                                shape = RoundedCornerShape(8.dp),
+                                                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                                border = BorderStroke(
+                                                    1.dp,
+                                                    if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                                                )
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier.fillMaxSize().padding(horizontal = 6.dp),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Text(
+                                                        if (isArabic) arabicLabel else listOf("Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday")[listOf(6, 7, 1, 2, 3, 4, 5).indexOf(day)].take(3),
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                                        color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        maxLines = 1
+                                                    )
                                                 }
                                             }
                                         }
                                     }
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        OutlinedTextField(
-                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                        ),
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        CenterWorkingHoursTimeField(
+                                            label = if (isArabic) "من" else "From",
                                             value = slot.startTime,
-                                            onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(startTime = value) } },
+                                            isArabic = isArabic,
                                             modifier = Modifier.weight(1f),
-                                            singleLine = true,
-                                            shape = RoundedCornerShape(10.dp),
-                                            label = { Text(if (isArabic) "من" else "From") }
+                                            onClick = { workingHoursTimePickerTarget = index to true }
                                         )
-                                        OutlinedTextField(
-                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                        ),
+                                        CenterWorkingHoursTimeField(
+                                            label = if (isArabic) "إلى" else "To",
                                             value = slot.endTime,
-                                            onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(endTime = value) } },
+                                            isArabic = isArabic,
                                             modifier = Modifier.weight(1f),
-                                            singleLine = true,
-                                            shape = RoundedCornerShape(10.dp),
-                                            label = { Text(if (isArabic) "إلى" else "To") }
+                                            onClick = { workingHoursTimePickerTarget = index to false }
                                         )
                                     }
                                     OutlinedTextField(
-                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                        ),
                                         value = slot.notes,
-                                        onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(notes = value) } },
+                                        onValueChange = { value ->
+                                            workSlots = workSlots.toMutableList().also { it[index] = slot.copy(notes = value) }
+                                        },
                                         modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
                                         shape = RoundedCornerShape(10.dp),
-                                        label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") }
+                                        label = { Text(if (isArabic) "ملاحظات الفترة (اختياري)" else "Period notes (optional)") },
+                                        placeholder = { Text(if (isArabic) "مثال: بالحجز فقط" else "e.g. By appointment only") }
                                     )
                                 }
                             }
@@ -1088,6 +1176,25 @@ private fun CenterFormDialog(
                 }
             }
         )
+    }
+
+    workingHoursTimePickerTarget?.let { (slotIndex, isStart) ->
+        val slot = workSlots.getOrNull(slotIndex)
+        if (slot != null) {
+            CenterWorkingHoursTimePickerDialog(
+                isArabic = isArabic,
+                initialValue = if (isStart) slot.startTime else slot.endTime,
+                onDismiss = { workingHoursTimePickerTarget = null },
+                onConfirm = { hour, minute ->
+                    val value = String.format(java.util.Locale.US, "%02d:%02d", hour, minute)
+                    workSlots = workSlots.toMutableList().also { list ->
+                        val current = list[slotIndex]
+                        list[slotIndex] = if (isStart) current.copy(startTime = value) else current.copy(endTime = value)
+                    }
+                    workingHoursTimePickerTarget = null
+                }
+            )
+        }
     }
 
     if (showMapPicker) {

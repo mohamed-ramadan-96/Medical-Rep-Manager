@@ -1234,7 +1234,6 @@ private fun DoctorFormDialog(
     onSave: (DoctorEntity, Set<Long>, List<DoctorAvailabilityEntity>) -> Unit
 ) {
     val context = LocalContext.current
-    val dialogMaxHeight = LocalConfiguration.current.screenHeightDp.dp * 0.88f
     var name by remember(initial) { mutableStateOf(initial?.name.orEmpty()) }
     var selectedSpecialtyId by remember(initial, specialties) { mutableStateOf(initial?.specialtyId ?: specialties.firstOrNull { it.name == initial?.specialty }?.id) }
     var showSpecialtyPicker by remember { mutableStateOf(false) }
@@ -1298,14 +1297,12 @@ private fun DoctorFormDialog(
     }
 
     AlertDialog(
-        modifier = Modifier.fillMaxWidth().widthIn(max = 560.dp).heightIn(max = dialogMaxHeight),
-        properties = DialogProperties(usePlatformDefaultWidth = false),
         onDismissRequest = onDismiss,
-        title = { Text(if (initial == null) { if (isArabic) "إضافة طبيب" else "Add doctor" } else { if (isArabic) "تعديل بيانات الطبيب" else "Edit doctor" }, style = MaterialTheme.typography.titleLarge) },
+        title = { Text(if (initial == null) { if (isArabic) "إضافة طبيب" else "Add doctor" } else { if (isArabic) "تعديل بيانات الطبيب" else "Edit doctor" }, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
         text = {
             LazyColumn(
-                modifier = Modifier.fillMaxWidth().heightIn(max = dialogMaxHeight - 150.dp),
-                verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 item {
                     Column(
@@ -1605,7 +1602,7 @@ private fun DoctorFormDialog(
             }
         },
         confirmButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Button(
                 onClick = {
                 if (name.isBlank()) {
@@ -1652,9 +1649,10 @@ private fun DoctorFormDialog(
                     ) }
                 }
             },
-                shape = MaterialTheme.shapes.small
+                modifier = Modifier.height(48.dp),
+                shape = RoundedCornerShape(10.dp)
             ) { Text(if (isArabic) "حفظ" else "Save") }
-            OutlinedButton(onClick = onDismiss, shape = MaterialTheme.shapes.small) { Text(if (isArabic) "إلغاء" else "Cancel") }
+            OutlinedButton(onClick = onDismiss, modifier = Modifier.height(48.dp), shape = RoundedCornerShape(10.dp)) { Text(if (isArabic) "إلغاء" else "Cancel") }
             }
         },
         dismissButton = { }

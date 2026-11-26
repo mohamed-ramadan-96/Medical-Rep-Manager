@@ -16,6 +16,9 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.Dialog
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.ui.draw.alpha
@@ -130,9 +133,38 @@ import java.util.UUID
 private fun doctorAreas(value: String): List<String> =
     value.split("|").map { it.trim() }.filter { it.isNotBlank() }.distinctBy { it.lowercase(Locale.ROOT) }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DoctorPickerBottomSheet(
+    title: String,
+    onDismiss: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+            AnimatedVisibility(
+                visible = true,
+                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(animationSpec = tween(AppMotion.Fast)),
+                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(animationSpec = tween(AppMotion.Fast))
+            ) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.78f).dp),
+                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 8.dp
+                ) {
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Text(title, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        content()
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DoctorFormBaseBottomSheet(
     title: String,
     onDismiss: () -> Unit,
     content: @Composable () -> Unit
@@ -157,7 +189,6 @@ private fun DoctorPickerBottomSheet(
         }
     }
 }
-
 @Composable
 private fun FormExpandableSection(
     title: String,
@@ -1446,7 +1477,7 @@ private fun DoctorFormDialog(
                     )
                 }
                 if (showAreaPicker) item {
-                    DoctorPickerBottomSheet(title = if (isArabic) "اختيار المناطق" else "Choose areas", onDismiss = { showAreaPicker = false }) {
+                    DoctorFormBaseBottomSheet(title = if (isArabic) "اختيار المناطق" else "Choose areas", onDismiss = { showAreaPicker = false }) {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             LazyColumn(modifier = Modifier.height(240.dp)) {
                                 items(areaOptions, key = { it }) { areaOption ->
@@ -1740,7 +1771,7 @@ private fun DoctorFormDialog(
     }
 
     if (showCenterPicker) {
-        DoctorPickerBottomSheet(
+        DoctorFormBaseBottomSheet(
             title = if (isArabic) "اختر مراكز عمل الطبيب" else "Select doctor's centers",
             onDismiss = { showCenterPicker = false }
         ) {

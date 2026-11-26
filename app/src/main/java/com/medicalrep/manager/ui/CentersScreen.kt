@@ -314,6 +314,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                         verticalArrangement = Arrangement.spacedBy(2.dp)
                                     ) {
                                         Text(center.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, maxLines = 1)
+                                        if (center.area.isNotBlank()) Text(center.area, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, maxLines = 1)
                                         if (center.address.isNotBlank()) {
                                             Text(center.address, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                                         }
@@ -528,6 +529,7 @@ private fun CenterFormDialog(
     var editCenterLocation by remember { mutableStateOf(false) }
     var locationSectionExpanded by remember(initial) { mutableStateOf(false) }
     var nameError by remember { mutableStateOf(false) }
+    var areaError by remember { mutableStateOf(false) }
     var showWorkingHoursInfo by remember { mutableStateOf(false) }
 
     val dialogMaxHeight = LocalConfiguration.current.screenHeightDp.dp * 0.88f
@@ -570,9 +572,10 @@ private fun CenterFormDialog(
                 }
                 item {
                     OutlinedTextField(
-                        value = area, onValueChange = { area = it },
+                        value = area, onValueChange = { area = it; areaError = false },
                         modifier = Modifier.fillMaxWidth(), singleLine = true, shape = MaterialTheme.shapes.small,
-                        label = { Text(if (isArabic) "المنطقة" else "Area") }
+                        label = { Text(if (isArabic) "المنطقة *" else "Area *") },
+                        isError = areaError
                     )
                 }
                 item {
@@ -751,7 +754,9 @@ private fun CenterFormDialog(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Button(
                 onClick = {
-                if (name.isBlank()) nameError = true else onSave(
+                if (name.isBlank()) nameError = true
+                else if (area.isBlank()) areaError = true
+                else onSave(
                     MedicalCenterEntity(
                         id = initial?.id ?: 0L,
                         name = name.trim(),

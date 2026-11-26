@@ -56,6 +56,11 @@ private val LocalAppCardContainerColor = compositionLocalOf { Color(0xFFE7EDF5) 
 @Composable
 fun AppCardContainerColor(): Color = LocalAppCardContainerColor.current
 
+/** Main form-dialog surface: AMOLED black in dark theme, unchanged surface in light theme. */
+@Composable
+fun AppDialogContainerColor(): Color =
+    if (MaterialTheme.colorScheme.surface == Color.Black) Color.Black else MaterialTheme.colorScheme.surface
+
 /**
  * Container color for large, nested form cards. Keep small fields and selection
  * rows on AppCardContainerColor; only large containers become AMOLED black.

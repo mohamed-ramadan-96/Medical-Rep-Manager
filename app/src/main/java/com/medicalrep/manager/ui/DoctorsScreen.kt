@@ -1177,49 +1177,36 @@ internal fun DoctorDetailsDialog(
 private fun DoctorTimeSelectionField(
     label: String,
     value: String,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    OutlinedButton(
+    Surface(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp),
-        shape = MaterialTheme.shapes.small,
-        contentPadding = PaddingValues(horizontal = AppSpacing.md, vertical = 8.dp)
+        modifier = modifier,
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelSmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1
-                )
-            }
-            Icon(
-                imageVector = Icons.Default.ArrowDropDown,
-                contentDescription = null
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Medium
             )
         }
     }
 }
 
-private fun doctorDisplayTime(value: String): String {
+private fun doctorDisplayTime(value: String, isArabic: Boolean): String {
     val parts = value.split(":")
     val hour = parts.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 23) ?: 9
     val minute = parts.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 59) ?: 0
-    val suffix = if (hour < 12) "AM" else "PM"
+    val suffix = if (hour < 12) (if (isArabic) "ص" else "AM") else (if (isArabic) "م" else "PM")
     val displayHour = when (hour % 12) { 0 -> 12; else -> hour % 12 }
     return String.format(Locale.US, "%02d:%02d %s", displayHour, minute, suffix)
 }
@@ -1548,15 +1535,37 @@ private fun DoctorFormDialog(
                     ) {
                             Text(if (isArabic) "كل فترة مستقلة: عامة أو مرتبطة بمركز من المراكز المختارة." else "Each slot is independent: general or linked to one of the selected centers.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             availabilityDrafts.forEachIndexed { index, draft ->
-                                Card(shape = RoundedCornerShape(10.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)) {
-                                    Column(Modifier.fillMaxWidth().padding(AppSpacing.md), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                                            Text((if (isArabic) "الفترة " else "Slot ") + (index + 1), modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                                            if (availabilityDrafts.size > 1) TextButton(onClick = { availabilityDrafts = availabilityDrafts.filterIndexed { i, _ -> i != index } }) { Text(if (isArabic) "حذف" else "Remove") }
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                (if (isArabic) "الفترة " else "Slot ") + (index + 1),
+                                                modifier = Modifier.weight(1f),
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            if (availabilityDrafts.size > 1) {
+                                                TextButton(
+                                                    onClick = { availabilityDrafts = availabilityDrafts.filterIndexed { i, _ -> i != index } }
+                                                ) {
+                                                    Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                                                    Text(if (isArabic) "حذف" else "Remove", color = MaterialTheme.colorScheme.error)
+                                                }
+                                            }
                                         }
                                         OutlinedSelectionField(
                                             label = if (isArabic) "نوع الموعد / المركز" else "Availability type / center",
-                                            value = draft.centerId?.let { id -> centers.firstOrNull { it.id == id }?.name } ?: if (isArabic) "موعد عام — بدون مركز" else "General — no center",
+                                            value = draft.centerId?.let { id -> centers.firstOrNull { it.id == id }?.name }
+                                                ?: if (isArabic) "موعد عام — بدون مركز" else "General — no center",
                                             onClick = { centerMenuForIndex = index }
                                         )
                                         DropdownMenu(expanded = centerMenuForIndex == index, onDismissRequest = { centerMenuForIndex = null }) {
@@ -1571,53 +1580,89 @@ private fun DoctorFormDialog(
                                                 })
                                             }
                                         }
-                                        Text(if (isArabic) "أيام التواجد" else "Available days", style = MaterialTheme.typography.labelMedium)
-                                        listOf(6 to "السبت", 7 to "الأحد", 1 to "الاثنين", 2 to "الثلاثاء", 3 to "الأربعاء", 4 to "الخميس", 5 to "الجمعة").chunked(2).forEach { pair ->
-                                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                                                pair.forEach { (day, label) ->
-                                                    Row(Modifier.weight(1f), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                                                        Checkbox(checked = day in draft.days, onCheckedChange = { checked ->
-                                                            val next = if (checked) draft.days + day else draft.days - day
-                                                            availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(days = next) }
-                                                        })
-                                                        Text(if (isArabic) label else listOf("Saturday","Sunday","Monday","Tuesday","Wednesday","Thursday","Friday")[listOf(6,7,1,2,3,4,5).indexOf(day)], style = MaterialTheme.typography.bodySmall)
+                                        Text(
+                                            if (isArabic) "أيام التواجد" else "Available days",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        androidx.compose.foundation.layout.FlowRow(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            maxItemsInEachRow = 4,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            listOf(
+                                                6 to "السبت", 7 to "الأحد", 1 to "الاثنين", 2 to "الثلاثاء",
+                                                3 to "الأربعاء", 4 to "الخميس", 5 to "الجمعة"
+                                            ).forEach { (day, arabicLabel) ->
+                                                val selected = day in draft.days
+                                                Surface(
+                                                    modifier = Modifier.weight(1f).height(40.dp),
+                                                    onClick = {
+                                                        val next = if (selected) draft.days - day else draft.days + day
+                                                        availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(days = next) }
+                                                    },
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                                    border = BorderStroke(
+                                                        1.dp,
+                                                        if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                                                    )
+                                                ) {
+                                                    Box(
+                                                        modifier = Modifier.fillMaxSize().padding(horizontal = 6.dp),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Text(
+                                                            if (isArabic) arabicLabel else listOf("Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday")[listOf(6, 7, 1, 2, 3, 4, 5).indexOf(day)].take(3),
+                                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                                            color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                            maxLines = 1
+                                                        )
                                                     }
                                                 }
                                             }
                                         }
-                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            Box(modifier = Modifier.weight(1f)) {
-                                                DoctorTimeSelectionField(
-                                                    label = if (isArabic) "من" else "From",
-                                                    value = doctorDisplayTime(draft.startTime),
-                                                    onClick = { availabilityTimePickerTarget = index to true }
-                                                )
-                                            }
-                                            Box(modifier = Modifier.weight(1f)) {
-                                                DoctorTimeSelectionField(
-                                                    label = if (isArabic) "إلى" else "To",
-                                                    value = doctorDisplayTime(draft.endTime),
-                                                    onClick = { availabilityTimePickerTarget = index to false }
-                                                )
-                                            }
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            DoctorTimeSelectionField(
+                                                label = if (isArabic) "من" else "From",
+                                                value = doctorDisplayTime(draft.startTime, isArabic),
+                                                modifier = Modifier.weight(1f),
+                                                onClick = { availabilityTimePickerTarget = index to true }
+                                            )
+                                            DoctorTimeSelectionField(
+                                                label = if (isArabic) "إلى" else "To",
+                                                value = doctorDisplayTime(draft.endTime, isArabic),
+                                                modifier = Modifier.weight(1f),
+                                                onClick = { availabilityTimePickerTarget = index to false }
+                                            )
                                         }
                                         OutlinedTextField(
-                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                            errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                        ),
                                             value = draft.notes,
-                                            onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(notes = value) } },
+                                            onValueChange = { value ->
+                                                availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(notes = value) }
+                                            },
                                             modifier = Modifier.fillMaxWidth(),
+                                            singleLine = true,
                                             shape = RoundedCornerShape(10.dp),
-                                            label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") }
+                                            label = { Text(if (isArabic) "ملاحظات الفترة (اختياري)" else "Period notes (optional)") },
+                                            placeholder = { Text(if (isArabic) "مثال: بالحجز فقط" else "e.g. By appointment only") }
                                         )
                                     }
                                 }
                             }
-                        OutlinedButton(shape = RoundedCornerShape(10.dp), onClick = { availabilityDrafts = availabilityDrafts + DoctorAvailabilityDraft() }, modifier = Modifier.fillMaxWidth()) { Text(if (isArabic) "+ إضافة فترة" else "+ Add slot") }
+                        OutlinedButton(
+                            shape = RoundedCornerShape(10.dp),
+                            onClick = { availabilityDrafts = availabilityDrafts + DoctorAvailabilityDraft() },
+                            modifier = Modifier.fillMaxWidth().height(46.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Text(if (isArabic) "إضافة فترة" else "Add slot")
+                        }
                     }
                 }
                 availabilityError?.let { message -> item { Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) } }

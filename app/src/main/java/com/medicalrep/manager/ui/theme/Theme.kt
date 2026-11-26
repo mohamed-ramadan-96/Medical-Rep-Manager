@@ -11,6 +11,8 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -48,13 +50,10 @@ private fun appColorScheme(base: androidx.compose.material3.ColorScheme, darkThe
         onSurfaceVariant = Color(0xFF454545)
     )
 
+private val LocalAppCardContainerColor = compositionLocalOf { Color(0xFFE7EDF5) }
+
 @Composable
-fun AppCardContainerColor(): Color =
-    if (MaterialTheme.colorScheme.background == Color.Black) {
-        MaterialTheme.colorScheme.surfaceContainer
-    } else {
-        Color.White
-    }
+fun AppCardContainerColor(): Color = LocalAppCardContainerColor.current
 
 // One consistent semi-rounded language for cards, dialogs, menus, fields and buttons.
 private val AppShapes = Shapes(
@@ -82,6 +81,12 @@ fun MedicalRepTheme(
         else -> LightColors
     }
     val colors = appColorScheme(baseColors, darkTheme)
+    val cardContainerColor = when {
+        darkTheme -> colors.surfaceContainer
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
+            baseColors.secondaryContainer
+        else -> Color(0xFFE7EDF5)
+    }
 
     SideEffect {
         var current = view.context
@@ -95,9 +100,11 @@ fun MedicalRepTheme(
         }
     }
 
-    MaterialTheme(
-        colorScheme = colors,
-        shapes = AppShapes,
-        content = content
-    )
+    CompositionLocalProvider(LocalAppCardContainerColor provides cardContainerColor) {
+        MaterialTheme(
+            colorScheme = colors,
+            shapes = AppShapes,
+            content = content
+        )
+    }
 }

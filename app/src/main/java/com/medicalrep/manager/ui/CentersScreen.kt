@@ -759,6 +759,7 @@ private fun CenterFormDialog(
             ) {
                 item {
                     OutlinedTextField(
+                            colors = AppFilledTextFieldColors(),
                         colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -769,11 +770,13 @@ private fun CenterFormDialog(
                         modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(10.dp),
                         label = { Text(if (isArabic) "اسم المركز *" else "Center name *") },
                         isError = nameError
-                    )
+                    
+                        )
                 }
                 item {
                     androidx.compose.foundation.layout.Box {
                         OutlinedTextField(
+                            colors = AppFilledTextFieldColors(),
                         colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -789,6 +792,7 @@ private fun CenterFormDialog(
                             label = { Text(if (isArabic) "المنطقة *" else "Area *") },
                             isError = areaError,
                             trailingIcon = { Icon(Icons.Default.ExpandMore, contentDescription = null) }
+                        
                         )
                         androidx.compose.foundation.layout.Box(
                             Modifier.matchParentSize().clickable { showAreaPicker = true }
@@ -836,6 +840,7 @@ private fun CenterFormDialog(
                 }
                 item {
                     OutlinedTextField(
+                            colors = AppFilledTextFieldColors(),
                         colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -845,10 +850,12 @@ private fun CenterFormDialog(
                         value = address, onValueChange = { address = it },
                         modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp),
                         label = { Text(if (isArabic) "العنوان" else "Address") }
-                    )
+                    
+                        )
                 }
                 item {
                     OutlinedTextField(
+                            colors = AppFilledTextFieldColors(),
                         colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -858,7 +865,8 @@ private fun CenterFormDialog(
                         value = phone, onValueChange = { phone = it },
                         modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(10.dp),
                         label = { Text(if (isArabic) "رقم الهاتف" else "Phone") }
-                    )
+                    
+                        )
                 }
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -962,6 +970,7 @@ private fun CenterFormDialog(
                                         )
                                     }
                                     OutlinedTextField(
+                            colors = AppFilledTextFieldColors(),
                                         value = slot.notes,
                                         onValueChange = { value ->
                                             workSlots = workSlots.toMutableList().also { it[index] = slot.copy(notes = value) }
@@ -971,7 +980,8 @@ private fun CenterFormDialog(
                                         shape = RoundedCornerShape(10.dp),
                                         label = { Text(if (isArabic) "ملاحظات الفترة (اختياري)" else "Period notes (optional)") },
                                         placeholder = { Text(if (isArabic) "مثال: بالحجز فقط" else "e.g. By appointment only") }
-                                    )
+                                    
+                        )
                                 }
                             }
                         }
@@ -979,6 +989,7 @@ private fun CenterFormDialog(
                 }
                 item {
                     OutlinedTextField(
+                            colors = AppFilledTextFieldColors(),
                         colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -988,7 +999,8 @@ private fun CenterFormDialog(
                         value = notes, onValueChange = { notes = it },
                         modifier = Modifier.fillMaxWidth(), singleLine = false, minLines = 1, shape = RoundedCornerShape(10.dp),
                         label = { Text(if (isArabic) "ملاحظات" else "Notes") }
-                    )
+                    
+                        )
                 }
                 item {
                     val hasCenterLocation = (latitude != null && longitude != null) || !mapUrl.isNullOrBlank()
@@ -1153,13 +1165,15 @@ private fun CenterFormDialog(
             title = { Text(if (isArabic) "إضافة منطقة جديدة" else "Add new area") },
             text = {
                 OutlinedTextField(
+                            colors = AppFilledTextFieldColors(),
                     value = newAreaName,
                     onValueChange = { newAreaName = it },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     shape = RoundedCornerShape(10.dp),
                     label = { Text(if (isArabic) "اسم المنطقة" else "Area name") }
-                )
+                
+                        )
             },
             confirmButton = {
                 TextButton(

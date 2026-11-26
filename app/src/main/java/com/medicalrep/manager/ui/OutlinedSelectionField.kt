@@ -1,6 +1,5 @@
 package com.medicalrep.manager.ui
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -13,6 +12,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.TextFieldColors
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,9 +31,8 @@ fun OutlinedSelectionField(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier.fillMaxWidth().heightIn(min = 56.dp),
-        shape = MaterialTheme.shapes.small,
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
@@ -53,3 +54,20 @@ fun OutlinedSelectionField(
         }
     }
 }
+
+@Composable
+fun AppFilledTextFieldColors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
+    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+    errorContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+    focusedBorderColor = Color.Transparent,
+    unfocusedBorderColor = Color.Transparent,
+    disabledBorderColor = Color.Transparent,
+    errorBorderColor = Color.Transparent,
+    focusedLabelColor = MaterialTheme.colorScheme.primary,
+    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    errorLabelColor = MaterialTheme.colorScheme.error,
+    cursorColor = MaterialTheme.colorScheme.primary,
+    errorCursorColor = MaterialTheme.colorScheme.error
+)

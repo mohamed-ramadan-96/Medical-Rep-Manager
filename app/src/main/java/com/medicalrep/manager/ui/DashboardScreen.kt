@@ -494,7 +494,11 @@ private fun VisitSummaryCard(visit: DoctorVisitEntity, doctorName: String?, isAr
 
 @Composable
 private fun EmptyDashboardCard(message: String) {
-    Card(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
+    Card(
+        Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())
+    ) {
         Text(message, Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

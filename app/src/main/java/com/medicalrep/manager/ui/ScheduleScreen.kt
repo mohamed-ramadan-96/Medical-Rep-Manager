@@ -15,10 +15,7 @@ import androidx.compose.material3.Divider
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Box
@@ -226,26 +223,18 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                 previousPosition = position
             }
         }
-        val fadeHeaderOffset = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }?.offset ?: Int.MAX_VALUE
-        val fadeStartOffset = with(LocalDensity.current) { 48.dp.roundToPx() }
-        val fadeAlpha by animateFloatAsState(
-            targetValue = ((fadeStartOffset - fadeHeaderOffset).toFloat() / fadeStartOffset).coerceIn(0f, 1f),
-            animationSpec = tween(AppMotion.Emphasized),
-            label = "scheduleFadeAlpha"
-        )
         val scheduleFadeColor = MaterialTheme.colorScheme.background
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize().padding(inner).drawWithContent {
                 drawContent()
                 val stickyHeader = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }
-                if (stickyHeader != null && fadeAlpha > 0f) {
+                if (stickyHeader != null) {
                     val fadeTop = (stickyHeader.offset + stickyHeader.size).toFloat()
-                    val fadeHeight = 72.dp.toPx()
+                    val fadeHeight = 36.dp.toPx()
                     drawRect(
                         brush = Brush.verticalGradient(
-                            0f to scheduleFadeColor.copy(alpha = fadeAlpha),
-                            0.65f to scheduleFadeColor.copy(alpha = 0.96f * fadeAlpha),
+                            0f to scheduleFadeColor,
                             1f to scheduleFadeColor.copy(alpha = 0f),
                             startY = fadeTop,
                             endY = fadeTop + fadeHeight
@@ -618,7 +607,6 @@ private fun AvailabilityFormDialog(
     onSave: (List<DoctorAvailabilityEntity>) -> Unit
 ) {
     val initial = initialGroup.firstOrNull()
-    val dialogMaxHeight = LocalConfiguration.current.screenHeightDp.dp * 0.88f
     var selectedDoctorId by remember(initialGroup, doctors) { mutableStateOf(initial?.doctorId ?: doctors.firstOrNull()?.id) }
     var drafts by remember(initialGroup) {
         mutableStateOf(
@@ -667,20 +655,21 @@ private fun AvailabilityFormDialog(
     val canSave = formError == null
 
     AlertDialog(
-        modifier = Modifier.fillMaxWidth().widthIn(max = 560.dp).heightIn(max = dialogMaxHeight),
-        properties = DialogProperties(usePlatformDefaultWidth = false),
         onDismissRequest = onDismiss,
         title = {
             Text(
                 if (initialGroup.isEmpty()) { if (isArabic) "إضافة مواعيد للطبيب" else "Add doctor availability" }
                 else { if (isArabic) "تعديل المواعيد" else "Edit availability" },
-                style = MaterialTheme.typography.titleLarge
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
             )
         },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth().heightIn(max = dialogMaxHeight - 150.dp).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
+                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 AvailabilitySelectionField(
                     label = if (isArabic) "الطبيب" else "Doctor",
@@ -927,7 +916,7 @@ private fun AvailabilityFormDialog(
                                 onValueChange = { value -> drafts = drafts.toMutableList().also { it[index] = draft.copy(notes = value) } },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
-                                shape = MaterialTheme.shapes.small,
+                                shape = RoundedCornerShape(10.dp),
                                 label = { Text(if (isArabic) "ملاحظات الفترة (اختياري)" else "Period notes (optional)") },
                                 placeholder = { Text(if (isArabic) "مثال: بالحجز فقط" else "e.g. By appointment only") }
                             )
@@ -947,7 +936,7 @@ private fun AvailabilityFormDialog(
             }
         },
         confirmButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Button(
                     enabled = canSave,
                     onClick = {
@@ -970,10 +959,10 @@ private fun AvailabilityFormDialog(
                             }
                             onSave(result)
                     },
-                    modifier = Modifier.weight(1f),
-                    shape = MaterialTheme.shapes.small
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    shape = RoundedCornerShape(10.dp)
                 ) { Text(if (isArabic) "حفظ المواعيد" else "Save availability", fontWeight = FontWeight.Bold) }
-                OutlinedButton(onClick = onDismiss, shape = MaterialTheme.shapes.small) {
+                OutlinedButton(onClick = onDismiss, modifier = Modifier.height(48.dp), shape = RoundedCornerShape(10.dp)) {
                     Text(if (isArabic) "إلغاء" else "Cancel")
                 }
             }

@@ -793,7 +793,7 @@ private fun AvailabilityFormDialog(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
-                        colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
                     ) {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(12.dp),

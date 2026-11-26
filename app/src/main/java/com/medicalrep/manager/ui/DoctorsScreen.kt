@@ -1344,7 +1344,12 @@ private fun DoctorFormDialog(
                 }
                 item {
                     OutlinedTextField(
-                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        ),
                         shape = RoundedCornerShape(10.dp),
                         value = name, onValueChange = { name = it; nameError = false },
                         modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), singleLine = true,
@@ -1368,7 +1373,12 @@ private fun DoctorFormDialog(
                     ) {
                         phoneNumbers.forEachIndexed { index, phone ->
                             OutlinedTextField(
-                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        ),
                         shape = RoundedCornerShape(10.dp),
                         value = phone,
                                 onValueChange = { value ->
@@ -1433,7 +1443,12 @@ private fun DoctorFormDialog(
                                     }
                                 }
                                 OutlinedTextField(
-                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        ),
                         shape = RoundedCornerShape(10.dp),
                         value = newArea,
                                     onValueChange = { newArea = it },
@@ -1536,7 +1551,12 @@ private fun DoctorFormDialog(
                                             }
                                         }
                                         OutlinedTextField(
-                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        ),
                                             value = draft.notes,
                                             onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(notes = value) } },
                                             modifier = Modifier.fillMaxWidth(),
@@ -1598,7 +1618,12 @@ private fun DoctorFormDialog(
                 }
                 item {
                     OutlinedTextField(
-                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            errorContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        ),
                         shape = RoundedCornerShape(10.dp),
                         value = notes, onValueChange = { notes = it },
                         modifier = Modifier.fillMaxWidth(), minLines = 2,

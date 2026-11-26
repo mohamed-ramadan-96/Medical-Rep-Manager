@@ -1329,7 +1329,7 @@ private fun DoctorFormDialog(
                                 onClick = {
                                     photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                                 },
-                                shape = MaterialTheme.shapes.small
+                                shape = RoundedCornerShape(10.dp)
                             ) {
                                 Text(if (isArabic) "اختيار صورة" else "Choose photo")
                             }
@@ -1343,7 +1343,8 @@ private fun DoctorFormDialog(
                 }
                 item {
                     OutlinedTextField(
-                        shape = MaterialTheme.shapes.small,
+                        shape = RoundedCornerShape(10.dp),
+ shape = RoundedCornerShape(10.dp),
                         value = name, onValueChange = { name = it; nameError = false },
                         modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), singleLine = true,
                         label = { Text(if (isArabic) "اسم الطبيب *" else "Doctor name *") },
@@ -1366,7 +1367,8 @@ private fun DoctorFormDialog(
                     ) {
                         phoneNumbers.forEachIndexed { index, phone ->
                             OutlinedTextField(
-                                shape = MaterialTheme.shapes.small,
+                        shape = RoundedCornerShape(10.dp),
+ shape = RoundedCornerShape(10.dp),
                         value = phone,
                                 onValueChange = { value ->
                                     phoneNumbers = phoneNumbers.toMutableList().also { it[index] = value }                                },                                modifier = Modifier.fillMaxWidth(),
@@ -1386,7 +1388,7 @@ private fun DoctorFormDialog(
                         OutlinedButton(
                             onClick = { phoneNumbers = phoneNumbers + "" },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = MaterialTheme.shapes.small
+                            shape = RoundedCornerShape(10.dp)
                         ) {
                             Icon(Icons.Default.Add, contentDescription = null)
                             Text(if (isArabic) "إضافة رقم هاتف" else "Add phone number")
@@ -1407,7 +1409,7 @@ private fun DoctorFormDialog(
                         onDismissRequest = { showAreaPicker = false },
                         title = { Text(if (isArabic) "اختيار المناطق" else "Choose areas") },
                         text = {
-                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 LazyColumn(modifier = Modifier.height(240.dp)) {
                                     items(areaOptions, key = { it }) { areaOption ->
                                         Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
@@ -1430,7 +1432,8 @@ private fun DoctorFormDialog(
                                     }
                                 }
                                 OutlinedTextField(
-                        shape = MaterialTheme.shapes.small,
+                        shape = RoundedCornerShape(10.dp),
+ shape = RoundedCornerShape(10.dp),
                         value = newArea,
                                     onValueChange = { newArea = it },
                                     modifier = Modifier.fillMaxWidth(),
@@ -1478,7 +1481,7 @@ private fun DoctorFormDialog(
                     ) {
                             Text(if (isArabic) "كل فترة مستقلة: عامة أو مرتبطة بمركز من المراكز المختارة." else "Each slot is independent: general or linked to one of the selected centers.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             availabilityDrafts.forEachIndexed { index, draft ->
-                                Card(shape = MaterialTheme.shapes.medium, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                                Card(shape = RoundedCornerShape(10.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                                     Column(Modifier.fillMaxWidth().padding(AppSpacing.md), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                         Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                                             Text((if (isArabic) "الفترة " else "Slot ") + (index + 1), modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
@@ -1532,16 +1535,17 @@ private fun DoctorFormDialog(
                                             }
                                         }
                                         OutlinedTextField(
-                                            value = draft.notes,
+                        shape = RoundedCornerShape(10.dp),
+value = draft.notes,
                                             onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(notes = value) } },
                                             modifier = Modifier.fillMaxWidth(),
-                                            shape = MaterialTheme.shapes.small,
+                                            shape = RoundedCornerShape(10.dp),
                                             label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") }
                                         )
                                     }
                                 }
                             }
-                        OutlinedButton(shape = MaterialTheme.shapes.small, onClick = { availabilityDrafts = availabilityDrafts + DoctorAvailabilityDraft() }, modifier = Modifier.fillMaxWidth()) { Text(if (isArabic) "+ إضافة فترة" else "+ Add slot") }
+                        OutlinedButton(shape = RoundedCornerShape(10.dp), onClick = { availabilityDrafts = availabilityDrafts + DoctorAvailabilityDraft() }, modifier = Modifier.fillMaxWidth()) { Text(if (isArabic) "+ إضافة فترة" else "+ Add slot") }
                     }
                 }
                 availabilityError?.let { message -> item { Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) } }
@@ -1558,7 +1562,7 @@ private fun DoctorFormDialog(
                     ) {
                         if (hasDoctorLocation) {
                             OutlinedButton(
-                                shape = MaterialTheme.shapes.small,
+                                shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier.fillMaxWidth(),
                                 onClick = {
                                     latitude = null
@@ -1576,7 +1580,7 @@ private fun DoctorFormDialog(
                             locationExpanded = false
                         }
                         OutlinedButton(
-                            shape = MaterialTheme.shapes.small,
+                            shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.fillMaxWidth(),
                             onClick = { showDoctorMapPicker = true }
                         ) {
@@ -1593,7 +1597,8 @@ private fun DoctorFormDialog(
                 }
                 item {
                     OutlinedTextField(
-                        shape = MaterialTheme.shapes.small,
+                        shape = RoundedCornerShape(10.dp),
+ shape = RoundedCornerShape(10.dp),
                         value = notes, onValueChange = { notes = it },
                         modifier = Modifier.fillMaxWidth(), minLines = 2,
                         label = { Text(if (isArabic) "ملاحظات" else "Notes") }

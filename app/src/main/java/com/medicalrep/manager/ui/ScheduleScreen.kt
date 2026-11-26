@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Box
@@ -615,6 +617,7 @@ private fun AvailabilityFormDialog(
     onSave: (List<DoctorAvailabilityEntity>) -> Unit
 ) {
     val initial = initialGroup.firstOrNull()
+    val dialogMaxHeight = LocalConfiguration.current.screenHeightDp.dp * 0.88f
     var selectedDoctorId by remember(initialGroup, doctors) { mutableStateOf(initial?.doctorId ?: doctors.firstOrNull()?.id) }
     var drafts by remember(initialGroup) {
         mutableStateOf(
@@ -663,6 +666,8 @@ private fun AvailabilityFormDialog(
     val canSave = formError == null
 
     AlertDialog(
+        modifier = Modifier.fillMaxWidth().widthIn(max = 560.dp).heightIn(max = dialogMaxHeight),
+        properties = DialogProperties(usePlatformDefaultWidth = false),
         onDismissRequest = onDismiss,
         title = {
             Text(
@@ -676,8 +681,8 @@ private fun AvailabilityFormDialog(
         },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.fillMaxWidth().heightIn(max = dialogMaxHeight - 150.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
             ) {
                 AvailabilitySelectionField(
                     label = if (isArabic) "الطبيب" else "Doctor",
@@ -924,7 +929,7 @@ private fun AvailabilityFormDialog(
                                 onValueChange = { value -> drafts = drafts.toMutableList().also { it[index] = draft.copy(notes = value) } },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
-                                shape = RoundedCornerShape(10.dp),
+                                shape = MaterialTheme.shapes.small,
                                 label = { Text(if (isArabic) "ملاحظات الفترة (اختياري)" else "Period notes (optional)") },
                                 placeholder = { Text(if (isArabic) "مثال: بالحجز فقط" else "e.g. By appointment only") }
                             )
@@ -944,7 +949,7 @@ private fun AvailabilityFormDialog(
             }
         },
         confirmButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Button(
                     enabled = canSave,
                     onClick = {
@@ -967,10 +972,10 @@ private fun AvailabilityFormDialog(
                             }
                             onSave(result)
                     },
-                    modifier = Modifier.weight(1f).height(48.dp),
-                    shape = RoundedCornerShape(10.dp)
+                    modifier = Modifier.weight(1f),
+                    shape = MaterialTheme.shapes.small
                 ) { Text(if (isArabic) "حفظ المواعيد" else "Save availability", fontWeight = FontWeight.Bold) }
-                OutlinedButton(onClick = onDismiss, modifier = Modifier.height(48.dp), shape = RoundedCornerShape(10.dp)) {
+                OutlinedButton(onClick = onDismiss, shape = MaterialTheme.shapes.small {
                     Text(if (isArabic) "إلغاء" else "Cancel")
                 }
             }

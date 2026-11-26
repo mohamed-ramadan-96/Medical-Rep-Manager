@@ -1347,12 +1347,6 @@ private fun DoctorFormDialog(
                 item {
                     OutlinedTextField(
                         shape = MaterialTheme.shapes.small,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                            focusedBorderColor = MaterialTheme.colorScheme.outline,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                        ),
                         value = name, onValueChange = { name = it; nameError = false },
                         modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), singleLine = true,
                         label = { Text(if (isArabic) "اسم الطبيب *" else "Doctor name *") },
@@ -1376,12 +1370,7 @@ private fun DoctorFormDialog(
                         phoneNumbers.forEachIndexed { index, phone ->
                             OutlinedTextField(
                                 shape = MaterialTheme.shapes.small,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                            focusedBorderColor = MaterialTheme.colorScheme.outline,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline                        ),
-                                value = phone,
+                        value = phone,
                                 onValueChange = { value ->
                                     phoneNumbers = phoneNumbers.toMutableList().also { it[index] = value }                                },                                modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
@@ -1445,13 +1434,7 @@ private fun DoctorFormDialog(
                                 }
                                 OutlinedTextField(
                         shape = MaterialTheme.shapes.small,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                            focusedBorderColor = MaterialTheme.colorScheme.outline,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                        ),
-                                    value = newArea,
+                        value = newArea,
                                     onValueChange = { newArea = it },
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true,
@@ -1556,12 +1539,6 @@ private fun DoctorFormDialog(
                                             onValueChange = { value -> availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(notes = value) } },
                                             modifier = Modifier.fillMaxWidth(),
                                             shape = MaterialTheme.shapes.small,
-                                            colors = OutlinedTextFieldDefaults.colors(
-                                                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                                                focusedBorderColor = MaterialTheme.colorScheme.outline,
-                                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                            ),
                                             label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") }
                                         )
                                     }
@@ -1584,7 +1561,7 @@ private fun DoctorFormDialog(
                     ) {
                         if (hasDoctorLocation) {
                             OutlinedButton(
-                                shape = RoundedCornerShape(50),
+                                shape = MaterialTheme.shapes.small,
                                 modifier = Modifier.fillMaxWidth(),
                                 onClick = {
                                     latitude = null
@@ -1620,12 +1597,6 @@ private fun DoctorFormDialog(
                 item {
                     OutlinedTextField(
                         shape = MaterialTheme.shapes.small,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                            focusedBorderColor = MaterialTheme.colorScheme.outline,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                        ),
                         value = notes, onValueChange = { notes = it },
                         modifier = Modifier.fillMaxWidth(), minLines = 2,
                         label = { Text(if (isArabic) "ملاحظات" else "Notes") }

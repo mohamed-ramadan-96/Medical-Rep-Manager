@@ -1282,6 +1282,7 @@ private data class DoctorAvailabilityDraft(
     val existing: List<DoctorAvailabilityEntity> = emptyList()
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DoctorFormDialog(
     isArabic: Boolean,

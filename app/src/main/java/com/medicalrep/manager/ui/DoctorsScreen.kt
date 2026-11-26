@@ -366,18 +366,25 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     previousPosition = position
                 }
         }
+        val fadeHeaderOffset = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }?.offset ?: Int.MAX_VALUE
+        val fadeStartOffset = with(LocalDensity.current) { 48.dp.roundToPx() }
+        val fadeAlpha by animateFloatAsState(
+            targetValue = ((fadeStartOffset - fadeHeaderOffset).toFloat() / fadeStartOffset).coerceIn(0f, 1f),
+            animationSpec = tween(AppMotion.Emphasized),
+            label = "doctorsFadeAlpha"
+        )
         val doctorsFadeColor = MaterialTheme.colorScheme.background
         Column(modifier = Modifier.fillMaxSize().padding(inner)) {
             LazyColumn(state = listState, modifier = Modifier.fillMaxSize().drawWithContent {
                 drawContent()
                 val stickyHeader = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }
-                if (stickyHeader != null && stickyHeader.offset <= 0) {
+                if (stickyHeader != null && fadeAlpha > 0f) {
                     val fadeTop = (stickyHeader.offset + stickyHeader.size).toFloat()
                     val fadeHeight = 72.dp.toPx()
                     drawRect(
                         brush = Brush.verticalGradient(
-                            0f to doctorsFadeColor,
-                            0.65f to doctorsFadeColor.copy(alpha = 0.96f),
+                            0f to doctorsFadeColor.copy(alpha = fadeAlpha),
+                            0.65f to doctorsFadeColor.copy(alpha = 0.96f * fadeAlpha),
                             1f to doctorsFadeColor.copy(alpha = 0f),
                             startY = fadeTop,
                             endY = fadeTop + fadeHeight

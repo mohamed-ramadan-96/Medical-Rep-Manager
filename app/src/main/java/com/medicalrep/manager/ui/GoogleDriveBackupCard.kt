@@ -1,6 +1,7 @@
 package com.medicalrep.manager.ui
 
 import com.medicalrep.manager.ui.theme.AppSpacing
+import com.medicalrep.manager.ui.theme.AppCardContainerColor
 
 import android.app.Activity
 import android.content.Context
@@ -146,7 +147,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+        colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(if (isArabic) "النسخ الاحتياطي على Google Drive" else "Google Drive Backup", style = MaterialTheme.typography.titleMedium)

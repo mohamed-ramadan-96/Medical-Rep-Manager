@@ -94,6 +94,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.medicalrep.manager.data.MedicalCenterEntity
 import com.medicalrep.manager.data.CenterAvailabilityEntity
@@ -665,8 +666,7 @@ private fun CenterFormDialog(
             ) {
                 item {
                     OutlinedTextField(
-                        shape = RoundedCornerShape(10.dp),
-value = name, onValueChange = { name = it; nameError = false },
+                            value = name, onValueChange = { name = it; nameError = false },
                         modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(10.dp),
                         label = { Text(if (isArabic) "اسم المركز *" else "Center name *") },
                         isError = nameError
@@ -675,8 +675,7 @@ value = name, onValueChange = { name = it; nameError = false },
                 item {
                     androidx.compose.foundation.layout.Box {
                         OutlinedTextField(
-                        shape = RoundedCornerShape(10.dp),
-value = area,
+                            value = area,
                             onValueChange = {},
                             readOnly = true,
                             modifier = Modifier.fillMaxWidth().clickable { showAreaPicker = true },
@@ -709,16 +708,14 @@ value = area,
                 }
                 item {
                     OutlinedTextField(
-                        shape = RoundedCornerShape(10.dp),
-value = address, onValueChange = { address = it },
+                            value = address, onValueChange = { address = it },
                         modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp),
                         label = { Text(if (isArabic) "العنوان" else "Address") }
                     )
                 }
                 item {
                     OutlinedTextField(
-                        shape = RoundedCornerShape(10.dp),
-value = phone, onValueChange = { phone = it },
+                            value = phone, onValueChange = { phone = it },
                         modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(10.dp),
                         label = { Text(if (isArabic) "رقم الهاتف" else "Phone") }
                     )
@@ -767,15 +764,12 @@ value = phone, onValueChange = { phone = it },
                                     }
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         OutlinedTextField(
-                        shape = RoundedCornerShape(10.dp),
-value = slot.startTime, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(startTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(10.dp), label = { Text(if (isArabic) "من" else "From") })
+                            value = slot.startTime, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(startTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(10.dp), label = { Text(if (isArabic) "من" else "From") })
                                         OutlinedTextField(
-                        shape = RoundedCornerShape(10.dp),
-value = slot.endTime, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(endTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(10.dp), label = { Text(if (isArabic) "إلى" else "To") })
+                            value = slot.endTime, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(endTime = value) } }, modifier = Modifier.weight(1f), singleLine = true, shape = RoundedCornerShape(10.dp), label = { Text(if (isArabic) "إلى" else "To") })
                                     }
                                     OutlinedTextField(
-                        shape = RoundedCornerShape(10.dp),
-value = slot.notes, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(notes = value) } }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp), label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") })
+                            value = slot.notes, onValueChange = { value -> workSlots = workSlots.toMutableList().also { it[index] = slot.copy(notes = value) } }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp), label = { Text(if (isArabic) "ملاحظات الفترة" else "Slot notes") })
                                 }
                             }
                         }
@@ -783,8 +777,7 @@ value = slot.notes, onValueChange = { value -> workSlots = workSlots.toMutableLi
                 }
                 item {
                     OutlinedTextField(
-                        shape = RoundedCornerShape(10.dp),
-value = notes, onValueChange = { notes = it },
+                            value = notes, onValueChange = { notes = it },
                         modifier = Modifier.fillMaxWidth(), minLines = 2, shape = RoundedCornerShape(10.dp),
                         label = { Text(if (isArabic) "ملاحظات" else "Notes") }
                     )

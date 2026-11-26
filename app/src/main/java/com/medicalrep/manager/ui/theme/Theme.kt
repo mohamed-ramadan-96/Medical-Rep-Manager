@@ -40,13 +40,21 @@ private fun appColorScheme(base: androidx.compose.material3.ColorScheme, darkThe
         surfaceDim = Color(0xFFF2F2F2),
         surfaceBright = Color.White,
         surfaceContainerLowest = Color.White,
-        surfaceContainerLow = Color(0xFFF0F0F0),
+        surfaceContainerLow = Color.White,
         surfaceContainer = Color(0xFFE6E6E6),
-        surfaceContainerHigh = Color(0xFFDDDDDD),
+        surfaceContainerHigh = Color.White,
         surfaceContainerHighest = Color(0xFFD4D4D4),
         onSurface = Color(0xFF1B1B1B),
         onSurfaceVariant = Color(0xFF454545)
     )
+
+@Composable
+fun AppCardContainerColor(): Color =
+    if (MaterialTheme.colorScheme.background == Color.Black) {
+        MaterialTheme.colorScheme.surfaceContainer
+    } else {
+        Color.White
+    }
 
 // One consistent semi-rounded language for cards, dialogs, menus, fields and buttons.
 private val AppShapes = Shapes(

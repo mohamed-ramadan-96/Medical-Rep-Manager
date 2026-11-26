@@ -287,7 +287,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                         Surface(
                             onClick = if (searchHeaderExpanded) ({}) else ({ searchHeaderExpanded = true }),
                             shape = RoundedCornerShape(10.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainer,
+                            color = AppCardContainerColor(),
                             modifier = Modifier.fillMaxSize()
                         ) {
                             Row(modifier = Modifier.padding(horizontal = if (searchHeaderExpanded) 18.dp else 10.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -382,7 +382,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                         }
                         Text(sheetTitle, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         OutlinedTextField(
-                    colors = AppFilledTextFieldColors(),
+                    colors = AppFilledTextFieldColors(AppCardContainerColor()),
                     value = filterSearch,
                     onValueChange = { filterSearch = it },
                     modifier = Modifier.fillMaxWidth(),
@@ -697,7 +697,7 @@ private fun AvailabilityFormDialog(
                         ) {
                             Text(if (isArabic) "اختيار الطبيب" else "Choose doctor", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                             OutlinedTextField(
-                    colors = AppFilledTextFieldColors(),
+                    colors = AppFilledTextFieldColors(AppCardContainerColor()),
                     value = doctorSearch,
                     onValueChange = { doctorSearch = it },
                     modifier = Modifier.fillMaxWidth(),
@@ -752,7 +752,7 @@ private fun AvailabilityFormDialog(
                         ) {
                             Text(if (isArabic) "اختيار المركز" else "Choose center", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                             OutlinedTextField(
-                    colors = AppFilledTextFieldColors(),
+                    colors = AppFilledTextFieldColors(AppCardContainerColor()),
                     value = centerSearch,
                     onValueChange = { centerSearch = it },
                     modifier = Modifier.fillMaxWidth(),
@@ -861,7 +861,7 @@ private fun AvailabilityFormDialog(
                                             error = null
                                         },
                                         shape = RoundedCornerShape(8.dp),
-                                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
+                                        color = if (selected) MaterialTheme.colorScheme.primary else AppCardContainerColor(),
                                         border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)
                                     ) {
                                         Box(
@@ -1035,7 +1035,7 @@ private fun AvailabilitySelectionField(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(10.dp),
-        color = if (isTimeField) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer,
+        color = if (isTimeField) MaterialTheme.colorScheme.surfaceContainerHigh else AppCardContainerColor(),
         border = if (isTimeField) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null
     ) {
         Row(

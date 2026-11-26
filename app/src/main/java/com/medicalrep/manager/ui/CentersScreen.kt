@@ -99,6 +99,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.medicalrep.manager.data.MedicalCenterEntity
 import com.medicalrep.manager.data.CenterAvailabilityEntity
 import androidx.room.withTransaction

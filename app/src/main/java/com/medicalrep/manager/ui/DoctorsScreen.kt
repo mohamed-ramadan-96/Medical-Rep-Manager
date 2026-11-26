@@ -1857,38 +1857,81 @@ private fun DoctorFormDialog(
     }
 
     if (showCenterPicker) {
-        DoctorFormBaseBottomSheet(
-            title = if (isArabic) "اختر مراكز عمل الطبيب" else "Select doctor's centers",
-            onDismiss = { showCenterPicker = false }
+        ModalBottomSheet(
+            onDismissRequest = { showCenterPicker = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = MaterialTheme.colorScheme.surface
         ) {
-            LazyColumn(
-                modifier = Modifier.heightIn(max = 360.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                item {
-                    TextButton(
-                        onClick = { selectedCenterIds = emptySet() },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(if (isArabic) "مسح الاختيار" else "Clear selection")
-                    }
-                }
-                items(centers, key = { it.id }) { center ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = center.id in selectedCenterIds,
-                            onCheckedChange = { checked ->
-                                selectedCenterIds = if (checked) {
-                                    selectedCenterIds + center.id
-                                } else {
-                                    selectedCenterIds - center.id
-                                }
+                Text(
+                    if (isArabic) "اختر مراكز عمل الطبيب" else "Select doctor's centers",
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    item {
+                        Surface(
+                            onClick = { selectedCenterIds = emptySet() },
+                            color = MaterialTheme.colorScheme.surfaceContainer,
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 15.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    if (isArabic) "مسح الاختيار" else "Clear selection",
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
                             }
-                        )
-                        Text(center.name)
+                        }
+                    }
+                    items(centers, key = { it.id }) { center ->
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceContainer,
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().clickable {
+                                    selectedCenterIds = if (center.id in selectedCenterIds) {
+                                        selectedCenterIds - center.id
+                                    } else {
+                                        selectedCenterIds + center.id
+                                    }
+                                }.padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = center.id in selectedCenterIds,
+                                    onCheckedChange = { checked ->
+                                        selectedCenterIds = if (checked) {
+                                            selectedCenterIds + center.id
+                                        } else {
+                                            selectedCenterIds - center.id
+                                        }
+                                    }
+                                )
+                                Text(
+                                    center.name,
+                                    modifier = Modifier.weight(1f),
+                                    textAlign = if (isArabic) TextAlign.End else TextAlign.Start,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
+                        }
                     }
                 }
             }

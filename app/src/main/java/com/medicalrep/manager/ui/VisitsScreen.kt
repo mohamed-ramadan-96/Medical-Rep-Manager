@@ -149,7 +149,7 @@ fun VisitsScreen(
                     onValueChange = { search = it },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    label = { Text(if (isArabic) "ابحث باسم الطبيب أو النتيجة" else "Search doctor or outcome") }
+                    placeholder = { Text(if (isArabic) "ابحث باسم الطبيب أو النتيجة" else "Search doctor or outcome") }
                 )
             val visibleVisits = visits.filter { visit ->
                 val doctorName = doctors.firstOrNull { it.id == visit.doctorId }?.name.orEmpty()

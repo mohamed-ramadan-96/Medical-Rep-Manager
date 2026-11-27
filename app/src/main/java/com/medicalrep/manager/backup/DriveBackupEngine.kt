@@ -432,16 +432,25 @@ object DriveBackupEngine {
                 requiredTables.forEach { table ->
                     check(hasTable(table)) { "Backup database is missing required table: $table" }
                 }
-                writable.rawQuery("PRAGMA user_version", null).use { cursor ->
-                    check(cursor.moveToFirst() && cursor.getInt(0) in 12..15) {
-                        "Unsupported database schema version; expected version 12 through 15"
-                    }
+                val backupSchemaVersion = writable.rawQuery("PRAGMA user_version", null).use { cursor ->
+                    check(cursor.moveToFirst()) { "Could not read backup database schema version" }
+                    cursor.getInt(0)
                 }
-                writable.rawQuery("PRAGMA user_version", null).use { cursor ->
-                    check(cursor.moveToFirst())
-                    if (cursor.getInt(0) >= 15) {
-                        check(hasTable("center_availability")) { "Backup database is missing center availability" }
-                    }
+                val isArabic = context.resources.configuration.locales[0]?.language == "ar"
+                if (backupSchemaVersion < MedicalRepDatabase.MIN_SUPPORTED_RESTORE_VERSION) {
+                    throw IllegalArgumentException(
+                        if (isArabic) "النسخة الاحتياطية قديمة جدًا ولا يمكن استعادتها."
+                        else "This backup is too old to restore."
+                    )
+                }
+                if (backupSchemaVersion > MedicalRepDatabase.SCHEMA_VERSION) {
+                    throw IllegalArgumentException(
+                        if (isArabic) "هذه النسخة الاحتياطية من إصدار أحدث من التطبيق. حدّث التطبيق ثم أعد المحاولة."
+                        else "This backup is from a newer app version. Update the app and try again."
+                    )
+                }
+                if (backupSchemaVersion >= 15) {
+                    check(hasTable("center_availability")) { "Backup database is missing center availability" }
                 }
                 writable.rawQuery("PRAGMA integrity_check", null).use { cursor ->
                     check(cursor.moveToFirst() && cursor.getString(0) == "ok") { "Backup database integrity check failed" }

@@ -403,7 +403,7 @@ interface SpecialtyDao {
 
 @Database(
     entities = [DoctorEntity::class, MedicalCenterEntity::class, SpecialtyEntity::class, DoctorAttachmentEntity::class, CenterAttachmentEntity::class, DoctorAvailabilityEntity::class, DoctorVisitEntity::class, DoctorCenterLinkEntity::class, WeeklyPlanEntryEntity::class, CenterAvailabilityEntity::class],
-    version = 16,
+    version = MedicalRepDatabase.SCHEMA_VERSION,
     exportSchema = false
 )
 abstract class MedicalRepDatabase : RoomDatabase() {
@@ -419,6 +419,9 @@ abstract class MedicalRepDatabase : RoomDatabase() {
     abstract fun weeklyPlanDao(): WeeklyPlanDao
 
     companion object {
+        const val SCHEMA_VERSION = 16
+        const val MIN_SUPPORTED_RESTORE_VERSION = 12
+
         @Volatile private var INSTANCE: MedicalRepDatabase? = null
 
         private val MIGRATION_1_2 = object : Migration(1, 2) {

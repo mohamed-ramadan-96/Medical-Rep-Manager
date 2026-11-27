@@ -64,7 +64,6 @@ import android.app.DownloadManager
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
-import com.medicalrep.manager.BuildConfig
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.material3.CardDefaults
@@ -500,6 +499,11 @@ private fun SettingsScreen(
     onCheckForUpdate: () -> Unit
 ) {
     val context = LocalContext.current
+    val versionName = remember {
+        runCatching {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        }.getOrNull() ?: ""
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -578,7 +582,7 @@ private fun SettingsScreen(
         }
         Spacer(Modifier.height(12.dp))
         Text(
-            if (isArabic) "الإصدار ${BuildConfig.VERSION_NAME}" else "Version ${BuildConfig.VERSION_NAME}",
+            if (isArabic) "الإصدار $versionName" else "Version $versionName",
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             style = MaterialTheme.typography.labelMedium,

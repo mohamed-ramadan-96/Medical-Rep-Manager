@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.EventRepeat
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
@@ -315,6 +316,38 @@ fun VisitsScreen(
     }
 }
 
+@Composable
+private fun VisitFormSelectionField(
+    label: String,
+    value: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().height(56.dp),
+        shape = RoundedCornerShape(10.dp),
+        color = AppSelectionRowColor()
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = if (value.isBlank()) label else "$label: $value",
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1
+            )
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun VisitFormDialog(
@@ -365,7 +398,7 @@ private fun VisitFormDialog(
         },
         text = {
             Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedSelectionField(
+                VisitFormSelectionField(
                     label = if (isArabic) "الطبيب" else "Doctor",
                     value = doctors.firstOrNull { it.id == selectedDoctorId }?.name
                         ?: "",
@@ -443,12 +476,12 @@ private fun VisitFormDialog(
                         }
                     }
                 }
-                OutlinedSelectionField(
+                VisitFormSelectionField(
                     label = if (isArabic) "تاريخ الزيارة" else "Visit date",
                     value = date,
                     onClick = { showVisitDatePicker = true }
                 )
-                OutlinedSelectionField(
+                VisitFormSelectionField(
                     label = if (isArabic) "الوقت" else "Time",
                     value = remember(time) {
                         runCatching {
@@ -465,7 +498,7 @@ private fun VisitFormDialog(
                     shape = RoundedCornerShape(10.dp),
                     value = outcome,
                     onValueChange = { outcome = it },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
                     singleLine = true,
                     placeholder = { Text(if (isArabic) "نتيجة الزيارة" else "Visit outcome") }
                 )
@@ -474,10 +507,11 @@ private fun VisitFormDialog(
                     shape = RoundedCornerShape(10.dp),
                     value = notes,
                     onValueChange = { notes = it },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    singleLine = true,
                     placeholder = { Text(if (isArabic) "ملاحظات الزيارة" else "Visit notes") }
                 )
-                OutlinedSelectionField(
+                VisitFormSelectionField(
                     label = if (isArabic) "موعد المتابعة" else "Follow-up date",
                     value = followUpDate,
                     onClick = { showFollowUpDatePicker = true }
@@ -486,7 +520,11 @@ private fun VisitFormDialog(
             }
         },
         confirmButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Button(onClick = {
                 val visitedAt = parseVisitDate(date, time)
                 val followUpAt = if (followUpDate.isBlank()) null else parseVisitDate(followUpDate, "09:00")
@@ -508,8 +546,8 @@ private fun VisitFormDialog(
                         )
                     )
                 }
-                }, modifier = Modifier.height(48.dp), shape = RoundedCornerShape(10.dp)) { Text(if (isArabic) "حفظ" else "Save") }
-                OutlinedButton(onClick = onDismiss, modifier = Modifier.height(48.dp), shape = RoundedCornerShape(10.dp)) { Text(if (isArabic) "إلغاء" else "Cancel") }
+                }, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(10.dp)) { Text(if (isArabic) "حفظ" else "Save") }
+                OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(10.dp)) { Text(if (isArabic) "إلغاء" else "Cancel") }
             }
         },
         dismissButton = { }

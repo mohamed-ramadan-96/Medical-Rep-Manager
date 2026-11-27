@@ -46,8 +46,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -304,32 +302,16 @@ fun WeeklyPlanScreen(
                 )
             }
             item {
-                Box {
-                    OutlinedSelectionField(
-                        label = if (isArabic) "المنطقة الجغرافية" else "Geographic area",
-                        value = when (selectedRegion) {
-                            ALL_REGIONS -> if (isArabic) "كل المناطق" else "All areas"
-                            "" -> if (isArabic) "اختر المنطقة" else "Choose area"
-                            else -> selectedRegion
-                        },
-                        onClick = { regionMenu = true },
-                        enabled = regions.isNotEmpty()
-                    )
-                    DropdownMenu(expanded = regionMenu, onDismissRequest = { regionMenu = false }) {
-                        DropdownMenuItem(text = { Text(if (isArabic) "كل المناطق" else "All areas") }, onClick = {
-                            selectedRegion = ALL_REGIONS
-                            selectedDoctorIds = emptySet()
-                            regionMenu = false
-                        })
-                        regions.forEach { region ->
-                            DropdownMenuItem(text = { Text(region) }, onClick = {
-                                selectedRegion = region
-                                selectedDoctorIds = emptySet()
-                                regionMenu = false
-                            })
-                        }
-                    }
-                }
+                OutlinedSelectionField(
+                    label = if (isArabic) "المنطقة الجغرافية" else "Geographic area",
+                    value = when (selectedRegion) {
+                        ALL_REGIONS -> if (isArabic) "كل المناطق" else "All areas"
+                        "" -> if (isArabic) "اختر المنطقة" else "Choose area"
+                        else -> selectedRegion
+                    },
+                    onClick = { regionMenu = true },
+                    enabled = regions.isNotEmpty()
+                )
             }
             item {
                 Box {
@@ -589,6 +571,23 @@ fun WeeklyPlanScreen(
                 }
             }
         }
+    }
+
+    if (regionMenu) {
+        AppSelectionPickerSheet(
+            title = if (isArabic) "اختيار المنطقة الجغرافية" else "Choose geographic area",
+            allOptionLabel = if (isArabic) "كل المناطق" else "All areas",
+            allOptionValue = ALL_REGIONS,
+            options = regions.map { it to it },
+            searchPlaceholder = if (isArabic) "ابحث عن منطقة..." else "Search areas...",
+            noResultsLabel = if (isArabic) "لا توجد نتائج" else "No results",
+            onDismiss = { regionMenu = false },
+            onSelect = { selected ->
+                selectedRegion = selected
+                selectedDoctorIds = emptySet()
+                regionMenu = false
+            }
+        )
     }
 
     detailsDoctorId?.let { doctorId ->

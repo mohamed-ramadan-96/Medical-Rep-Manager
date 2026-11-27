@@ -7,6 +7,9 @@ import com.medicalrep.manager.ui.theme.AppSpacing
 import com.medicalrep.manager.ui.theme.AppMotion
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import kotlin.math.abs
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -400,6 +403,32 @@ fun MedicalRepApp(
                 )
             } else {
             AnimatedContent(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(selectedTab, isArabic, showSettings) {
+                        var totalHorizontalDrag = 0f
+                        detectHorizontalDragGestures(
+                            onHorizontalDrag = { _, dragAmount ->
+                                totalHorizontalDrag += dragAmount
+                            },
+                            onDragEnd = {
+                                if (abs(totalHorizontalDrag) >= 72.dp.toPx()) {
+                                    val movingToNextVisualTab = (totalHorizontalDrag < 0f) == isArabic
+                                    val targetTab = (selectedTab + if (movingToNextVisualTab) 1 else -1)
+                                        .coerceIn(tabs.indices)
+                                    if (targetTab != selectedTab) {
+                                        selectedTab = targetTab
+                                        showSpecialtiesManagement = false
+                                        animatedTab = targetTab
+                                        navigationAnimationKey++
+                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    }
+                                }
+                                totalHorizontalDrag = 0f
+                            },
+                            onDragCancel = { totalHorizontalDrag = 0f }
+                        )
+                    },
                 targetState = selectedTab,
                 label = "main_tab_transition",
                 transitionSpec = {

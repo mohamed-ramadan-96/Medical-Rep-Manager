@@ -1751,18 +1751,19 @@ private fun DoctorFormDialog(
                                     Text(if (isArabic) "إزالة الصورة" else "Remove photo")
                                 }
                             }
-                            if (photoCompressing) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                                    Text(if (isArabic) "جارٍ ضغط الصورة..." else "Compressing photo...")
-                                }
+                        }
+                        if (photoCompressing) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                                Text(if (isArabic) "جارٍ ضغط الصورة..." else "Compressing photo...", modifier = Modifier.padding(start = 8.dp))
                             }
-                            photoError?.let {
-                                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                            }
+                        }
+                        photoError?.let {
+                            Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }

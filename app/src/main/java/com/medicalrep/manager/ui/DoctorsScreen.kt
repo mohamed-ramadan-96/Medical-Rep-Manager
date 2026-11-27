@@ -198,13 +198,17 @@ private fun DoctorFormBaseBottomSheet(
 private fun CompactOutlinedRemovableItem(
     text: String,
     contentDescription: String,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    onClick: (() -> Unit)? = null
 ) {
     Surface(
         shape = RoundedCornerShape(10.dp),
         color = Color.Transparent,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        modifier = Modifier.fillMaxWidth().height(40.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(40.dp)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
         Row(
             modifier = Modifier
@@ -1386,6 +1390,7 @@ private fun DoctorFormDialog(
     var centerSearchQuery by remember { mutableStateOf("") }
     var centersExpanded by remember { mutableStateOf(false) }
     var availabilityExpanded by remember(initial, initialAvailability) { mutableStateOf(initialAvailability.isNotEmpty()) }
+    var editingAvailabilityIndex by remember(initial, initialAvailability) { mutableStateOf<Int?>(null) }
     var availabilityDrafts by remember(initial, initialAvailability) {
         mutableStateOf(
             initialAvailability.groupBy { it.slotGroupId.ifBlank { "legacy-" + it.id } + "|" + (it.centerId?.toString() ?: "general") }
@@ -1611,6 +1616,15 @@ private fun DoctorFormDialog(
                                     }
                                 }
                             }
+                            selectedAreas.sorted().forEach { selectedArea ->
+                                CompactOutlinedRemovableItem(
+                                    text = selectedArea,
+                                    contentDescription = if (isArabic) "إزالة المنطقة المختارة" else "Remove selected area",
+                                    onRemove = {
+                                        selectedAreas = selectedAreas.filterNot { it.equals(selectedArea, true) }.toSet()
+                                    }
+                                )
+                            }
                             OutlinedTextField(
                     colors = AppFilledTextFieldColors(AppCardContainerColor()),
                     shape = RoundedCornerShape(10.dp),
@@ -1661,8 +1675,46 @@ private fun DoctorFormDialog(
                         expanded = availabilityExpanded,
                         onToggle = { availabilityExpanded = !availabilityExpanded }
                     ) {
-                            Text(if (isArabic) "كل فترة مستقلة: عامة أو مرتبطة بمركز من المراكز المختارة." else "Each slot is independent: general or linked to one of the selected centers.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             availabilityDrafts.forEachIndexed { index, draft ->
+                                val dayNames = draft.days.sorted().joinToString(if (isArabic) "، " else ", ") { day ->
+                                    when (day) {
+                                        6 -> if (isArabic) "السبت" else "Sat"
+                                        7 -> if (isArabic) "الأحد" else "Sun"
+                                        1 -> if (isArabic) "الاثنين" else "Mon"
+                                        2 -> if (isArabic) "الثلاثاء" else "Tue"
+                                        3 -> if (isArabic) "الأربعاء" else "Wed"
+                                        4 -> if (isArabic) "الخميس" else "Thu"
+                                        5 -> if (isArabic) "الجمعة" else "Fri"
+                                        else -> ""
+                                    }
+                                }
+                                val centerName = centers.firstOrNull { it.id == draft.centerId }?.name
+                                val availabilitySummary = buildString {
+                                    append(dayNames.ifBlank { if (isArabic) "بدون أيام" else "No days" })
+                                    append(" • ")
+                                    append(doctorDisplayTime(draft.startTime, isArabic))
+                                    append(" – ")
+                                    append(doctorDisplayTime(draft.endTime, isArabic))
+                                    if (!centerName.isNullOrBlank()) {
+                                        append(" • ")
+                                        append(centerName)
+                                    }
+                                }
+                                CompactOutlinedRemovableItem(
+                                    text = availabilitySummary,
+                                    contentDescription = if (isArabic) "حذف موعد التواجد" else "Remove availability",
+                                    onRemove = {
+                                        availabilityDrafts = availabilityDrafts.filterIndexed { i, _ -> i != index }
+                                        editingAvailabilityIndex = when {
+                                            editingAvailabilityIndex == index -> null
+                                            editingAvailabilityIndex != null && editingAvailabilityIndex!! > index -> editingAvailabilityIndex!! - 1
+                                            else -> editingAvailabilityIndex
+                                        }
+                                    },
+                                    onClick = { editingAvailabilityIndex = index }
+                                )
+                                if (editingAvailabilityIndex == index) {
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(10.dp),
@@ -1682,14 +1734,6 @@ private fun DoctorFormDialog(
                                                 modifier = Modifier.weight(1f),
                                                 fontWeight = FontWeight.Bold
                                             )
-                                            if (availabilityDrafts.size > 1) {
-                                                TextButton(
-                                                    onClick = { availabilityDrafts = availabilityDrafts.filterIndexed { i, _ -> i != index } }
-                                                ) {
-                                                    Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
-                                                    Text(if (isArabic) "حذف" else "Remove", color = MaterialTheme.colorScheme.error)
-                                                }
-                                            }
                                         }
                                         Text(
                                             if (isArabic) "أيام التواجد" else "Available days",
@@ -1766,14 +1810,21 @@ private fun DoctorFormDialog(
                 )
                                     }
                                 }
+                                }
                             }
-                        OutlinedButton(
-                            shape = RoundedCornerShape(10.dp),
-                            onClick = { availabilityDrafts = availabilityDrafts + DoctorAvailabilityDraft() },
-                            modifier = Modifier.fillMaxWidth().height(46.dp)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Text(if (isArabic) "إضافة فترة" else "Add slot")
+                            OutlinedButton(
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                                onClick = {
+                                    val newIndex = availabilityDrafts.size
+                                    availabilityDrafts = availabilityDrafts + DoctorAvailabilityDraft()
+                                    editingAvailabilityIndex = newIndex
+                                },
+                                modifier = Modifier.fillMaxWidth().height(40.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Text(if (isArabic) "إضافة موعد" else "Add availability")
+                            }
                         }
                     }
                 }

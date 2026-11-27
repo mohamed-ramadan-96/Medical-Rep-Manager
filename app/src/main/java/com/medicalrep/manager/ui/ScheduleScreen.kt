@@ -691,7 +691,7 @@ private fun AvailabilityFormDialog(
             ) {
                 AvailabilitySelectionField(
                     label = if (isArabic) "الطبيب" else "Doctor",
-                    value = doctors.firstOrNull { it.id == selectedDoctorId }?.name ?: if (isArabic) "اختر الطبيب" else "Choose doctor",
+                    value = doctors.firstOrNull { it.id == selectedDoctorId }?.name.orEmpty(),
                     onClick = { doctorSearch = ""; doctorMenu = true }
                 )
                 if (doctorMenu) {
@@ -746,7 +746,7 @@ private fun AvailabilityFormDialog(
                 AvailabilitySelectionField(
                     label = if (isArabic) "المركز" else "Center",
                     value = selectableCenters.firstOrNull { it.id == selectedCenterId }?.name
-                        ?: if (isArabic) "اختر المركز" else "Choose center",
+                        ?: "",
                     onClick = { centerSearch = ""; centerMenu = true }
                 )
                 if (centerMenu) {
@@ -1058,7 +1058,9 @@ private fun AvailabilitySelectionField(
                     isRequired -> MaterialTheme.colorScheme.primary
                     else -> MaterialTheme.colorScheme.onSurfaceVariant
                 })
-                Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
+                if (value.isNotBlank()) {
+                    Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
+                }
             }
             if (!isTimeField) {
                 Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)

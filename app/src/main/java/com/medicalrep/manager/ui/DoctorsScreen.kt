@@ -122,6 +122,7 @@ import com.medicalrep.manager.data.DoctorAvailabilityEntity
 import com.medicalrep.manager.data.DoctorCenterLinkEntity
 import com.medicalrep.manager.data.DoctorVisitEntity
 import com.medicalrep.manager.data.DoctorEntity
+import com.medicalrep.manager.domain.ContactPhoneRules
 import com.medicalrep.manager.data.MedicalCenterEntity
 import com.medicalrep.manager.data.MedicalRepDatabase
 import com.medicalrep.manager.data.SpecialtyEntity
@@ -1035,7 +1036,7 @@ internal fun DoctorDetailsDialog(
                                 }
                                 if (center.phone.isNotBlank()) {
                                     Text(if (isArabic) "الهاتف" else "Phone", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                                    Text(center.phone)
+                                    Text(ContactPhoneRules.split(center.phone).joinToString(" • "))
                                 }
                                 val hasCenterLocation = (center.latitude != null && center.longitude != null) || !center.mapUrl.isNullOrBlank()
                                 var showCenterLocationActions by remember(center.id, center.latitude, center.longitude, center.mapUrl) { mutableStateOf(false) }

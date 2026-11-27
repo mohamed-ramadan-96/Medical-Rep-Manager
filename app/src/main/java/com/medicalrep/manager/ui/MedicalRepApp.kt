@@ -513,7 +513,7 @@ private fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(if (isArabic) "المظهر" else "Appearance", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf(
                 "light" to (if (isArabic) "فاتح" else "Light"),
                 "dark" to (if (isArabic) "داكن" else "Dark"),

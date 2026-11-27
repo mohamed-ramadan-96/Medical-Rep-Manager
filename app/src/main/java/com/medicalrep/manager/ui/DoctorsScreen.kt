@@ -949,7 +949,11 @@ private fun DoctorCard(
                     fadeOut(animationSpec = androidx.compose.animation.core.tween(AppMotion.Fast))
             ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(start = 52.dp, top = 2.dp, bottom = 4.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(start = 52.dp, top = 2.dp, bottom = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
                     if (doctor.phoneNumbers.isNotBlank()) {
@@ -1016,6 +1020,7 @@ private fun DoctorCard(
                             Text(if (isArabic) "واتساب" else "WhatsApp", maxLines = 1)
                         }
                     }
+                }
             }
         }
     }

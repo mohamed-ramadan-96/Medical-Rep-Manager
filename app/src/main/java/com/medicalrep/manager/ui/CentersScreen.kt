@@ -43,6 +43,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -773,14 +774,14 @@ private fun CenterFormDialog(
         text = {
             LazyColumn(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 item {
                     OutlinedTextField(
                     colors = AppFilledTextFieldColors(),
                     value = name,
                     onValueChange = { name = it; nameError = false },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().offset(y = (-8).dp),
                     singleLine = true,
                     shape = RoundedCornerShape(10.dp),
                     label = { Text(if (isArabic) "اسم المركز *" else "Center name *") },
@@ -794,7 +795,7 @@ private fun CenterFormDialog(
                     value = area,
                     onValueChange = {},
                     readOnly = true,
-                    modifier = Modifier.fillMaxWidth().clickable { showAreaPicker = true },
+                    modifier = Modifier.fillMaxWidth().offset(y = (-8).dp).clickable { showAreaPicker = true },
                     singleLine = true,
                     shape = RoundedCornerShape(10.dp),
                     label = { Text(if (isArabic) "المنطقة *" else "Area *") },
@@ -856,7 +857,7 @@ private fun CenterFormDialog(
                 )
                 }
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
                         phoneNumbers.forEachIndexed { index, phone ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),

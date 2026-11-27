@@ -354,7 +354,25 @@ fun MedicalRepApp(
                 }
             }
         ) { innerPadding ->
-            if (showSettings) {
+            AnimatedContent(
+                targetState = showSettings,
+                label = "settings_screen_transition",
+                transitionSpec = {
+                    val direction = if (isArabic) -1 else 1
+                    val offset = if (targetState) direction else -direction
+                    (slideInHorizontally(
+                        animationSpec = tween(durationMillis = AppMotion.Emphasized),
+                        initialOffsetX = { width -> offset * (width / 24) }
+                    ) + fadeIn(animationSpec = tween(durationMillis = AppMotion.Standard)))
+                        .togetherWith(
+                            slideOutHorizontally(
+                                animationSpec = tween(durationMillis = AppMotion.Standard),
+                                targetOffsetX = { width -> -offset * (width / 32) }
+                            ) + fadeOut(animationSpec = tween(durationMillis = AppMotion.Fast))
+                        )
+                }
+            ) { settingsVisible ->
+            if (settingsVisible) {
                 SettingsScreen(
                     isArabic = isArabic,
                     padding = innerPadding,
@@ -402,12 +420,40 @@ fun MedicalRepApp(
             ) { tab ->
                 when (tab) {
                     0 -> DashboardScreen(isArabic, innerPadding)
-                    1 -> if (showSpecialtiesManagement) SpecialtiesScreen(isArabic = isArabic, padding = innerPadding) else DoctorsScreen(isArabic = isArabic, padding = innerPadding, onManageSpecialties = { showSpecialtiesManagement = true })
+                    1 -> AnimatedContent(
+                        targetState = showSpecialtiesManagement,
+                        label = "doctors_specialties_transition",
+                        transitionSpec = {
+                            val direction = if (isArabic) -1 else 1
+                            val offset = if (targetState) direction else -direction
+                            (slideInHorizontally(
+                                animationSpec = tween(durationMillis = AppMotion.Emphasized),
+                                initialOffsetX = { width -> offset * (width / 24) }
+                            ) + fadeIn(animationSpec = tween(durationMillis = AppMotion.Standard)))
+                                .togetherWith(
+                                    slideOutHorizontally(
+                                        animationSpec = tween(durationMillis = AppMotion.Standard),
+                                        targetOffsetX = { width -> -offset * (width / 32) }
+                                    ) + fadeOut(animationSpec = tween(durationMillis = AppMotion.Fast))
+                                )
+                        }
+                    ) { specialtiesVisible ->
+                        if (specialtiesVisible) {
+                            SpecialtiesScreen(isArabic = isArabic, padding = innerPadding)
+                        } else {
+                            DoctorsScreen(
+                                isArabic = isArabic,
+                                padding = innerPadding,
+                                onManageSpecialties = { showSpecialtiesManagement = true }
+                            )
+                        }
+                    }
                     2 -> CentersScreen(isArabic = isArabic, padding = innerPadding)
                     3 -> ScheduleScreen(isArabic = isArabic, padding = innerPadding)
                     4 -> FollowUpScreen(isArabic = isArabic, padding = innerPadding)
                     else -> DashboardScreen(isArabic, innerPadding)
                 }
+            }
             }
             }
         }

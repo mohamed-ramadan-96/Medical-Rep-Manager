@@ -245,17 +245,23 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                 val stickyHeader = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }
                 if (stickyHeader != null && fadeAlpha > 0f) {
                     val fadeTop = (stickyHeader.offset + stickyHeader.size).toFloat()
+                    val solidFadeHeight = 20.dp.toPx()
                     val fadeHeight = 72.dp.toPx()
                     drawRect(
+                        color = scheduleFadeColor,
+                        topLeft = androidx.compose.ui.geometry.Offset(0f, fadeTop),
+                        size = androidx.compose.ui.geometry.Size(size.width, solidFadeHeight)
+                    )
+                    drawRect(
                         brush = Brush.verticalGradient(
-                            0f to scheduleFadeColor.copy(alpha = fadeAlpha),
-                            0.65f to scheduleFadeColor.copy(alpha = 0.96f * fadeAlpha),
+                            0f to scheduleFadeColor,
+                            0.65f to scheduleFadeColor.copy(alpha = 0.96f),
                             1f to scheduleFadeColor.copy(alpha = 0f),
-                            startY = fadeTop,
+                            startY = fadeTop + solidFadeHeight,
                             endY = fadeTop + fadeHeight
                         ),
-                        topLeft = androidx.compose.ui.geometry.Offset(0f, fadeTop),
-                        size = androidx.compose.ui.geometry.Size(size.width, fadeHeight)
+                        topLeft = androidx.compose.ui.geometry.Offset(0f, fadeTop + solidFadeHeight),
+                        size = androidx.compose.ui.geometry.Size(size.width, fadeHeight - solidFadeHeight)
                     )
                 }
             },

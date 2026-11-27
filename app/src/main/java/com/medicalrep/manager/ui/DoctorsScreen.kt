@@ -578,17 +578,23 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 val stickyHeader = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }
                 if (stickyHeader != null && fadeAlpha > 0f) {
                     val fadeTop = (stickyHeader.offset + stickyHeader.size).toFloat()
+                    val solidFadeHeight = 20.dp.toPx()
                     val fadeHeight = 72.dp.toPx()
                     drawRect(
+                        color = doctorsFadeColor,
+                        topLeft = androidx.compose.ui.geometry.Offset(0f, fadeTop),
+                        size = androidx.compose.ui.geometry.Size(size.width, solidFadeHeight)
+                    )
+                    drawRect(
                         brush = Brush.verticalGradient(
-                            0f to doctorsFadeColor.copy(alpha = fadeAlpha),
-                            0.65f to doctorsFadeColor.copy(alpha = 0.96f * fadeAlpha),
+                            0f to doctorsFadeColor,
+                            0.65f to doctorsFadeColor.copy(alpha = 0.96f),
                             1f to doctorsFadeColor.copy(alpha = 0f),
-                            startY = fadeTop,
+                            startY = fadeTop + solidFadeHeight,
                             endY = fadeTop + fadeHeight
                         ),
-                        topLeft = androidx.compose.ui.geometry.Offset(0f, fadeTop),
-                        size = androidx.compose.ui.geometry.Size(size.width, fadeHeight)
+                        topLeft = androidx.compose.ui.geometry.Offset(0f, fadeTop + solidFadeHeight),
+                        size = androidx.compose.ui.geometry.Size(size.width, fadeHeight - solidFadeHeight)
                     )
                 }
             }, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
@@ -1676,15 +1682,17 @@ private fun DoctorFormDialog(
                 photoCompressing = true
                 photoError = null
                 try {
-                    val compressedFile = withContext(Dispatchers.IO) {
-                        val originalSize = ImageCompression.uriLength(context, uri)
-                        val directory = File(context.filesDir, "doctor_photos").apply { mkdirs() }
-                        val output = File(directory, "doctor_${UUID.randomUUID()}.jpg")
-                        if (originalSize != null &&
-                            ImageCompression.compressUriToJpeg(context, uri, output, 1000, 80) &&
-                            output.length() < originalSize
-                        ) output else { output.delete(); null }
-                    }
+                    val compressedFile = runCatching {
+                        withContext(Dispatchers.IO) {
+                            val originalSize = ImageCompression.uriLength(context, uri)
+                            val directory = File(context.filesDir, "doctor_photos").apply { mkdirs() }
+                            val output = File(directory, "doctor_${initial?.id ?: "new"}_${UUID.randomUUID()}.jpg")
+                            if (originalSize != null &&
+                                ImageCompression.compressUriToJpeg(context, uri, output, 1000, 80) &&
+                                output.length() < originalSize
+                            ) output else { output.delete(); null }
+                        }
+                    }.getOrNull()
                     if (compressedFile != null) {
                         photoUri = Uri.fromFile(compressedFile).toString()
                     } else {

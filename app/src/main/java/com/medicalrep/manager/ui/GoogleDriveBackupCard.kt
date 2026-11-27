@@ -65,7 +65,6 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
     val context = LocalContext.current
     val activity = context.findActivity()
     val prefs = remember { context.getSharedPreferences(DriveBackupScheduler.PREFS, Context.MODE_PRIVATE) }
-    val database = remember { MedicalRepDatabase.getInstance(context) }
     var enabled by remember { mutableStateOf(prefs.getBoolean(DriveBackupScheduler.KEY_ENABLED, false)) }
     var interval by remember { mutableStateOf(prefs.getInt(DriveBackupScheduler.KEY_INTERVAL, 1)) }
     var menuExpanded by remember { mutableStateOf(false) }
@@ -336,7 +335,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
                     scope.launch {
                         try {
                             val result = withContext(Dispatchers.IO) {
-                                ExistingImageCompression.run(context, database) { completed, total ->
+                                ExistingImageCompression.run(context, MedicalRepDatabase.getInstance(context)) { completed, total ->
                                     scope.launch {
                                         compressionProgress = if (total > 0) completed.toFloat() / total.toFloat() else 1f
                                         compressionProgressLabel = if (isArabic) {

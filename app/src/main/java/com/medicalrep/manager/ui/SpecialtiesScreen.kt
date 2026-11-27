@@ -146,7 +146,7 @@ fun SpecialtiesScreen(isArabic: Boolean, padding: androidx.compose.foundation.la
                     onValueChange = { name = it; nameError = false },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    label = { Text(if (isArabic) "اسم التخصص *" else "Specialty name *") },
+                    label = { Text(if (isArabic) "اسم التخصص" else "Specialty name") },
                     isError = nameError
                 )
             },

@@ -1,5 +1,7 @@
 package com.medicalrep.manager.ui
 
+import com.medicalrep.manager.ui.theme.AppDialogContainerColor
+
 import com.medicalrep.manager.ui.theme.AppSpacing
 import com.medicalrep.manager.ui.theme.AppCardContainerColor
 
@@ -35,6 +37,7 @@ import androidx.compose.material.icons.filled.EventRepeat
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.ui.platform.LocalConfiguration
@@ -281,6 +284,7 @@ fun VisitsScreen(
 
     pendingDelete?.let { visit ->
         AlertDialog(
+        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
             onDismissRequest = { pendingDelete = null },
             title = { Text(if (isArabic) "حذف الزيارة؟" else "Delete visit?") },
             text = { Text(if (isArabic) "سيتم حذف سجل هذه الزيارة فقط." else "Only this visit record will be deleted.") },
@@ -325,6 +329,7 @@ private fun VisitFormDialog(
     var error by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
+        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
         onDismissRequest = onDismiss,
         title = {
             Text(

@@ -1,5 +1,7 @@
 package com.medicalrep.manager.ui
 
+import com.medicalrep.manager.ui.theme.AppDialogContainerColor
+
 import com.medicalrep.manager.ui.theme.AppSpacing
 
 import android.content.Intent
@@ -22,6 +24,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -103,6 +106,7 @@ fun CenterAttachmentsDialog(
     }
 
     AlertDialog(
+        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
         onDismissRequest = onDismiss,
         title = { Text((if (isArabic) "مرفقات " else "Attachments: ") + center.name) },
         text = {

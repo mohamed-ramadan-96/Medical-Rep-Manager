@@ -1,5 +1,7 @@
 package com.medicalrep.manager.ui
 
+import com.medicalrep.manager.ui.theme.AppDialogContainerColor
+
 import com.medicalrep.manager.ui.theme.AppSpacing
 
 import com.medicalrep.manager.ui.theme.AppMotion
@@ -39,6 +41,7 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.outlined.PeopleAlt
 import androidx.compose.material3.Card
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
 import com.medicalrep.manager.AppUpdateInfo
@@ -279,6 +282,7 @@ fun MedicalRepApp() {
             val downloadFailed = progress?.status == DownloadManager.STATUS_FAILED
 
             AlertDialog(
+        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
                 onDismissRequest = {
                     if (!isDownloading) {
                         availableUpdate = null

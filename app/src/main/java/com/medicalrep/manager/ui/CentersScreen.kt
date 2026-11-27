@@ -540,6 +540,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
 
     directionsCenter?.let { center ->
         AlertDialog(
+        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
             onDismissRequest = { directionsCenter = null },
             title = { Text(if (isArabic) "فتح الاتجاهات؟" else "Open directions?") },
             text = {
@@ -566,6 +567,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
 
     pendingDelete?.let { center ->
         AlertDialog(
+        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
             onDismissRequest = { pendingDelete = null },
             title = { Text(if (isArabic) "حذف المركز؟" else "Delete center?") },
             text = {
@@ -675,6 +677,7 @@ private fun CenterWorkingHoursTimePickerDialog(
         is24Hour = false
     )
     AlertDialog(
+        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
         onDismissRequest = onDismiss,
         title = { Text(if (isArabic) "اختيار الوقت" else "Choose time") },
         text = { androidx.compose.material3.TimePicker(state = state) },
@@ -737,6 +740,7 @@ private fun CenterFormDialog(
 
     if (showWorkingHoursInfo) {
         AlertDialog(
+        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
             onDismissRequest = { showWorkingHoursInfo = false },
             title = { Text(if (isArabic) "مواعيد عمل المركز" else "Center working hours") },
             text = {
@@ -795,7 +799,7 @@ private fun CenterFormDialog(
                             ModalBottomSheet(
                                 onDismissRequest = { showAreaPicker = false },
                                 sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-                                containerColor = MaterialTheme.colorScheme.surface
+                                containerColor = AppDialogContainerColor()
                             ) {
                                 Column(
                                     modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp),
@@ -1154,6 +1158,7 @@ private fun CenterFormDialog(
 
     if (showNewAreaDialog) {
         AlertDialog(
+        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
             onDismissRequest = { showNewAreaDialog = false },
             title = { Text(if (isArabic) "إضافة منطقة جديدة" else "Add new area") },
             text = {

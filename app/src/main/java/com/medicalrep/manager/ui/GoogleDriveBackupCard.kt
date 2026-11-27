@@ -1,5 +1,7 @@
 package com.medicalrep.manager.ui
 
+import com.medicalrep.manager.ui.theme.AppDialogContainerColor
+
 import com.medicalrep.manager.ui.theme.AppSpacing
 import com.medicalrep.manager.ui.theme.AppCardContainerColor
 
@@ -17,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -229,6 +232,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
 
     errorMessage?.let { message ->
         AlertDialog(
+        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
             onDismissRequest = { errorMessage = null },
             title = { Text(if (isArabic) "تفاصيل الخطأ" else "Error details") },
             text = { Text(message) },
@@ -248,6 +252,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
 
     if (backupPendingDeleteAll) {
         AlertDialog(
+        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
             onDismissRequest = { if (!busy) backupPendingDeleteAll = false },
             title = { Text(if (isArabic) "حذف كل النسخ الاحتياطية؟" else "Delete all backups?") },
             text = {
@@ -298,6 +303,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
 
     backupPendingDelete?.let { item ->
         AlertDialog(
+        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
             onDismissRequest = { if (!busy) backupPendingDelete = null },
             title = { Text(if (isArabic) "حذف النسخة الاحتياطية؟" else "Delete backup?") },
             text = {
@@ -337,6 +343,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
 
     if (showBackups) {
         AlertDialog(
+        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
             onDismissRequest = { showBackups = false },
             title = { Text(if (isArabic) "النسخ المتاحة" else "Available backups") },
             text = {

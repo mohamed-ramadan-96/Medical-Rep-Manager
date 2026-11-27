@@ -373,7 +373,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                 ModalBottomSheet(
                     onDismissRequest = { activeFilterSheet = null },
                     sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = AppDialogContainerColor()
                 ) {
                     Column(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp),
@@ -565,6 +565,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
 
     if (showPageDescription) {
         AlertDialog(
+        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
             onDismissRequest = { showPageDescription = false },
             title = { Text(if (isArabic) "جدول المواعيد المتاحة" else "Weekly availability") },
             text = { Text(if (isArabic) "استعرض الأطباء حسب اليوم أو المركز أو التخصص، ويمكنك إضافة وتعديل مواعيد التواجد." else "Browse doctors by day, center or specialty, and add or edit their availability.") },
@@ -592,6 +593,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
 
     pendingDelete?.let { group ->
         AlertDialog(
+        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
             onDismissRequest = { pendingDelete = null },
             title = { Text(if (isArabic) "حذف الفترة؟" else "Delete time slot?") },
             text = { Text(if (isArabic) "سيتم حذف الأيام التابعة لهذه الفترة فقط." else "Only the days belonging to this time slot will be deleted.") },
@@ -694,7 +696,7 @@ private fun AvailabilityFormDialog(
                     ModalBottomSheet(
                         onDismissRequest = { doctorMenu = false },
                         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-                        containerColor = MaterialTheme.colorScheme.surface
+                        containerColor = AppDialogContainerColor()
                     ) {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp),
@@ -749,7 +751,7 @@ private fun AvailabilityFormDialog(
                     ModalBottomSheet(
                         onDismissRequest = { centerMenu = false },
                         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-                        containerColor = MaterialTheme.colorScheme.surface
+                        containerColor = AppDialogContainerColor()
                     ) {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp),
@@ -1098,6 +1100,7 @@ private fun AvailabilityTimePickerDialog(
         is24Hour = false
     )
     AlertDialog(
+        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
         onDismissRequest = onDismiss,
         title = { Text(if (isArabic) "اختيار الوقت" else "Choose time") },
         text = { TimePicker(state = state) },

@@ -1470,42 +1470,60 @@ private fun DoctorFormDialog(
                                     shape = RoundedCornerShape(10.dp),
                                     color = Color.Transparent,
                                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth().height(40.dp)
                                 ) {
-                                    OutlinedTextField(
-                                        colors = AppFilledTextFieldColors().copy(
-                                            focusedContainerColor = Color.Transparent,
-                                            unfocusedContainerColor = Color.Transparent,
-                                            disabledContainerColor = Color.Transparent,
-                                            errorContainerColor = Color.Transparent,
-                                            focusedIndicatorColor = Color.Transparent,
-                                            unfocusedIndicatorColor = Color.Transparent,
-                                            disabledIndicatorColor = Color.Transparent,
-                                            errorIndicatorColor = Color.Transparent
-                                        ),
-                                        shape = RoundedCornerShape(10.dp),
-                                        value = phone,
-                                        onValueChange = { value ->
-                                            phoneNumbers = phoneNumbers.toMutableList().also { it[index] = value }
-                                        },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        singleLine = true,
-                                        label = { Text(if (isArabic) "رقم الهاتف ${index + 1}" else "Phone number ${index + 1}") },
-                                        trailingIcon = {
-                                            IconButton(onClick = {
-                                                phoneNumbers = phoneNumbers.toMutableList().also { list ->
-                                                    if (list.size > 1) list.removeAt(index) else list[0] = ""
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(40.dp)
+                                            .padding(horizontal = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        BasicTextField(
+                                            value = phone,
+                                            onValueChange = { value ->
+                                                phoneNumbers = phoneNumbers.toMutableList().also { it[index] = value }
+                                            },
+                                            modifier = Modifier.weight(1f),
+                                            singleLine = true,
+                                            textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            ),
+                                            decorationBox = { innerTextField ->
+                                                Box(contentAlignment = Alignment.CenterStart) {
+                                                    if (phone.isEmpty()) {
+                                                        Text(
+                                                            if (isArabic) "رقم الهاتف ${index + 1}" else "Phone number ${index + 1}",
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    }
+                                                    innerTextField()
                                                 }
-                                            }) {
-                                                Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف الرقم" else "Delete number")
                                             }
+                                        )
+                                        Box(
+                                            modifier = Modifier
+                                                .size(36.dp)
+                                                .clickable {
+                                                    phoneNumbers = phoneNumbers.toMutableList().also { list ->
+                                                        if (list.size > 1) list.removeAt(index) else list[0] = ""
+                                                    }
+                                                },
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Delete,
+                                                contentDescription = if (isArabic) "حذف الرقم" else "Delete number",
+                                                modifier = Modifier.size(18.dp)
+                                            )
                                         }
-                                    )
+                                    }
                                 }
                             }
                             OutlinedButton(
                                 onClick = { phoneNumbers = phoneNumbers + "" },
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().height(40.dp),
                                 shape = RoundedCornerShape(10.dp),
                                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                             ) {

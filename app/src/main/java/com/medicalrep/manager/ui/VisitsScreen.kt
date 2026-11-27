@@ -368,7 +368,7 @@ private fun VisitFormDialog(
                 OutlinedSelectionField(
                     label = if (isArabic) "الطبيب" else "Doctor",
                     value = doctors.firstOrNull { it.id == selectedDoctorId }?.name
-                        ?: if (isArabic) "اختر الطبيب" else "Choose doctor",
+                        ?: "",
                     onClick = { doctorMenu = true }
                 )
                 if (doctorMenu) {
@@ -445,7 +445,7 @@ private fun VisitFormDialog(
                 }
                 OutlinedSelectionField(
                     label = if (isArabic) "تاريخ الزيارة" else "Visit date",
-                    value = date.ifBlank { if (isArabic) "اختر التاريخ" else "Choose date" },
+                    value = date,
                     onClick = { showVisitDatePicker = true }
                 )
                 OutlinedSelectionField(
@@ -457,7 +457,7 @@ private fun VisitFormDialog(
                                 SimpleDateFormat("hh:mm a", Locale.US).format(it)
                             } ?: time
                         }.getOrDefault(time)
-                    }.ifBlank { if (isArabic) "اختر الوقت" else "Choose time" },
+                    },
                     onClick = { showVisitTimePicker = true }
                 )
                 OutlinedTextField(
@@ -479,7 +479,7 @@ private fun VisitFormDialog(
                 )
                 OutlinedSelectionField(
                     label = if (isArabic) "موعد المتابعة" else "Follow-up date",
-                    value = followUpDate.ifBlank { if (isArabic) "اختياري" else "Optional" },
+                    value = followUpDate,
                     onClick = { showFollowUpDatePicker = true }
                 )
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }

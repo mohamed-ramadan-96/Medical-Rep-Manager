@@ -1609,60 +1609,6 @@ private fun DoctorFormDialog(
                         onClick = { showAreaPicker = true }
                     )
                 }
-                if (showAreaPicker) item {
-                    DoctorFormBaseBottomSheet(title = if (isArabic) "اختيار المناطق" else "Choose areas", onDismiss = { showAreaPicker = false }) {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            LazyColumn(modifier = Modifier.height(240.dp)) {
-                                items(areaOptions, key = { it }) { areaOption ->
-                                    Surface(
-                                        color = AppSelectionRowColor(),
-                                        shape = RoundedCornerShape(10.dp),
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Checkbox(checked = selectedAreas.any { it.equals(areaOption, true) }, onCheckedChange = { checked ->
-                                                selectedAreas = if (checked) selectedAreas + areaOption else selectedAreas.filterNot { it.equals(areaOption, true) }.toSet()
-                                            })
-                                            Text(areaOption, modifier = Modifier.weight(1f))
-                                            IconButton(onClick = {
-                                                areaOptions = areaOptions.filterNot { it.equals(areaOption, true) }
-                                                selectedAreas = selectedAreas.filterNot { it.equals(areaOption, true) }.toSet()
-                                                if (existingAreas.any { it.equals(areaOption, true) }) onDeleteArea(areaOption)
-                                            }) { Icon(Icons.Default.Close, contentDescription = if (isArabic) "حذف المنطقة" else "Delete area") }
-                                        }
-                                    }
-                                }
-                            }
-                            selectedAreas.sorted().forEach { selectedArea ->
-                                CompactOutlinedRemovableItem(
-                                    text = selectedArea,
-                                    contentDescription = if (isArabic) "إزالة المنطقة المختارة" else "Remove selected area",
-                                    onRemove = {
-                                        selectedAreas = selectedAreas.filterNot { it.equals(selectedArea, true) }.toSet()
-                                    }
-                                )
-                            }
-                            OutlinedTextField(
-                    colors = AppFilledTextFieldColors(AppCardContainerColor()),
-                    shape = RoundedCornerShape(10.dp),
-                    value = newArea,
-                    onValueChange = { newArea = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text(if (isArabic) "إضافة منطقة جديدة" else "Add a new area") },
-                    trailingIcon = {
-                                    IconButton(onClick = {
-                                        val value = newArea.trim()
-                                        if (value.isNotBlank() && areaOptions.none { it.equals(value, true) }) { areaOptions = areaOptions + value; newArea = "" }
-                                    }, enabled = newArea.isNotBlank()) { Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة منطقة" else "Add area") }
-                                }
-                )
-                        }
-                    }
-                }
                 item {
                     FormExpandableSection(
                         title = if (isArabic) "مراكز عمل الطبيب" else "Doctor's centers",
@@ -1972,6 +1918,61 @@ private fun DoctorFormDialog(
         },
         dismissButton = { }
     )
+
+    if (showAreaPicker) {
+                    DoctorFormBaseBottomSheet(title = if (isArabic) "اختيار المناطق" else "Choose areas", onDismiss = { showAreaPicker = false }) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            LazyColumn(modifier = Modifier.height(240.dp)) {
+                                items(areaOptions, key = { it }) { areaOption ->
+                                    Surface(
+                                        color = AppSelectionRowColor(),
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Checkbox(checked = selectedAreas.any { it.equals(areaOption, true) }, onCheckedChange = { checked ->
+                                                selectedAreas = if (checked) selectedAreas + areaOption else selectedAreas.filterNot { it.equals(areaOption, true) }.toSet()
+                                            })
+                                            Text(areaOption, modifier = Modifier.weight(1f))
+                                            IconButton(onClick = {
+                                                areaOptions = areaOptions.filterNot { it.equals(areaOption, true) }
+                                                selectedAreas = selectedAreas.filterNot { it.equals(areaOption, true) }.toSet()
+                                                if (existingAreas.any { it.equals(areaOption, true) }) onDeleteArea(areaOption)
+                                            }) { Icon(Icons.Default.Close, contentDescription = if (isArabic) "حذف المنطقة" else "Delete area") }
+                                        }
+                                    }
+                                }
+                            }
+                            selectedAreas.sorted().forEach { selectedArea ->
+                                CompactOutlinedRemovableItem(
+                                    text = selectedArea,
+                                    contentDescription = if (isArabic) "إزالة المنطقة المختارة" else "Remove selected area",
+                                    onRemove = {
+                                        selectedAreas = selectedAreas.filterNot { it.equals(selectedArea, true) }.toSet()
+                                    }
+                                )
+                            }
+                            OutlinedTextField(
+                    colors = AppFilledTextFieldColors(AppCardContainerColor()),
+                    shape = RoundedCornerShape(10.dp),
+                    value = newArea,
+                    onValueChange = { newArea = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text(if (isArabic) "إضافة منطقة جديدة" else "Add a new area") },
+                    trailingIcon = {
+                                    IconButton(onClick = {
+                                        val value = newArea.trim()
+                                        if (value.isNotBlank() && areaOptions.none { it.equals(value, true) }) { areaOptions = areaOptions + value; newArea = "" }
+                                    }, enabled = newArea.isNotBlank()) { Icon(Icons.Default.Add, contentDescription = if (isArabic) "إضافة منطقة" else "Add area") }
+                                }
+                )
+                        }
+                    }
+    }
 
     availabilityTimePickerTarget?.let { (draftIndex, isStart) ->
         val currentDraft = availabilityDrafts.getOrNull(draftIndex)

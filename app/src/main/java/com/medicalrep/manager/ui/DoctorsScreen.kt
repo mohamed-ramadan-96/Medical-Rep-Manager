@@ -1463,35 +1463,54 @@ private fun DoctorFormDialog(
                         title = if (isArabic) "أرقام الهاتف" else "Phone numbers",
                         expanded = phonesExpanded,
                         onToggle = { phonesExpanded = !phonesExpanded }
-                    ) {
-                        phoneNumbers.forEachIndexed { index, phone ->
-                            OutlinedTextField(
-                    colors = AppFilledTextFieldColors(),
-                    shape = RoundedCornerShape(10.dp),
-                    value = phone,
-                    onValueChange = { value ->
-                                    phoneNumbers = phoneNumbers.toMutableList().also { it[index] = value }                                },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text(if (isArabic) "رقم الهاتف ${index + 1}" else "Phone number ${index + 1}") },
-                    trailingIcon = {
-                                    IconButton(onClick = {
-                                        phoneNumbers = phoneNumbers.toMutableList().also { list ->
-                                            if (list.size > 1) list.removeAt(index) else list[0] = ""
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            phoneNumbers.forEachIndexed { index, phone ->
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = Color.Transparent,
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    OutlinedTextField(
+                                        colors = AppFilledTextFieldColors().copy(
+                                            focusedContainerColor = Color.Transparent,
+                                            unfocusedContainerColor = Color.Transparent,
+                                            disabledContainerColor = Color.Transparent,
+                                            errorContainerColor = Color.Transparent,
+                                            focusedIndicatorColor = Color.Transparent,
+                                            unfocusedIndicatorColor = Color.Transparent,
+                                            disabledIndicatorColor = Color.Transparent,
+                                            errorIndicatorColor = Color.Transparent
+                                        ),
+                                        shape = RoundedCornerShape(10.dp),
+                                        value = phone,
+                                        onValueChange = { value ->
+                                            phoneNumbers = phoneNumbers.toMutableList().also { it[index] = value }
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        label = { Text(if (isArabic) "رقم الهاتف ${index + 1}" else "Phone number ${index + 1}") },
+                                        trailingIcon = {
+                                            IconButton(onClick = {
+                                                phoneNumbers = phoneNumbers.toMutableList().also { list ->
+                                                    if (list.size > 1) list.removeAt(index) else list[0] = ""
+                                                }
+                                            }) {
+                                                Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف الرقم" else "Delete number")
+                                            }
                                         }
-                                    }) {
-                                        Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف الرقم" else "Delete number")
-                                    }
+                                    )
                                 }
-                )
-                        }
-                        OutlinedButton(
-                            onClick = { phoneNumbers = phoneNumbers + "" },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                            Text(if (isArabic) "إضافة رقم هاتف" else "Add phone number")
+                            }
+                            OutlinedButton(
+                                onClick = { phoneNumbers = phoneNumbers + "" },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null)
+                                Text(if (isArabic) "إضافة رقم هاتف" else "Add phone number")
+                            }
                         }
                     }
                 }

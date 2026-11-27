@@ -1,6 +1,19 @@
 package com.medicalrep.manager.ui
 
 import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.Alignment
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -83,3 +96,97 @@ fun AppFilledTextFieldColors(containerColor: Color = AppCardContainerColor()): T
     cursorColor = MaterialTheme.colorScheme.primary,
     errorCursorColor = MaterialTheme.colorScheme.error
 )
+
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun AppSelectionPickerSheet(
+    title: String,
+    allOptionLabel: String,
+    allOptionValue: String,
+    options: List<Pair<String, String>>,
+    searchPlaceholder: String,
+    noResultsLabel: String,
+    onDismiss: () -> Unit,
+    onSelect: (String) -> Unit
+) {
+    var searchQuery by remember { mutableStateOf("") }
+    val filteredOptions = remember(options, searchQuery) {
+        options.filter { (_, label) ->
+            label.contains(searchQuery.trim(), ignoreCase = true)
+        }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = AppDialogContainerColor()
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                title,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+            )
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(10.dp),
+                colors = AppFilledTextFieldColors(),
+                placeholder = { Text(searchPlaceholder) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
+            )
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                item {
+                    Surface(
+                        onClick = { onSelect(allOptionValue) },
+                        color = AppSelectionRowColor(),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                    ) {
+                        Text(
+                            allOptionLabel,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 15.dp),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+                if (filteredOptions.isEmpty()) {
+                    item {
+                        Text(
+                            noResultsLabel,
+                            modifier = Modifier.fillMaxWidth().padding(20.dp),
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    items(filteredOptions, key = { it.first }) { option ->
+                        Surface(
+                            onClick = { onSelect(option.first) },
+                            color = AppSelectionRowColor(),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                        ) {
+                            Text(
+                                option.second,
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 15.dp),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

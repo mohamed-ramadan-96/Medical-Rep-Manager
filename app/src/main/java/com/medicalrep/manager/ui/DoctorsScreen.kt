@@ -1676,6 +1676,11 @@ private fun DoctorFormDialog(
                         onToggle = { availabilityExpanded = !availabilityExpanded }
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                if (isArabic) "كل فترة مستقلة: عامة أو مرتبطة بمركز من المراكز المختارة." else "Each slot is independent: general or linked to one of the selected centers.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                             availabilityDrafts.forEachIndexed { index, draft ->
                                 val dayNames = draft.days.sorted().joinToString(if (isArabic) "، " else ", ") { day ->
                                     when (day) {
@@ -1712,7 +1717,7 @@ private fun DoctorFormDialog(
                                             else -> editingAvailabilityIndex
                                         }
                                     },
-                                    onClick = { editingAvailabilityIndex = index }
+                                    onClick = { editingAvailabilityIndex = if (editingAvailabilityIndex == index) null else index }
                                 )
                                 if (editingAvailabilityIndex == index) {
                                 Card(

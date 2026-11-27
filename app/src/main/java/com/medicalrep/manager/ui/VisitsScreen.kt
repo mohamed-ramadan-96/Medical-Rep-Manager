@@ -4,6 +4,7 @@ import com.medicalrep.manager.ui.theme.AppDialogContainerColor
 
 import com.medicalrep.manager.ui.theme.AppSpacing
 import com.medicalrep.manager.ui.theme.AppCardContainerColor
+import com.medicalrep.manager.ui.theme.AppSelectionRowColor
 
 import com.medicalrep.manager.ui.theme.AppMotion
 
@@ -35,8 +36,12 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EventRepeat
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
@@ -301,6 +306,7 @@ fun VisitsScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun VisitFormDialog(
     isArabic: Boolean,
@@ -326,6 +332,7 @@ private fun VisitFormDialog(
         mutableStateOf(initial?.nextFollowUpAt?.let { visitDateText(it) }.orEmpty())
     }
     var doctorMenu by remember { mutableStateOf(false) }
+    var doctorSearch by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
@@ -352,12 +359,76 @@ private fun VisitFormDialog(
                         ?: if (isArabic) "اختر الطبيب" else "Choose doctor",
                     onClick = { doctorMenu = true }
                 )
-                DropdownMenu(expanded = doctorMenu, onDismissRequest = { doctorMenu = false }) {
-                    doctors.forEach { doctor ->
-                        DropdownMenuItem(
-                            text = { Text(doctor.name) },
-                            onClick = { selectedDoctorId = doctor.id; doctorMenu = false }
-                        )
+                if (doctorMenu) {
+                    ModalBottomSheet(
+                        onDismissRequest = {
+                            doctorMenu = false
+                            doctorSearch = ""
+                        },
+                        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                        containerColor = AppDialogContainerColor()
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                if (isArabic) "اختيار الطبيب" else "Choose doctor",
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            OutlinedTextField(
+                                value = doctorSearch,
+                                onValueChange = { doctorSearch = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                shape = RoundedCornerShape(10.dp),
+                                colors = AppFilledTextFieldColors(),
+                                placeholder = { Text(if (isArabic) "ابحث عن دكتور..." else "Search doctors...") },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
+                            )
+                            val normalizedQuery = doctorSearch.trim()
+                            val filteredDoctors = doctors.filter { doctor ->
+                                normalizedQuery.isBlank() ||
+                                    doctor.name.contains(normalizedQuery, ignoreCase = true) ||
+                                    doctor.specialty.contains(normalizedQuery, ignoreCase = true) ||
+                                    doctor.area.contains(normalizedQuery, ignoreCase = true)
+                            }
+                            LazyColumn(
+                                modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                items(filteredDoctors, key = { it.id }) { doctor ->
+                                    Surface(
+                                        onClick = {
+                                            selectedDoctorId = doctor.id
+                                            doctorMenu = false
+                                            doctorSearch = ""
+                                        },
+                                        color = AppSelectionRowColor(),
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                                    ) {
+                                        androidx.compose.foundation.layout.Box(
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 15.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(doctor.name, textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
+                                        }
+                                    }
+                                }
+                                if (filteredDoctors.isEmpty()) item {
+                                    Text(
+                                        if (isArabic) "لا توجد نتائج" else "No results",
+                                        modifier = Modifier.fillMaxWidth().padding(20.dp),
+                                        textAlign = TextAlign.Center,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
                 OutlinedTextField(

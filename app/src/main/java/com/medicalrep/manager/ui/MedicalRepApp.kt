@@ -51,9 +51,12 @@ import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.outlined.PeopleAlt
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 
 import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
+import com.medicalrep.manager.data.MedicalRepDatabase
 import com.medicalrep.manager.AppUpdateInfo
 import com.medicalrep.manager.checkForAppUpdate
 import com.medicalrep.manager.downloadAppUpdate
@@ -65,6 +68,7 @@ import android.net.Uri
 import android.widget.Toast
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.Calendar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -79,6 +83,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -206,6 +211,19 @@ fun MedicalRepApp(
     onThemeModeChange: (String) -> Unit
 ) {
     val context = LocalContext.current
+    val database = remember(context) { MedicalRepDatabase.getInstance(context) }
+    val visits by database.doctorVisitDao().observeAll().collectAsState(initial = emptyList())
+    val todayStart = remember {
+        Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+    }
+    val pendingFollowUps = remember(visits, todayStart) {
+        visits.count { it.nextFollowUpAt != null && it.nextFollowUpAt >= todayStart }
+    }
     var availableUpdate by remember { mutableStateOf<AppUpdateInfo?>(null) }
     var updateDownloadId by rememberSaveable { mutableStateOf<Long?>(null) }
     var updateDownloadProgress by remember { mutableStateOf<AppUpdateDownloadProgress?>(null) }
@@ -303,10 +321,25 @@ fun MedicalRepApp(
                                 }
                             },
                             icon = {
-                                AnimatedNavigationIcon(
-                                    name = tab.icon,
-                                    animationKey = if (animatedTab == index) navigationAnimationKey else -1
-                                )
+                                if (tab.icon == "followup" && pendingFollowUps > 0) {
+                                    BadgedBox(
+                                        badge = {
+                                            Badge {
+                                                Text(pendingFollowUps.toString())
+                                            }
+                                        }
+                                    ) {
+                                        AnimatedNavigationIcon(
+                                            name = tab.icon,
+                                            animationKey = if (animatedTab == index) navigationAnimationKey else -1
+                                        )
+                                    }
+                                } else {
+                                    AnimatedNavigationIcon(
+                                        name = tab.icon,
+                                        animationKey = if (animatedTab == index) navigationAnimationKey else -1
+                                    )
+                                }
                             },
                             label = { Text(if (isArabic) tab.titleAr else tab.titleEn, maxLines = 1, softWrap = false) },
                             colors = NavigationBarItemDefaults.colors(

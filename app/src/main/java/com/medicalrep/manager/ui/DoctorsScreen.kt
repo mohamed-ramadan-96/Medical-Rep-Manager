@@ -47,6 +47,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.foundation.clickable
@@ -148,6 +149,36 @@ import java.util.UUID
 
 private fun doctorAreas(value: String): List<String> =
     value.split("|").map { it.trim() }.filter { it.isNotBlank() }.distinctBy { it.lowercase(Locale.ROOT) }
+
+private data class DoctorAvatarPalette(
+    val lightBackground: Color,
+    val lightForeground: Color,
+    val darkBackground: Color,
+    val darkForeground: Color
+)
+
+private val doctorAvatarPalettes = listOf(
+    DoctorAvatarPalette(Color(0xFFE9DFF5), Color(0xFF49365F), Color(0xFF55436D), Color(0xFFF2E9FF)),
+    DoctorAvatarPalette(Color(0xFFDCEAF7), Color(0xFF294B68), Color(0xFF36536D), Color(0xFFE4F3FF)),
+    DoctorAvatarPalette(Color(0xFFDDF0E7), Color(0xFF285844), Color(0xFF315B4A), Color(0xFFE3F8EC)),
+    DoctorAvatarPalette(Color(0xFFF8E7D6), Color(0xFF6A4328), Color(0xFF70513A), Color(0xFFFFF0E0)),
+    DoctorAvatarPalette(Color(0xFFF5DFE5), Color(0xFF6A3448), Color(0xFF6A3E50), Color(0xFFFFEAF0)),
+    DoctorAvatarPalette(Color(0xFFE3E8F7), Color(0xFF35456F), Color(0xFF3E4D78), Color(0xFFEAF0FF)),
+    DoctorAvatarPalette(Color(0xFFE8EBD5), Color(0xFF4D542D), Color(0xFF555C35), Color(0xFFF4F6DD)),
+    DoctorAvatarPalette(Color(0xFFDDECEF), Color(0xFF31545A), Color(0xFF34575D), Color(0xFFE4F8FA)),
+    DoctorAvatarPalette(Color(0xFFF1E3D4), Color(0xFF62482E), Color(0xFF66503A), Color(0xFFFFF1DE)),
+    DoctorAvatarPalette(Color(0xFFE8E0D8), Color(0xFF514438), Color(0xFF55483B), Color(0xFFF6EDE3))
+)
+
+private fun doctorAvatarColors(name: String, isDarkTheme: Boolean): Pair<Color, Color> {
+    val index = Math.floorMod(name.trim().lowercase(Locale.ROOT).hashCode(), doctorAvatarPalettes.size)
+    val palette = doctorAvatarPalettes[index]
+    return if (isDarkTheme) {
+        palette.darkBackground to palette.darkForeground
+    } else {
+        palette.lightBackground to palette.lightForeground
+    }
+}
 
 @Composable
 private fun DoctorPickerBottomSheet(
@@ -892,7 +923,29 @@ private fun DoctorCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 if (doctor.photoUri.isNullOrBlank()) {
-                    Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(44.dp))
+                    val avatarInitial = doctor.name.trim().firstOrNull()?.toString()?.uppercase(Locale.ROOT)
+                    if (avatarInitial.isNullOrEmpty()) {
+                        Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(44.dp))
+                    } else {
+                        val (avatarBackground, avatarForeground) = doctorAvatarColors(
+                            doctor.name,
+                            MaterialTheme.colorScheme.background.luminance() < 0.5f
+                        )
+                        Surface(
+                            modifier = Modifier.size(44.dp),
+                            shape = CircleShape,
+                            color = avatarBackground
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    avatarInitial,
+                                    color = avatarForeground,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
                 } else {
                     AsyncImage(
                         model = doctor.photoUri,

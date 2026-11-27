@@ -48,7 +48,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.LocalIndication
@@ -124,11 +123,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -564,40 +563,21 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     previousPosition = position
                 }
         }
-        val fadeHeaderOffset = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }?.offset ?: Int.MAX_VALUE
+        val searchControlHeight by animateDpAsState(if (searchHeaderExpanded) 60.dp else 44.dp, tween(AppMotion.Emphasized), label = "searchControlHeight")
         val fadeStartOffset = with(LocalDensity.current) { 48.dp.roundToPx() }
+        val fadeScrollOffset = listState.layoutInfo.visibleItemsInfo
+            .firstOrNull { it.index == 0 }
+            ?.let { -it.offset }
+            ?: fadeStartOffset
+        val fadeTarget = (fadeScrollOffset.toFloat() / fadeStartOffset).coerceIn(0f, 1f)
         val fadeAlpha by animateFloatAsState(
-            targetValue = ((fadeStartOffset - fadeHeaderOffset).toFloat() / fadeStartOffset).coerceIn(0f, 1f),
+            targetValue = fadeTarget,
             animationSpec = tween(AppMotion.Emphasized),
             label = "doctorsFadeAlpha"
         )
-        val doctorsFadeColor = MaterialTheme.colorScheme.background
         Column(modifier = Modifier.fillMaxSize().padding(inner)) {
-            LazyColumn(state = listState, overscrollEffect = null, modifier = Modifier.fillMaxSize().clipToBounds().drawWithContent {
-                drawContent()
-                val stickyHeader = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }
-                if (stickyHeader != null && fadeAlpha > 0f) {
-                    val fadeTop = (stickyHeader.offset + stickyHeader.size).toFloat()
-                    val solidFadeHeight = 20.dp.toPx()
-                    val fadeHeight = 72.dp.toPx()
-                    drawRect(
-                        color = doctorsFadeColor,
-                        topLeft = androidx.compose.ui.geometry.Offset(0f, fadeTop),
-                        size = androidx.compose.ui.geometry.Size(size.width, solidFadeHeight)
-                    )
-                    drawRect(
-                        brush = Brush.verticalGradient(
-                            0f to doctorsFadeColor,
-                            0.65f to doctorsFadeColor.copy(alpha = 0.96f),
-                            1f to doctorsFadeColor.copy(alpha = 0f),
-                            startY = fadeTop + solidFadeHeight,
-                            endY = fadeTop + fadeHeight
-                        ),
-                        topLeft = androidx.compose.ui.geometry.Offset(0f, fadeTop + solidFadeHeight),
-                        size = androidx.compose.ui.geometry.Size(size.width, fadeHeight - solidFadeHeight)
-                    )
-                }
-            }, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
+            Box(Modifier.fillMaxSize().clipToBounds()) {
+            LazyColumn(state = listState, modifier = Modifier.fillMaxSize().clipToBounds(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
                 item {
                     Row(Modifier.fillMaxWidth().padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(if (isArabic) "إدارة الأطباء" else "Doctors", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
@@ -617,7 +597,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                         val filterWidth by animateDpAsState(if (searchHeaderExpanded) 60.dp else 0.dp, tween(AppMotion.Emphasized), label = "filterWidth")
                         val filterAlpha by animateFloatAsState(if (searchHeaderExpanded) 1f else 0f, tween(AppMotion.Fast), label = "filterAlpha")
                         val searchWidth by animateDpAsState(if (searchHeaderExpanded) maxWidth - 68.dp else 44.dp, tween(AppMotion.Emphasized), label = "searchWidth")
-                        val controlHeight by animateDpAsState(if (searchHeaderExpanded) 60.dp else 44.dp, tween(AppMotion.Emphasized), label = "searchControlHeight")
+                        val controlHeight = searchControlHeight
                         Row(
                             Modifier.fillMaxWidth().height(controlHeight),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -698,7 +678,10 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     )
                 }
             }
-        }    }
+        }
+            TopFadeOverlay(alpha = fadeAlpha, modifier = Modifier.align(Alignment.TopStart).padding(top = searchControlHeight + 12.dp).zIndex(1f))
+        }
+    }
     if (areaMenu) {
         AppSelectionPickerSheet(
             title = if (isArabic) "اختيار المنطقة" else "Choose area",

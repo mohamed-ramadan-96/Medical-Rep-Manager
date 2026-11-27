@@ -28,8 +28,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.background
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
@@ -85,6 +83,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.rotate
@@ -267,14 +266,17 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val centerHeaderHeight by animateDpAsState(if (centerHeaderExpanded) 76.dp else 48.dp, animationSpec = tween(AppMotion.Emphasized), label = "centersHeaderHeight")
     val centerSearchHeight by animateDpAsState(if (centerHeaderExpanded) 60.dp else 44.dp, animationSpec = tween(AppMotion.Emphasized), label = "centersSearchHeight")
 
-    val fadeHeaderOffset = centerListState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }?.offset ?: Int.MAX_VALUE
         val fadeStartOffset = with(LocalDensity.current) { 48.dp.roundToPx() }
-        val fadeAlpha by animateFloatAsState(
-            targetValue = ((fadeStartOffset - fadeHeaderOffset).toFloat() / fadeStartOffset).coerceIn(0f, 1f),
-            animationSpec = tween(AppMotion.Emphasized),
-            label = "centersFadeAlpha"
-        )
-        val centerFadeColor = MaterialTheme.colorScheme.background
+    val fadeScrollOffset = centerListState.layoutInfo.visibleItemsInfo
+        .firstOrNull { it.index == 0 }
+        ?.let { -it.offset }
+        ?: fadeStartOffset
+    val fadeTarget = (fadeScrollOffset.toFloat() / fadeStartOffset).coerceIn(0f, 1f)
+    val fadeAlpha by animateFloatAsState(
+        targetValue = fadeTarget,
+        animationSpec = tween(AppMotion.Emphasized),
+        label = "centersFadeAlpha"
+    )
     Scaffold(
         modifier = Modifier.padding(padding),
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
@@ -284,34 +286,10 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             }
         }
     ) { inner ->
+        Box(Modifier.fillMaxSize().padding(inner).clipToBounds()) {
         LazyColumn(
             state = centerListState,
-            overscrollEffect = null,
-            modifier = Modifier.fillMaxSize().padding(inner).clipToBounds().drawWithContent {
-                drawContent()
-                val stickyHeader = centerListState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }
-                if (stickyHeader != null && fadeAlpha > 0f) {
-                    val fadeTop = (stickyHeader.offset + stickyHeader.size).toFloat()
-                    val solidFadeHeight = 20.dp.toPx()
-                    val fadeHeight = 72.dp.toPx()
-                    drawRect(
-                        color = centerFadeColor,
-                        topLeft = androidx.compose.ui.geometry.Offset(0f, fadeTop),
-                        size = androidx.compose.ui.geometry.Size(size.width, solidFadeHeight)
-                    )
-                    drawRect(
-                        brush = Brush.verticalGradient(
-                            0f to centerFadeColor,
-                            0.65f to centerFadeColor.copy(alpha = 0.96f),
-                            1f to centerFadeColor.copy(alpha = 0f),
-                            startY = fadeTop + solidFadeHeight,
-                            endY = fadeTop + fadeHeight
-                        ),
-                        topLeft = androidx.compose.ui.geometry.Offset(0f, fadeTop + solidFadeHeight),
-                        size = androidx.compose.ui.geometry.Size(size.width, fadeHeight - solidFadeHeight)
-                    )
-                }
-            },
+            modifier = Modifier.fillMaxSize().clipToBounds(),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
         ) {
@@ -336,7 +314,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     val filterWidth by animateDpAsState(if (centerHeaderExpanded) 60.dp else 0.dp, tween(AppMotion.Emphasized), label = "centerFilterWidth")
                     val filterAlpha by animateFloatAsState(if (centerHeaderExpanded) 1f else 0f, tween(AppMotion.Fast), label = "centerFilterAlpha")
                     val searchWidth by animateDpAsState(if (centerHeaderExpanded) maxWidth - 68.dp else 44.dp, tween(AppMotion.Emphasized), label = "centerSearchWidth")
-                    val controlHeight by animateDpAsState(if (centerHeaderExpanded) 60.dp else 44.dp, tween(AppMotion.Emphasized), label = "centerSearchControlHeight")
+                    val controlHeight = centerSearchHeight
                     Row(
                         Modifier.fillMaxWidth().height(controlHeight),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -506,6 +484,8 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                             }
                         }
                     }
+        }
+            TopFadeOverlay(alpha = fadeAlpha, modifier = Modifier.align(Alignment.TopStart).padding(top = centerSearchHeight + 16.dp).zIndex(1f))
         }
     }
 

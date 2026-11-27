@@ -35,7 +35,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import java.time.LocalTime
@@ -58,7 +57,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.LaunchedEffect
@@ -108,6 +106,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -230,42 +229,22 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                 previousPosition = position
             }
         }
-        val fadeHeaderOffset = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }?.offset ?: Int.MAX_VALUE
+        val searchControlHeight by animateDpAsState(if (searchHeaderExpanded) 60.dp else 44.dp, tween(AppMotion.Emphasized), label = "scheduleSearchHeight")
         val fadeStartOffset = with(LocalDensity.current) { 48.dp.roundToPx() }
+        val fadeScrollOffset = listState.layoutInfo.visibleItemsInfo
+            .firstOrNull { it.index == 0 }
+            ?.let { -it.offset }
+            ?: fadeStartOffset
+        val fadeTarget = (fadeScrollOffset.toFloat() / fadeStartOffset).coerceIn(0f, 1f)
         val fadeAlpha by animateFloatAsState(
-            targetValue = ((fadeStartOffset - fadeHeaderOffset).toFloat() / fadeStartOffset).coerceIn(0f, 1f),
+            targetValue = fadeTarget,
             animationSpec = tween(AppMotion.Emphasized),
             label = "scheduleFadeAlpha"
         )
-        val scheduleFadeColor = MaterialTheme.colorScheme.background
+        Box(Modifier.fillMaxSize().padding(inner).clipToBounds()) {
         LazyColumn(
             state = listState,
-            overscrollEffect = null,
-            modifier = Modifier.fillMaxSize().padding(inner).clipToBounds().drawWithContent {
-                drawContent()
-                val stickyHeader = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }
-                if (stickyHeader != null && fadeAlpha > 0f) {
-                    val fadeTop = (stickyHeader.offset + stickyHeader.size).toFloat()
-                    val solidFadeHeight = 20.dp.toPx()
-                    val fadeHeight = 72.dp.toPx()
-                    drawRect(
-                        color = scheduleFadeColor,
-                        topLeft = androidx.compose.ui.geometry.Offset(0f, fadeTop),
-                        size = androidx.compose.ui.geometry.Size(size.width, solidFadeHeight)
-                    )
-                    drawRect(
-                        brush = Brush.verticalGradient(
-                            0f to scheduleFadeColor,
-                            0.65f to scheduleFadeColor.copy(alpha = 0.96f),
-                            1f to scheduleFadeColor.copy(alpha = 0f),
-                            startY = fadeTop + solidFadeHeight,
-                            endY = fadeTop + fadeHeight
-                        ),
-                        topLeft = androidx.compose.ui.geometry.Offset(0f, fadeTop + solidFadeHeight),
-                        size = androidx.compose.ui.geometry.Size(size.width, fadeHeight - solidFadeHeight)
-                    )
-                }
-            },
+            modifier = Modifier.fillMaxSize().clipToBounds(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
         ) {
@@ -290,7 +269,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                 val filterWidth by animateDpAsState(if (searchHeaderExpanded) 60.dp else 0.dp, tween(AppMotion.Emphasized), label = "scheduleFilterWidth")
                 val filterAlpha by animateFloatAsState(if (searchHeaderExpanded) 1f else 0f, tween(AppMotion.Fast), label = "scheduleFilterAlpha")
                 val searchWidth by animateDpAsState(if (searchHeaderExpanded) maxWidth - 68.dp else 44.dp, tween(AppMotion.Emphasized), label = "scheduleSearchWidth")
-                val controlHeight by animateDpAsState(if (searchHeaderExpanded) 60.dp else 44.dp, tween(AppMotion.Emphasized), label = "scheduleSearchHeight")
+                val controlHeight = searchControlHeight
                 Row(
                     Modifier.fillMaxWidth().height(controlHeight),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -569,6 +548,8 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                     }
                 
             }
+        }
+            TopFadeOverlay(alpha = fadeAlpha, modifier = Modifier.align(Alignment.TopStart).padding(top = searchControlHeight + 12.dp).zIndex(1f))
         }
     }
 

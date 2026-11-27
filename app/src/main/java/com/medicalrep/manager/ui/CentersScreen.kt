@@ -856,7 +856,7 @@ private fun CenterFormDialog(
                 )
                 }
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
                         phoneNumbers.forEachIndexed { index, phone ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),

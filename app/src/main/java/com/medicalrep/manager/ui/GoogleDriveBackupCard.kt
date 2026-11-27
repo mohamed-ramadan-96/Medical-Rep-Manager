@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -30,6 +31,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,8 +39,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.work.WorkManager
 import com.google.android.gms.auth.api.identity.AuthorizationRequest
 import com.google.android.gms.auth.api.identity.AuthorizationResult
@@ -63,6 +67,8 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
     var interval by remember { mutableStateOf(prefs.getInt(DriveBackupScheduler.KEY_INTERVAL, 1)) }
     var menuExpanded by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
+    var backupInProgress by remember { mutableStateOf(false) }
+    var backupProgress by remember { mutableStateOf<Float?>(null) }
     var token by remember { mutableStateOf<String?>(null) }
     var pendingAction by remember { mutableStateOf<((String) -> Unit)?>(null) }
     var showBackups by remember { mutableStateOf(false) }
@@ -122,17 +128,31 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
     fun runBackup(access: String) {
         scope.launch {
             busy = true
+            backupInProgress = true
+            backupProgress = null
             try {
                 val result = withContext(Dispatchers.IO) {
                     val local = DriveBackupEngine.createLocalBackup(context)
-                    try { DriveBackupEngine.upload(context, access, local) } finally { local.delete() }
+                    try {
+                        DriveBackupEngine.upload(context, access, local) { uploadedBytes, totalBytes ->
+                            scope.launch {
+                                backupProgress = if (totalBytes > 0L) {
+                                    (uploadedBytes.toFloat() / totalBytes.toFloat()).coerceIn(0f, 1f)
+                                } else null
+                            }
+                        }
+                    } finally { local.delete() }
                 }
                 prefs.edit().putLong(DriveBackupScheduler.KEY_LAST_BACKUP, System.currentTimeMillis()).remove(DriveBackupScheduler.KEY_LAST_ERROR).apply()
                 notify(if (isArabic) "تم حفظ النسخة الاحتياطية على Google Drive." else "Backup saved to Google Drive.")
                 activity.recreate()
             } catch (error: Exception) {
                 showError((if (isArabic) "فشل النسخ الاحتياطي: " else "Backup failed: ") + (error.localizedMessage ?: error.javaClass.simpleName))
-            } finally { busy = false }
+            } finally {
+                backupInProgress = false
+                backupProgress = null
+                busy = false
+            }
         }
     }
 
@@ -212,17 +232,52 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
                     color = MaterialTheme.colorScheme.error
                 )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                Button(onClick = {
-                    if (token != null) runBackup(token!!)
-                    else authorize { runBackup(it) }
-                }, enabled = !busy, modifier = Modifier.weight(1f)) {
-                    Text(if (busy) (if (isArabic) "جارٍ التنفيذ..." else "Working...") else (if (isArabic) "نسخ الآن" else "Back up now"))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            if (token != null) runBackup(token!!)
+                            else authorize { runBackup(it) }
+                        },
+                        enabled = !busy,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(if (busy) (if (isArabic) "جارٍ التنفيذ..." else "Working...") else (if (isArabic) "نسخ الآن" else "Back up now"))
+                    }
+                    if (backupInProgress) {
+                        val progress = backupProgress
+                        if (progress == null) {
+                            LinearProgressIndicator(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                            )
+                        } else {
+                            LinearProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                            )
+                        }
+                    }
                 }
-                OutlinedButton(onClick = {
-                    if (token != null) loadBackups(token!!)
-                    else authorize { loadBackups(it) }
-                }, enabled = !busy, modifier = Modifier.weight(1f)) {
+                OutlinedButton(
+                    onClick = {
+                        if (token != null) loadBackups(token!!)
+                        else authorize { loadBackups(it) }
+                    },
+                    enabled = !busy,
+                    modifier = Modifier.weight(1f)
+                ) {
                     Text(if (isArabic) "استعادة" else "Restore")
                 }
             }

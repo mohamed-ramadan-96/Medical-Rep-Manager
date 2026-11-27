@@ -144,7 +144,7 @@ object DriveBackupEngine {
         }
     }
 
-    fun upload(context: Context, token: String, backup: File): DriveBackupItem {
+    fun upload(context: Context, token: String, backup: File, onProgress: ((Long, Long) -> Unit)? = null): DriveBackupItem {
         var stage = "Drive folder lookup"
         var targetHost = "www.googleapis.com"
         try {
@@ -183,7 +183,21 @@ object DriveBackupEngine {
             put.setRequestProperty("Authorization", "Bearer $token")
             put.setRequestProperty("Content-Type", "application/zip")
             put.setFixedLengthStreamingMode(backup.length())
-            FileInputStream(backup).use { input -> put.outputStream.use { input.copyTo(it) } }
+            val totalBytes = backup.length()
+            onProgress?.invoke(0L, totalBytes)
+            FileInputStream(backup).use { input ->
+                put.outputStream.use { output ->
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    var uploadedBytes = 0L
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        output.write(buffer, 0, count)
+                        uploadedBytes += count
+                        onProgress?.invoke(uploadedBytes, totalBytes)
+                    }
+                }
+            }
             check(put.responseCode in 200..299) { "Backup upload failed: ${responseText(put)}" }
             val result = JSONObject(put.inputStream.bufferedReader().use { it.readText() })
             put.disconnect()

@@ -17,7 +17,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
-import com.medicalrep.manager.ui.theme.AppCardContainerColor
+import com.medicalrep.manager.ui.theme.AppSelectionRowColor
 
 @Composable
 fun OutlinedSelectionField(
@@ -26,7 +26,7 @@ fun OutlinedSelectionField(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    containerColor: Color = AppCardContainerColor()
+    containerColor: Color = AppSelectionRowColor()
 ) {
     Surface(
         onClick = onClick,

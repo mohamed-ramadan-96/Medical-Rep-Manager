@@ -56,27 +56,27 @@ private val LocalAppCardContainerColor = compositionLocalOf { Color(0xFFE7EDF5) 
 @Composable
 fun AppCardContainerColor(): Color = LocalAppCardContainerColor.current
 
+/** Selection-row fill: slightly lifted from the AMOLED dialog background in dark theme. */
+@Composable
+fun AppSelectionRowColor(): Color =
+    if (MaterialTheme.colorScheme.surface == Color.Black) MaterialTheme.colorScheme.surfaceContainerHigh else AppCardContainerColor()
+
 /** Main form-dialog surface: AMOLED black in dark theme, unchanged surface in light theme. */
 @Composable
 fun AppDialogContainerColor(): Color =
     if (MaterialTheme.colorScheme.surface == Color.Black) Color.Black else MaterialTheme.colorScheme.surface
 
 /**
- * Container color for large, nested form cards. Keep small fields and selection
- * rows on AppCardContainerColor; only large containers become AMOLED black.
+ * Container color for large, nested form cards. Dark cards use the same lifted
+ * fill as selection rows; light-theme behavior remains unchanged.
  */
 @Composable
 fun AppLargeCardContainerColor(): Color =
-    if (MaterialTheme.colorScheme.surface == Color.Black) Color.Black else AppCardContainerColor()
+    if (MaterialTheme.colorScheme.surface == Color.Black) MaterialTheme.colorScheme.surfaceContainerHigh else AppCardContainerColor()
 
-/** A subtle separator keeps AMOLED-black cards visible on black dialog surfaces. */
+/** Large form cards no longer draw an outline. */
 @Composable
-fun AppLargeCardBorder(): BorderStroke? =
-    if (MaterialTheme.colorScheme.surface == Color.Black) {
-        BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-    } else {
-        null
-    }
+fun AppLargeCardBorder(): BorderStroke? = null
 
 // One consistent semi-rounded language for cards, dialogs, menus, fields and buttons.
 private val AppShapes = Shapes(

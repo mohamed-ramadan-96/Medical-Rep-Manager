@@ -5,6 +5,7 @@ import com.medicalrep.manager.ui.theme.AppDialogContainerColor
 
 import com.medicalrep.manager.ui.theme.AppMotion
 import com.medicalrep.manager.ui.theme.AppCardContainerColor
+import com.medicalrep.manager.ui.theme.AppSelectionRowColor
 import com.medicalrep.manager.ui.theme.AppLargeCardBorder
 import com.medicalrep.manager.ui.theme.AppLargeCardContainerColor
 
@@ -722,7 +723,7 @@ private fun AvailabilityFormDialog(
                                             selectedCenterId = doctorCenterLinks.firstOrNull { it.doctorId == doctor.id }?.centerId ?: doctor.centerId
                                             doctorMenu = false
                                         },
-                                        color = AppCardContainerColor(),
+                                        color = AppSelectionRowColor(),
                                         shape = RoundedCornerShape(10.dp),
                                         modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                                     ) {
@@ -773,7 +774,7 @@ private fun AvailabilityFormDialog(
                                 items(filteredCenters, key = { it.id }) { center ->
                                     Surface(
                                         onClick = { selectedCenterId = center.id; centerMenu = false },
-                                        color = AppCardContainerColor(),
+                                        color = AppSelectionRowColor(),
                                         shape = RoundedCornerShape(10.dp),
                                         modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                                     ) {
@@ -1043,7 +1044,7 @@ private fun AvailabilitySelectionField(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(10.dp),
-        color = if (isTimeField) MaterialTheme.colorScheme.surfaceContainerHigh else AppCardContainerColor(),
+        color = if (isTimeField) MaterialTheme.colorScheme.surfaceContainerHigh else AppSelectionRowColor(),
         border = if (isTimeField) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null
     ) {
         Row(

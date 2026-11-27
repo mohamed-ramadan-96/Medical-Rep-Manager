@@ -307,7 +307,7 @@ fun WeeklyPlanScreen(
                     label = if (isArabic) "المنطقة الجغرافية" else "Geographic area",
                     value = when (selectedRegion) {
                         ALL_REGIONS -> if (isArabic) "كل المناطق" else "All areas"
-                        "" -> if (isArabic) "اختر المنطقة" else "Choose area"
+                        "" -> ""
                         else -> selectedRegion
                     },
                     onClick = { regionMenu = true },
@@ -319,7 +319,7 @@ fun WeeklyPlanScreen(
                     OutlinedSelectionField(
                         label = if (isArabic) "الأطباء المتاحون" else "Available doctors",
                         value = when {
-                            selectedDoctorIds.isEmpty() -> if (isArabic) "اضغط لاختيار الأطباء" else "Tap to choose doctors"
+                            selectedDoctorIds.isEmpty() -> ""
                             else -> doctors.filter { it.id in selectedDoctorIds }.joinToString("، ") { it.name }
                         },
                         onClick = {

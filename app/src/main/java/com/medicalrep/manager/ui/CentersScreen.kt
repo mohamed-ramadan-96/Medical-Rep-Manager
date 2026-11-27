@@ -1162,7 +1162,7 @@ private fun CenterFormDialog(
                         id = initial?.id ?: 0L,
                         name = name.trim(),
                         address = address.trim(),
-                        phone = phoneNumbers.map(String::trim).filter(String::isNotBlank).joinToString("\n"),
+                        phone = phoneNumbers.map { it.trim() }.filter { it.isNotBlank() }.joinToString("\n"),
                         notes = notes.trim(),
                         createdAt = initial?.createdAt ?: System.currentTimeMillis(),
                         latitude = latitude,

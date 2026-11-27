@@ -1677,10 +1677,13 @@ private fun DoctorFormDialog(
                 photoError = null
                 try {
                     val compressedFile = withContext(Dispatchers.IO) {
+                        val originalSize = ImageCompression.uriLength(context, uri)
                         val directory = File(context.filesDir, "doctor_photos").apply { mkdirs() }
                         val output = File(directory, "doctor_${UUID.randomUUID()}.jpg")
-                        if (ImageCompression.compressUriToJpeg(context, uri, output, 1000, 80)) output
-                        else { output.delete(); null }
+                        if (originalSize != null &&
+                            ImageCompression.compressUriToJpeg(context, uri, output, 1000, 80) &&
+                            output.length() < originalSize
+                        ) output else { output.delete(); null }
                     }
                     if (compressedFile != null) {
                         photoUri = Uri.fromFile(compressedFile).toString()

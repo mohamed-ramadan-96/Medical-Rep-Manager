@@ -64,6 +64,9 @@ object ImageCompression {
                 if (oriented !== decoded) oriented?.recycle()
                 decoded.recycle()
             }
+        } catch (_: OutOfMemoryError) {
+            destination.delete()
+            false
         } catch (_: Exception) {
             destination.delete()
             false

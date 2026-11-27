@@ -55,7 +55,9 @@ object ExistingImageCompression {
                 val saved = compressAttachment(context, File(attachment.localPath), 2000, 85) {
                     database.doctorAttachmentDao().update(attachment.copy(mimeType = "image/jpeg"))
                 }
-                when { saved == null -> failed++; saved == 0L -> skipped++; else -> { compressed++; savedBytes += saved } }
+                if (saved == null) failed++
+                else if (saved == 0L) skipped++
+                else { compressed++; savedBytes += saved }
             } catch (_: Exception) { failed++ }
             finally { advance() }
         }
@@ -64,7 +66,9 @@ object ExistingImageCompression {
                 val saved = compressAttachment(context, File(attachment.localPath), 2000, 85) {
                     database.centerAttachmentDao().update(attachment.copy(mimeType = "image/jpeg"))
                 }
-                when { saved == null -> failed++; saved == 0L -> skipped++; else -> { compressed++; savedBytes += saved } }
+                if (saved == null) failed++
+                else if (saved == 0L) skipped++
+                else { compressed++; savedBytes += saved }
             } catch (_: Exception) { failed++ }
             finally { advance() }
         }

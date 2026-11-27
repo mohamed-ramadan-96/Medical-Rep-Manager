@@ -89,9 +89,12 @@ fun CenterAttachmentsDialog(
                         val destination = if (isImage) File(directory, "${UUID.randomUUID()}.jpg")
                             else File(directory, UUID.randomUUID().toString() + (extension?.let { ".$it" } ?: ""))
                         try {
-                            val storedMimeType = if (isImage && ImageCompression.compressUriToJpeg(context, uri, destination, 2000, 85)) {
-                                "image/jpeg"
-                            } else {
+                            val originalSize = if (isImage) ImageCompression.uriLength(context, uri) else null
+                            val compressed = isImage && originalSize != null &&
+                                ImageCompression.compressUriToJpeg(context, uri, destination, 2000, 85) &&
+                                destination.length() < originalSize
+                            val storedMimeType = if (compressed) "image/jpeg" else {
+                                destination.delete()
                                 ImageCompression.copyUriToFile(context, uri, destination)
                                 mimeType
                             }

@@ -50,7 +50,6 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.outlined.PeopleAlt
-import androidx.compose.material3.Card
 import androidx.compose.material3.AlertDialog
 
 import androidx.compose.material3.Button
@@ -66,7 +65,6 @@ import android.net.Uri
 import android.widget.Toast
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -515,25 +513,19 @@ private fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(if (isArabic) "المظهر" else "Appearance", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(10.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-        ) {
-            Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(
-                    "light" to (if (isArabic) "فاتح" else "Light"),
-                    "dark" to (if (isArabic) "داكن" else "Dark"),
-                    "system" to (if (isArabic) "تلقائي" else "System")
-                ).forEach { (mode, label) ->
-                    FilterChip(
-                        selected = themeMode == mode,
-                        onClick = { onThemeModeChange(mode) },
-                        label = { Text(label) },
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = RoundedCornerShape(10.dp)
-                    )
-                }
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(
+                "light" to (if (isArabic) "فاتح" else "Light"),
+                "dark" to (if (isArabic) "داكن" else "Dark"),
+                "system" to (if (isArabic) "تلقائي" else "System")
+            ).forEach { (mode, label) ->
+                FilterChip(
+                    selected = themeMode == mode,
+                    onClick = { onThemeModeChange(mode) },
+                    label = { Text(label) },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(10.dp)
+                )
             }
         }
         Text(if (isArabic) "تواصل معنا" else "Contact us", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)

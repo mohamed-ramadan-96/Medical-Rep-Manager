@@ -967,17 +967,18 @@ private fun DoctorCard(
                     if (doctor.notes.isNotBlank()) {
                         Text(doctor.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                                onClick = {}
-                            ),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = {}
+                        ),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                         OutlinedButton(
                             onClick = {
                                 try {
@@ -1015,7 +1016,6 @@ private fun DoctorCard(
                             Text(if (isArabic) "واتساب" else "WhatsApp", maxLines = 1)
                         }
                     }
-                }
             }
         }
     }

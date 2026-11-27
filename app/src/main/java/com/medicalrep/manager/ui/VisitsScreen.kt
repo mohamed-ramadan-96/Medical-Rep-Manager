@@ -460,29 +460,22 @@ private fun VisitFormDialog(
                     }.ifBlank { if (isArabic) "اختر الوقت" else "Choose time" },
                     onClick = { showVisitTimePicker = true }
                 )
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        if (isArabic) "نتيجة الزيارة" else "Visit outcome",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    OutlinedTextField(
-                        colors = AppFilledTextFieldColors(),
-                        shape = RoundedCornerShape(10.dp),
-                        value = outcome,
-                        onValueChange = { outcome = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        placeholder = { Text(if (isArabic) "اكتب نتيجة الزيارة" else "Enter visit outcome") }
-                    )
-                }
+                OutlinedTextField(
+                    colors = AppFilledTextFieldColors(),
+                    shape = RoundedCornerShape(10.dp),
+                    value = outcome,
+                    onValueChange = { outcome = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    placeholder = { Text(if (isArabic) "نتيجة الزيارة" else "Visit outcome") }
+                )
                 OutlinedTextField(
                     colors = AppFilledTextFieldColors(),
                     shape = RoundedCornerShape(10.dp),
                     value = notes,
                     onValueChange = { notes = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text(if (isArabic) "ملاحظات الزيارة" else "Visit notes") }
+                    placeholder = { Text(if (isArabic) "ملاحظات الزيارة" else "Visit notes") }
                 )
                 OutlinedSelectionField(
                     label = if (isArabic) "موعد المتابعة" else "Follow-up date",

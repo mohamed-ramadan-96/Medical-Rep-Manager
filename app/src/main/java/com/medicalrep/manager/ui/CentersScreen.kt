@@ -105,6 +105,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.medicalrep.manager.domain.ContactPhoneRules
 import com.medicalrep.manager.data.MedicalCenterEntity
 import com.medicalrep.manager.data.CenterAvailabilityEntity
 import androidx.room.withTransaction
@@ -225,7 +226,8 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val filteredCenters = remember(centers, centerSearch, selectedArea) {
         centers.filter { center ->
             (selectedArea == "all" || center.area.equals(selectedArea, ignoreCase = true)) &&
-                (centerSearch.isBlank() || listOf(center.name, center.address, center.phone).any { it.contains(centerSearch.trim(), ignoreCase = true) })
+                (centerSearch.isBlank() || listOf(center.name, center.address).any { it.contains(centerSearch.trim(), ignoreCase = true) } ||
+                    ContactPhoneRules.split(center.phone).any { it.contains(centerSearch.trim(), ignoreCase = true) })
         }
     }
     val centerListState = rememberLazyListState()
@@ -421,7 +423,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                             Text(center.address, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                                         }
                                         if (center.phone.isNotBlank()) {
-                                            Text(center.phone, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                                            Text(ContactPhoneRules.split(center.phone).joinToString(" • "), style = MaterialTheme.typography.bodySmall)
                                         }
                                     }
                                     IconButton(
@@ -714,7 +716,9 @@ private fun CenterFormDialog(
     var showNewAreaDialog by remember { mutableStateOf(false) }
     var newAreaName by remember { mutableStateOf("") }
     var address by remember(initial) { mutableStateOf(initial?.address.orEmpty()) }
-    var phone by remember(initial) { mutableStateOf(initial?.phone.orEmpty()) }
+    var phoneNumbers by remember(initial) {
+        mutableStateOf(ContactPhoneRules.split(initial?.phone.orEmpty()).ifEmpty { listOf("") })
+    }
     var notes by remember(initial) { mutableStateOf(initial?.notes.orEmpty()) }
     var workSlots by remember(initial, initialAvailability) {
         mutableStateOf(
@@ -848,19 +852,52 @@ private fun CenterFormDialog(
                     onValueChange = { address = it },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp),
-                    label = { Text(if (isArabic) "العنوان" else "Address") }
+                    placeholder = { Text(if (isArabic) "العنوان" else "Address") }
                 )
                 }
                 item {
-                    OutlinedTextField(
-                    colors = AppFilledTextFieldColors(),
-                    value = phone,
-                    onValueChange = { phone = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    shape = RoundedCornerShape(10.dp),
-                    label = { Text(if (isArabic) "رقم الهاتف" else "Phone") }
-                )
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        phoneNumbers.forEachIndexed { index, phone ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                OutlinedTextField(
+                                    colors = AppFilledTextFieldColors(),
+                                    value = phone,
+                                    onValueChange = { value ->
+                                        phoneNumbers = phoneNumbers.toMutableList().also { it[index] = value }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(10.dp),
+                                    placeholder = { Text(if (isArabic) "رقم الهاتف" else "Phone") }
+                                )
+                                if (index > 0) {
+                                    IconButton(
+                                        onClick = {
+                                            phoneNumbers = phoneNumbers.toMutableList().also { it.removeAt(index) }
+                                        },
+                                        modifier = Modifier.size(48.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = if (isArabic) "حذف رقم الهاتف" else "Remove phone number"
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        OutlinedButton(
+                            onClick = { phoneNumbers = phoneNumbers + "" },
+                            modifier = Modifier.fillMaxWidth().height(46.dp),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Text(if (isArabic) "إضافة رقم" else "Add number")
+                        }
+                    }
                 }
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
@@ -984,8 +1021,7 @@ private fun CenterFormDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     shape = RoundedCornerShape(10.dp),
-                    label = { Text(if (isArabic) "ملاحظات الفترة (اختياري)" else "Period notes (optional)") },
-                    placeholder = { Text(if (isArabic) "مثال: بالحجز فقط" else "e.g. By appointment only") }
+                    placeholder = { Text(if (isArabic) "ملاحظات الفترة (اختياري)" else "Period notes (optional)") }
                 )
                                 }
                             }
@@ -1001,7 +1037,7 @@ private fun CenterFormDialog(
                     singleLine = false,
                     minLines = 1,
                     shape = RoundedCornerShape(10.dp),
-                    label = { Text(if (isArabic) "ملاحظات" else "Notes") }
+                    placeholder = { Text(if (isArabic) "ملاحظات" else "Notes") }
                 )
                 }
                 item {
@@ -1126,7 +1162,7 @@ private fun CenterFormDialog(
                         id = initial?.id ?: 0L,
                         name = name.trim(),
                         address = address.trim(),
-                        phone = phone.trim(),
+                        phone = phoneNumbers.map(String::trim).filter(String::isNotBlank).joinToString("\n"),
                         notes = notes.trim(),
                         createdAt = initial?.createdAt ?: System.currentTimeMillis(),
                         latitude = latitude,

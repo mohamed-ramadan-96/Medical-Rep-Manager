@@ -29,6 +29,11 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -99,9 +104,9 @@ private val tabs = listOf(
 )
 
 @Composable
-private fun ReferenceNavigationIcon(name: String) {
+private fun ReferenceNavigationIcon(name: String, modifier: Modifier = Modifier) {
     val color = MaterialTheme.colorScheme.onSurface
-    Canvas(Modifier.size(24.dp)) {
+    Canvas(modifier.size(24.dp)) {
         val unit = size.minDimension / 48f
         scale(unit, pivot = androidx.compose.ui.geometry.Offset.Zero) {
             val stroke = Stroke(width = 2.8f, cap = StrokeCap.Round, join = StrokeJoin.Round)
@@ -159,6 +164,32 @@ private fun ReferenceNavigationIcon(name: String) {
     }
 }
 
+@Composable
+private fun AnimatedNavigationIcon(name: String, animationKey: Int) {
+    val scale = remember { Animatable(1f) }
+
+    LaunchedEffect(animationKey) {
+        if (animationKey >= 0) {
+            scale.animateTo(
+                targetValue = 1.14f,
+                animationSpec = spring(dampingRatio = 0.42f, stiffness = 650f)
+            )
+            scale.animateTo(
+                targetValue = 1f,
+                animationSpec = spring(dampingRatio = 0.5f, stiffness = 500f)
+            )
+        }
+    }
+
+    ReferenceNavigationIcon(
+        name = name,
+        modifier = Modifier.graphicsLayer {
+            scaleX = scale.value
+            scaleY = scale.value
+        }
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MedicalRepApp() {
@@ -190,6 +221,9 @@ fun MedicalRepApp() {
         mutableStateOf(if (preferences.getBoolean("arabic_language", true)) AppLanguage.Arabic else AppLanguage.English)
     }
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    var animatedTab by remember { mutableIntStateOf(-1) }
+    var navigationAnimationKey by remember { mutableIntStateOf(0) }
+    val hapticFeedback = LocalHapticFeedback.current
     var showSpecialtiesManagement by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) { if (selectedTab !in tabs.indices) selectedTab = 0 }
     val isArabic = language == AppLanguage.Arabic
@@ -229,8 +263,21 @@ fun MedicalRepApp() {
                     tabs.forEachIndexed { index, tab ->
                         NavigationBarItem(
                             selected = selectedTab == index,
-                            onClick = { selectedTab = index; showSpecialtiesManagement = false },
-                            icon = { ReferenceNavigationIcon(tab.icon) },
+                            onClick = {
+                                if (selectedTab != index) {
+                                    selectedTab = index
+                                    showSpecialtiesManagement = false
+                                    animatedTab = index
+                                    navigationAnimationKey++
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                }
+                            },
+                            icon = {
+                                AnimatedNavigationIcon(
+                                    name = tab.icon,
+                                    animationKey = if (animatedTab == index) navigationAnimationKey else -1
+                                )
+                            },
                             label = { Text(if (isArabic) tab.titleAr else tab.titleEn, maxLines = 1, softWrap = false) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = MaterialTheme.colorScheme.primary,

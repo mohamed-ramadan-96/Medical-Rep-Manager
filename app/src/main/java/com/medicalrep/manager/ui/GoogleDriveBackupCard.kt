@@ -33,6 +33,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +49,8 @@ import com.google.android.gms.auth.api.identity.AuthorizationRequest
 import com.google.android.gms.auth.api.identity.AuthorizationResult
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.common.api.Scope
+import com.medicalrep.manager.backup.BackupRunController
+import com.medicalrep.manager.backup.BackupRunState
 import com.medicalrep.manager.backup.DriveBackupEngine
 import com.medicalrep.manager.backup.DriveBackupItem
 import com.medicalrep.manager.backup.DriveBackupScheduler
@@ -67,8 +70,11 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
     var interval by remember { mutableStateOf(prefs.getInt(DriveBackupScheduler.KEY_INTERVAL, 1)) }
     var menuExpanded by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
-    var backupInProgress by remember { mutableStateOf(false) }
-    var backupProgress by remember { mutableStateOf<Float?>(null) }
+    val backupRunState by BackupRunController.state.collectAsState()
+    val backupRunning = backupRunState is BackupRunState.Preparing ||
+        backupRunState is BackupRunState.Uploading
+    val backupFailure = backupRunState as? BackupRunState.Failed
+    val backupFinished = backupRunState as? BackupRunState.Finished
     var token by remember { mutableStateOf<String?>(null) }
     var pendingAction by remember { mutableStateOf<((String) -> Unit)?>(null) }
     var showBackups by remember { mutableStateOf(false) }
@@ -125,34 +131,12 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
             }
     }
 
-    fun runBackup(access: String) {
-        scope.launch {
-            busy = true
-            backupInProgress = true
-            backupProgress = null
-            try {
-                val result = withContext(Dispatchers.IO) {
-                    val local = DriveBackupEngine.createLocalBackup(context)
-                    try {
-                        DriveBackupEngine.uploadAndRetain(context, access, local) { uploadedBytes, totalBytes ->
-                            scope.launch {
-                                backupProgress = if (totalBytes > 0L) {
-                                    (uploadedBytes.toFloat() / totalBytes.toFloat()).coerceIn(0f, 1f)
-                                } else null
-                            }
-                        }
-                    } finally { local.delete() }
-                }
-                prefs.edit().putLong(DriveBackupScheduler.KEY_LAST_BACKUP, System.currentTimeMillis()).remove(DriveBackupScheduler.KEY_LAST_ERROR).apply()
-                notify(if (isArabic) "تم حفظ النسخة الاحتياطية على Google Drive." else "Backup saved to Google Drive.")
-                activity.recreate()
-            } catch (error: Exception) {
-                showError((if (isArabic) "فشل النسخ الاحتياطي: " else "Backup failed: ") + (error.localizedMessage ?: error.javaClass.simpleName))
-            } finally {
-                backupInProgress = false
-                backupProgress = null
-                busy = false
-            }
+    fun startBackup(access: String) {
+        if (!BackupRunController.start(context, access, isArabic)) {
+            showError(
+                if (isArabic) "هناك عملية نسخ احتياطي أخرى قيد التنفيذ بالفعل."
+                else "Another backup is already running."
+            )
         }
     }
 
@@ -242,32 +226,29 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
                 ) {
                     Button(
                         onClick = {
-                            if (token != null) runBackup(token!!)
-                            else authorize { runBackup(it) }
+                            if (token != null) startBackup(token!!)
+                            else authorize { startBackup(it) }
                         },
-                        enabled = !busy,
+                        enabled = !busy && !backupRunning,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(if (busy) (if (isArabic) "جارٍ التنفيذ..." else "Working...") else (if (isArabic) "نسخ الآن" else "Back up now"))
+                        Text(if (busy || backupRunning) (if (isArabic) "جارٍ التنفيذ..." else "Working...") else (if (isArabic) "نسخ الآن" else "Back up now"))
                     }
-                    if (backupInProgress) {
-                        val progress = backupProgress
-                        if (progress == null) {
-                            LinearProgressIndicator(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(6.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                            )
-                        } else {
-                            LinearProgressIndicator(
-                                progress = { progress },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(6.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                            )
-                        }
+                    when (val runState = backupRunState) {
+                        BackupRunState.Preparing -> LinearProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                        )
+                        is BackupRunState.Uploading -> LinearProgressIndicator(
+                            progress = { runState.progress },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                        )
+                        else -> Unit
                     }
                 }
                 OutlinedButton(
@@ -275,7 +256,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
                         if (token != null) loadBackups(token!!)
                         else authorize { loadBackups(it) }
                     },
-                    enabled = !busy,
+                    enabled = !busy && !backupRunning,
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(if (isArabic) "استعادة" else "Restore")
@@ -285,10 +266,15 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
         }
     }
 
-    errorMessage?.let { message ->
+    val visibleErrorMessage = errorMessage ?: backupFailure?.message
+    val showingBackupFailure = errorMessage == null && backupFailure != null
+    visibleErrorMessage?.let { message ->
         AlertDialog(
         containerColor = AppDialogContainerColor(),
-            onDismissRequest = { errorMessage = null },
+            onDismissRequest = {
+                errorMessage = null
+                if (showingBackupFailure) backupFailure?.let(BackupRunController::consumeResult)
+            },
             title = { Text(if (isArabic) "تفاصيل الخطأ" else "Error details") },
             text = { Text(message) },
             confirmButton = {
@@ -297,10 +283,32 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                         clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Medical Rep Manager error", message))
                         errorMessage = null
+                        if (showingBackupFailure) backupFailure?.let(BackupRunController::consumeResult)
                         notify(if (isArabic) "تم نسخ تفاصيل الخطأ." else "Error details copied.")
                     }) { Text(if (isArabic) "نسخ الخطأ" else "Copy error") }
-                    TextButton(onClick = { errorMessage = null }) { Text(if (isArabic) "إغلاق" else "Close") }
+                    TextButton(onClick = {
+                        errorMessage = null
+                        if (showingBackupFailure) backupFailure?.let(BackupRunController::consumeResult)
+                    }) { Text(if (isArabic) "إغلاق" else "Close") }
                 }
+            }
+        )
+    }
+
+    backupFinished?.let { result ->
+        AlertDialog(
+            containerColor = AppDialogContainerColor(),
+            onDismissRequest = {
+                BackupRunController.consumeResult(result)
+                activity.recreate()
+            },
+            title = { Text(if (isArabic) "اكتمل النسخ الاحتياطي" else "Backup completed") },
+            text = { Text(result.message) },
+            confirmButton = {
+                TextButton(onClick = {
+                    BackupRunController.consumeResult(result)
+                    activity.recreate()
+                }) { Text(if (isArabic) "حسنًا" else "OK") }
             }
         )
     }

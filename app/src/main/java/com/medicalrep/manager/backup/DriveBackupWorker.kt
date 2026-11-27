@@ -43,6 +43,7 @@ class DriveBackupWorker(context: Context, params: WorkerParameters) : CoroutineW
     override suspend fun doWork(): Result {
         val prefs = applicationContext.getSharedPreferences(DriveBackupScheduler.PREFS, Context.MODE_PRIVATE)
         if (!prefs.getBoolean(DriveBackupScheduler.KEY_ENABLED, false)) return Result.success()
+        if (!BackupRunController.tryAcquireScheduledRun()) return Result.retry()
         return try {
             val request = AuthorizationRequest.builder()
                 .setRequestedScopes(listOf(Scope("https://www.googleapis.com/auth/drive.file")))
@@ -63,6 +64,8 @@ class DriveBackupWorker(context: Context, params: WorkerParameters) : CoroutineW
         } catch (error: Exception) {
             prefs.edit().putString(DriveBackupScheduler.KEY_LAST_ERROR, error.localizedMessage ?: "Backup failed").apply()
             Result.retry()
+        } finally {
+            BackupRunController.releaseScheduledRun()
         }
     }
 }

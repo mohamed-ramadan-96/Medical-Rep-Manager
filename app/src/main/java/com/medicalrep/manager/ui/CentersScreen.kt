@@ -3,6 +3,7 @@ package com.medicalrep.manager.ui
 import com.medicalrep.manager.ui.theme.AppSpacing
 import com.medicalrep.manager.ui.theme.AppDialogContainerColor
 import com.medicalrep.manager.ui.theme.AppCardContainerColor
+import com.medicalrep.manager.ui.theme.AppSelectionRowColor
 import com.medicalrep.manager.ui.theme.AppLargeCardBorder
 import com.medicalrep.manager.ui.theme.AppLargeCardContainerColor
 
@@ -610,7 +611,7 @@ private data class CenterWorkingHoursDraft(
 private fun CenterAreaPickerRow(label: String, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        color = AppCardContainerColor(),
+        color = AppSelectionRowColor(),
         shape = RoundedCornerShape(10.dp),
         modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
     ) {

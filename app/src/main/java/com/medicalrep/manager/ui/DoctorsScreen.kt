@@ -3,6 +3,7 @@ package com.medicalrep.manager.ui
 import com.medicalrep.manager.ui.theme.AppSpacing
 import com.medicalrep.manager.ui.theme.AppDialogContainerColor
 import com.medicalrep.manager.ui.theme.AppCardContainerColor
+import com.medicalrep.manager.ui.theme.AppSelectionRowColor
 import com.medicalrep.manager.ui.theme.AppLargeCardBorder
 import com.medicalrep.manager.ui.theme.AppLargeCardContainerColor
 
@@ -1478,7 +1479,7 @@ private fun DoctorFormDialog(
                             LazyColumn(modifier = Modifier.height(240.dp)) {
                                 items(areaOptions, key = { it }) { areaOption ->
                                     Surface(
-                                        color = AppCardContainerColor(),
+                                        color = AppSelectionRowColor(),
                                         shape = RoundedCornerShape(10.dp),
                                         modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                                     ) {
@@ -1818,7 +1819,7 @@ private fun DoctorFormDialog(
                     item {
                         Surface(
                             onClick = { selectedSpecialtyId = null; showSpecialtyPicker = false },
-                            color = AppCardContainerColor(),
+                            color = AppSelectionRowColor(),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                         ) {
@@ -1837,7 +1838,7 @@ private fun DoctorFormDialog(
                     items(specialties, key = { it.id }) { specialty ->
                         Surface(
                             onClick = { selectedSpecialtyId = specialty.id; showSpecialtyPicker = false },
-                            color = AppCardContainerColor(),
+                            color = AppSelectionRowColor(),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                         ) {
@@ -1886,7 +1887,7 @@ private fun DoctorFormDialog(
                     item {
                         Surface(
                             onClick = { selectedCenterIds = emptySet() },
-                            color = AppCardContainerColor(),
+                            color = AppSelectionRowColor(),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                         ) {
@@ -1948,7 +1949,7 @@ private fun DoctorFormDialog(
                         key = { it.id }
                     ) { center ->
                         Surface(
-                            color = AppCardContainerColor(),
+                            color = AppSelectionRowColor(),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                         ) {

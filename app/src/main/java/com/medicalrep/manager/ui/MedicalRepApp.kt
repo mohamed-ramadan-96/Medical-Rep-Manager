@@ -326,6 +326,7 @@ fun MedicalRepApp(
             if (showSettings) {
                 SettingsScreen(
                     isArabic = isArabic,
+                    padding = innerPadding,
                     themeMode = themeMode,
                     onThemeModeChange = onThemeModeChange,
                     isCheckingUpdate = isCheckingUpdate,
@@ -493,6 +494,7 @@ fun MedicalRepApp(
 @Composable
 private fun SettingsScreen(
     isArabic: Boolean,
+    padding: PaddingValues,
     themeMode: String,
     onThemeModeChange: (String) -> Unit,
     isCheckingUpdate: Boolean,
@@ -507,6 +509,7 @@ private fun SettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .padding(padding)
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)

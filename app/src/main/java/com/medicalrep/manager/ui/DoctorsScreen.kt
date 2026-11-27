@@ -927,54 +927,6 @@ private fun DoctorCard(
                 }
             }
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = {}
-                    ),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedButton(
-                    onClick = {
-                        try {
-                            context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$firstPhone")))
-                        } catch (_: ActivityNotFoundException) {
-                            Toast.makeText(context, if (isArabic) "لا يوجد تطبيق للاتصال" else "No dialer app available", Toast.LENGTH_SHORT).show()
-                        } catch (_: Exception) {
-                            Toast.makeText(context, if (isArabic) "تعذر فتح الاتصال" else "Unable to open dialer", Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    enabled = hasPhone,
-                    modifier = Modifier.weight(1f).height(40.dp),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.size(6.dp))
-                    Text(if (isArabic) "اتصال" else "Call", maxLines = 1)
-                }
-                OutlinedButton(
-                    onClick = {
-                        try {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$whatsappNumber")))
-                        } catch (_: ActivityNotFoundException) {
-                            Toast.makeText(context, if (isArabic) "تعذر فتح واتساب أو المتصفح" else "Unable to open WhatsApp or browser", Toast.LENGTH_SHORT).show()
-                        } catch (_: Exception) {
-                            Toast.makeText(context, if (isArabic) "تعذر فتح واتساب" else "Unable to open WhatsApp", Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    enabled = hasPhone,
-                    modifier = Modifier.weight(1f).height(40.dp),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.size(6.dp))
-                    Text(if (isArabic) "واتساب" else "WhatsApp", maxLines = 1)
-                }
-            }
-            Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.End),
                 verticalAlignment = Alignment.CenterVertically
@@ -1015,6 +967,54 @@ private fun DoctorCard(
                     if (doctor.notes.isNotBlank()) {
                         Text(doctor.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = {}
+                        ),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            try {
+                                context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$firstPhone")))
+                            } catch (_: ActivityNotFoundException) {
+                                Toast.makeText(context, if (isArabic) "لا يوجد تطبيق للاتصال" else "No dialer app available", Toast.LENGTH_SHORT).show()
+                            } catch (_: Exception) {
+                                Toast.makeText(context, if (isArabic) "تعذر فتح الاتصال" else "Unable to open dialer", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        enabled = hasPhone,
+                        modifier = Modifier.weight(1f).height(40.dp),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.size(6.dp))
+                        Text(if (isArabic) "اتصال" else "Call", maxLines = 1)
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            try {
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$whatsappNumber")))
+                            } catch (_: ActivityNotFoundException) {
+                                Toast.makeText(context, if (isArabic) "تعذر فتح واتساب أو المتصفح" else "Unable to open WhatsApp or browser", Toast.LENGTH_SHORT).show()
+                            } catch (_: Exception) {
+                                Toast.makeText(context, if (isArabic) "تعذر فتح واتساب" else "Unable to open WhatsApp", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        enabled = hasPhone,
+                        modifier = Modifier.weight(1f).height(40.dp),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.size(6.dp))
+                        Text(if (isArabic) "واتساب" else "WhatsApp", maxLines = 1)
+                    }
+                }
                 }
             }
         }

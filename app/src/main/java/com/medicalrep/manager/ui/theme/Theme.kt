@@ -71,8 +71,7 @@ fun AppDialogContainerColor(): Color =
  * fill as selection rows; light-theme behavior remains unchanged.
  */
 @Composable
-fun AppLargeCardContainerColor(): Color =
-    if (MaterialTheme.colorScheme.surface == Color.Black) MaterialTheme.colorScheme.surfaceContainerHigh else AppCardContainerColor()
+fun AppLargeCardContainerColor(): Color = AppSelectionRowColor()
 
 /** Large form cards no longer draw an outline. */
 @Composable

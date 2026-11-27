@@ -294,7 +294,6 @@ fun WeeklyPlanScreen(
                 Box {
                     OutlinedSelectionField(
                         label = if (isArabic) "المنطقة الجغرافية" else "Geographic area",
-                        containerColor = AppCardContainerColor(),
                         value = when (selectedRegion) {
                             ALL_REGIONS -> if (isArabic) "كل المناطق" else "All areas"
                             "" -> if (isArabic) "اختر المنطقة" else "Choose area"
@@ -323,7 +322,6 @@ fun WeeklyPlanScreen(
                 Box {
                     OutlinedSelectionField(
                         label = if (isArabic) "الأطباء المتاحون" else "Available doctors",
-                        containerColor = AppCardContainerColor(),
                         value = when {
                             selectedDoctorIds.isEmpty() -> if (isArabic) "اضغط لاختيار الأطباء" else "Tap to choose doctors"
                             else -> doctors.filter { it.id in selectedDoctorIds }.joinToString("، ") { it.name }

@@ -80,8 +80,16 @@ import com.medicalrep.manager.data.DoctorVisitEntity
 import com.medicalrep.manager.data.MedicalRepDatabase
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.util.Date
 import java.util.Locale
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 
 private fun visitDateText(timestamp: Long, pattern: String = "yyyy-MM-dd"): String =
     SimpleDateFormat(pattern, Locale.US).format(Date(timestamp))
@@ -333,6 +341,9 @@ private fun VisitFormDialog(
     }
     var doctorMenu by remember { mutableStateOf(false) }
     var doctorSearch by remember { mutableStateOf("") }
+    var showVisitDatePicker by remember { mutableStateOf(false) }
+    var showVisitTimePicker by remember { mutableStateOf(false) }
+    var showFollowUpDatePicker by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
@@ -431,23 +442,15 @@ private fun VisitFormDialog(
                         }
                     }
                 }
-                OutlinedTextField(
-                    colors = AppFilledTextFieldColors(),
-                    shape = RoundedCornerShape(10.dp),
-                    value = date,
-                    onValueChange = { date = it; error = null },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text(if (isArabic) "تاريخ الزيارة (YYYY-MM-DD)" else "Visit date (YYYY-MM-DD)") }
+                OutlinedSelectionField(
+                    label = if (isArabic) "تاريخ الزيارة" else "Visit date",
+                    value = date.ifBlank { if (isArabic) "اختر التاريخ" else "Choose date" },
+                    onClick = { showVisitDatePicker = true }
                 )
-                OutlinedTextField(
-                    colors = AppFilledTextFieldColors(),
-                    shape = RoundedCornerShape(10.dp),
-                    value = time,
-                    onValueChange = { time = it; error = null },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text(if (isArabic) "الوقت (HH:MM)" else "Time (HH:MM)") }
+                OutlinedSelectionField(
+                    label = if (isArabic) "الوقت" else "Time",
+                    value = time.ifBlank { if (isArabic) "اختر الوقت" else "Choose time" },
+                    onClick = { showVisitTimePicker = true }
                 )
                 OutlinedTextField(
                     colors = AppFilledTextFieldColors(),
@@ -466,14 +469,10 @@ private fun VisitFormDialog(
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(if (isArabic) "ملاحظات الزيارة" else "Visit notes") }
                 )
-                OutlinedTextField(
-                    colors = AppFilledTextFieldColors(),
-                    shape = RoundedCornerShape(10.dp),
-                    value = followUpDate,
-                    onValueChange = { followUpDate = it; error = null },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text(if (isArabic) "موعد المتابعة (اختياري YYYY-MM-DD)" else "Follow-up date (optional YYYY-MM-DD)") }
+                OutlinedSelectionField(
+                    label = if (isArabic) "موعد المتابعة" else "Follow-up date",
+                    value = followUpDate.ifBlank { if (isArabic) "اختياري" else "Optional" },
+                    onClick = { showFollowUpDatePicker = true }
                 )
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             }
@@ -507,4 +506,111 @@ private fun VisitFormDialog(
         },
         dismissButton = { }
     )
+
+    if (showVisitDatePicker) {
+        val initialDateMillis = runCatching {
+            LocalDate.parse(date).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        }.getOrNull()
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = initialDateMillis
+        )
+        DatePickerDialog(
+            onDismissRequest = { showVisitDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { selectedDateMillis ->
+                        date = Instant.ofEpochMilli(selectedDateMillis)
+                            .atZone(ZoneOffset.UTC)
+                            .toLocalDate()
+                            .toString()
+                        error = null
+                    }
+                    showVisitDatePicker = false
+                }) { Text(if (isArabic) "تأكيد" else "Confirm") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showVisitDatePicker = false }) {
+                    Text(if (isArabic) "إلغاء" else "Cancel")
+                }
+            },
+            containerColor = AppDialogContainerColor()
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showFollowUpDatePicker) {
+        val initialFollowUpMillis = runCatching {
+            if (followUpDate.isBlank()) null
+            else LocalDate.parse(followUpDate).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        }.getOrNull()
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = initialFollowUpMillis
+                ?: LocalDate.now(ZoneOffset.UTC).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        )
+        DatePickerDialog(
+            onDismissRequest = { showFollowUpDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { selectedDateMillis ->
+                        followUpDate = Instant.ofEpochMilli(selectedDateMillis)
+                            .atZone(ZoneOffset.UTC)
+                            .toLocalDate()
+                            .toString()
+                        error = null
+                    }
+                    showFollowUpDatePicker = false
+                }) { Text(if (isArabic) "تأكيد" else "Confirm") }
+            },
+            dismissButton = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = {
+                        followUpDate = ""
+                        error = null
+                        showFollowUpDatePicker = false
+                    }) { Text(if (isArabic) "مسح" else "Clear") }
+                    TextButton(onClick = { showFollowUpDatePicker = false }) {
+                        Text(if (isArabic) "إلغاء" else "Cancel")
+                    }
+                }
+            },
+            containerColor = AppDialogContainerColor()
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showVisitTimePicker) {
+        val timeParts = time.split(":")
+        val initialHour = timeParts.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 23) ?: 9
+        val initialMinute = timeParts.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 59) ?: 0
+        val timePickerState = rememberTimePickerState(
+            initialHour = initialHour,
+            initialMinute = initialMinute,
+            is24Hour = false
+        )
+        AlertDialog(
+            onDismissRequest = { showVisitTimePicker = false },
+            containerColor = AppDialogContainerColor(),
+            title = { Text(if (isArabic) "اختيار الوقت" else "Choose time") },
+            text = { TimePicker(state = timePickerState) },
+            confirmButton = {
+                TextButton(onClick = {
+                    time = String.format(
+                        Locale.US,
+                        "%02d:%02d",
+                        timePickerState.hour,
+                        timePickerState.minute
+                    )
+                    error = null
+                    showVisitTimePicker = false
+                }) { Text(if (isArabic) "تأكيد" else "Confirm") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showVisitTimePicker = false }) {
+                    Text(if (isArabic) "إلغاء" else "Cancel")
+                }
+            }
+        )
+    }
 }

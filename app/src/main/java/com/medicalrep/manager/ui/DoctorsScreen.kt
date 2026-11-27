@@ -684,6 +684,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             }
             TopFadeOverlay(alpha = fadeAlpha, modifier = Modifier.align(Alignment.TopStart).padding(top = searchControlHeight + 8.dp).zIndex(1f))
         }
+        }
     }
     if (areaMenu) {
         AppSelectionPickerSheet(

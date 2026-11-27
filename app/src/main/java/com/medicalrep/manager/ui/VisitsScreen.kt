@@ -87,6 +87,7 @@ import java.util.Date
 import java.util.Locale
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
@@ -533,7 +534,7 @@ private fun VisitFormDialog(
                     Text(if (isArabic) "إلغاء" else "Cancel")
                 }
             },
-            containerColor = AppDialogContainerColor()
+            colors = DatePickerDefaults.colors(containerColor = AppDialogContainerColor())
         ) {
             DatePicker(state = datePickerState)
         }
@@ -574,7 +575,7 @@ private fun VisitFormDialog(
                     }
                 }
             },
-            containerColor = AppDialogContainerColor()
+            colors = DatePickerDefaults.colors(containerColor = AppDialogContainerColor())
         ) {
             DatePicker(state = datePickerState)
         }

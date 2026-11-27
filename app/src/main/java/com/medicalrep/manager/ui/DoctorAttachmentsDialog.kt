@@ -47,6 +47,7 @@ import androidx.core.content.FileProvider
 import com.medicalrep.manager.data.DoctorAttachmentEntity
 import com.medicalrep.manager.data.DoctorEntity
 import com.medicalrep.manager.data.MedicalRepDatabase
+import com.medicalrep.manager.util.ImageCompression
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -83,19 +84,27 @@ fun DoctorAttachmentsDialog(
                             if (cursor.moveToFirst() && nameIndex >= 0) cursor.getString(nameIndex) else null
                         } ?: "attachment"
                         val directory = File(context.filesDir, "doctor_attachments").apply { mkdirs() }
-                        val safeExtension = displayName.substringAfterLast('.', "").takeIf { it.isNotBlank() }
-                        val fileName = UUID.randomUUID().toString() + (safeExtension?.let { ".$it" } ?: "")
-                        val destination = File(directory, fileName)
-                        val input = resolver.openInputStream(uri) ?: error("Unable to read selected file")
-                        input.use { source -> destination.outputStream().use { output -> source.copyTo(output) } }
-                        dao.insert(
-                            DoctorAttachmentEntity(
+                        val isImage = mimeType.startsWith("image/", ignoreCase = true)
+                        val extension = displayName.substringAfterLast('.', "").takeIf { it.isNotBlank() }
+                        val destination = if (isImage) File(directory, "${UUID.randomUUID()}.jpg")
+                            else File(directory, UUID.randomUUID().toString() + (extension?.let { ".$it" } ?: ""))
+                        try {
+                            val storedMimeType = if (isImage && ImageCompression.compressUriToJpeg(context, uri, destination, 2000, 85)) {
+                                "image/jpeg"
+                            } else {
+                                ImageCompression.copyUriToFile(context, uri, destination)
+                                mimeType
+                            }
+                            dao.insert(DoctorAttachmentEntity(
                                 doctorId = doctor.id,
-                                displayName = displayName,
-                                mimeType = mimeType,
+                                displayName = if (storedMimeType == "image/jpeg") displayName.substringBeforeLast('.', displayName) + ".jpg" else displayName,
+                                mimeType = storedMimeType,
                                 localPath = destination.absolutePath
-                            )
-                        )
+                            ))
+                        } catch (error: Exception) {
+                            destination.delete()
+                            throw error
+                        }
                     }
                 } catch (exception: Exception) {
                     errorMessage = exception.localizedMessage ?: if (isArabic) "تعذر حفظ الملف" else "Could not save file"

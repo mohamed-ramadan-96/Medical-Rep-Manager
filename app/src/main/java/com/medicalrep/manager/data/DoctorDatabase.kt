@@ -270,8 +270,14 @@ interface DoctorAttachmentDao {
     @Query("SELECT * FROM doctor_attachments WHERE doctorId = :doctorId")
     suspend fun getForDoctor(doctorId: Long): List<DoctorAttachmentEntity>
 
+    @Query("SELECT * FROM doctor_attachments")
+    suspend fun getAll(): List<DoctorAttachmentEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(attachment: DoctorAttachmentEntity): Long
+
+    @Update
+    suspend fun update(attachment: DoctorAttachmentEntity)
 
     @Delete
     suspend fun delete(attachment: DoctorAttachmentEntity)
@@ -285,8 +291,14 @@ interface CenterAttachmentDao {
     @Query("SELECT * FROM center_attachments WHERE centerId = :centerId")
     suspend fun getForCenter(centerId: Long): List<CenterAttachmentEntity>
 
+    @Query("SELECT * FROM center_attachments")
+    suspend fun getAll(): List<CenterAttachmentEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(attachment: CenterAttachmentEntity): Long
+
+    @Update
+    suspend fun update(attachment: CenterAttachmentEntity)
 
     @Delete
     suspend fun delete(attachment: CenterAttachmentEntity)

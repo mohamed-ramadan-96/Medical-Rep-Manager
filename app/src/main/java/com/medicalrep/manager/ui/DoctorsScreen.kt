@@ -195,7 +195,7 @@ private fun DoctorFormBaseBottomSheet(
     }
 }
 @Composable
-private fun FormExpandableSection(
+internal fun FormExpandableSection(
     title: String,
     expanded: Boolean,
     onToggle: () -> Unit,

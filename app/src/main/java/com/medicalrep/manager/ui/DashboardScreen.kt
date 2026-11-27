@@ -74,6 +74,12 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
+private data class DashboardBackupResult(
+    val title: String,
+    val message: String,
+    val refreshAfterAcknowledge: Boolean = false
+)
+
 @Composable
 fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
     val context = LocalContext.current
@@ -85,6 +91,9 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
     var exportMenuExpanded by remember { mutableStateOf(false) }
     var importMenuExpanded by remember { mutableStateOf(false) }
     var pendingRestoreUri by remember { mutableStateOf<Uri?>(null) }
+    var localBackupBusy by remember { mutableStateOf(false) }
+    var localBackupBusyTitle by remember { mutableStateOf("") }
+    var localBackupResult by remember { mutableStateOf<DashboardBackupResult?>(null) }
     var showExcelExportConfirmation by remember { mutableStateOf(false) }
     var showExcelImportConfirmation by remember { mutableStateOf(false) }
 
@@ -104,6 +113,8 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
         ActivityResultContracts.CreateDocument("application/zip")
     ) { uri ->
         if (uri != null) scope.launch {
+            localBackupBusy = true
+            localBackupBusyTitle = if (isArabic) "جارٍ إنشاء ملف النسخة الكاملة..." else "Creating full backup file..."
             try {
                 withContext(Dispatchers.IO) {
                     val backup = DriveBackupEngine.createLocalBackup(context)
@@ -113,10 +124,20 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                         } ?: error("Unable to open selected destination")
                     } finally { backup.delete() }
                 }
-                Toast.makeText(context, if (isArabic) "تم تصدير النسخة الكاملة بنجاح" else "Full app backup exported", Toast.LENGTH_LONG).show()
+                localBackupResult = DashboardBackupResult(
+                    title = if (isArabic) "تم تصدير النسخة بنجاح" else "Backup exported successfully",
+                    message = if (isArabic)
+                        "تم حفظ ملف النسخة الكاملة في المكان الذي اخترته.\n\nتتضمن النسخة: الأطباء، المراكز، التخصصات، جداول الإتاحة والمواعيد، الزيارات، الصور والمرفقات."
+                    else
+                        "The full backup file was saved to the location you selected.\n\nIt includes doctors, centers, specialties, availability schedules, appointments, visits, photos and attachments."
+                )
             } catch (error: Exception) {
-                Toast.makeText(context, (if (isArabic) "فشل تصدير النسخة: " else "Backup export failed: ") + (error.localizedMessage ?: ""), Toast.LENGTH_LONG).show()
-            }
+                localBackupResult = DashboardBackupResult(
+                    title = if (isArabic) "فشل تصدير النسخة" else "Backup export failed",
+                    message = (if (isArabic) "تعذر إنشاء ملف النسخة أو حفظه.\nالسبب: " else "The backup file could not be created or saved.\nReason: ") +
+                        (error.localizedMessage ?: error.javaClass.simpleName)
+                )
+            } finally { localBackupBusy = false }
         }
     }
     val fullBackupImportLauncher = rememberLauncherForActivityResult(
@@ -191,7 +212,8 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
 
     pendingRestoreUri?.let { selectedUri ->
         androidx.compose.material3.AlertDialog(
-        containerColor = AppDialogContainerColor(),
+            containerColor = AppDialogContainerColor(),
+            shape = RoundedCornerShape(10.dp),
             onDismissRequest = { pendingRestoreUri = null },
             title = { Text(if (isArabic) "استعادة النسخة الكاملة؟" else "Restore full backup?") },
             text = {
@@ -202,6 +224,8 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = {
                     pendingRestoreUri = null
+                    localBackupBusy = true
+                    localBackupBusyTitle = if (isArabic) "جارٍ استعادة النسخة..." else "Restoring backup..."
                     scope.launch {
                         try {
                             withContext(Dispatchers.IO) {
@@ -213,11 +237,29 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                                     DriveBackupEngine.restoreFromLocalFile(context, archive)
                                 } finally { archive.delete() }
                             }
-                            Toast.makeText(context, if (isArabic) "تمت استعادة النسخة الكاملة." else "Full backup restored.", Toast.LENGTH_LONG).show()
-                            findDashboardActivity(context)?.recreate()
+                            localBackupResult = DashboardBackupResult(
+                                title = if (isArabic) "تمت استعادة النسخة بنجاح" else "Backup restored successfully",
+                                message = if (isArabic)
+                                    "تمت استعادة بيانات النسخة الكاملة، وتشمل:\n• الأطباء والمراكز\n• التخصصات وجداول الإتاحة والمواعيد\n• الزيارات\n• صور الأطباء ومرفقات الأطباء والمراكز\n\nاضغط موافق لتحديث التطبيق."
+                                else
+                                    "The full backup was restored, including:\n• Doctors and centers\n• Specialties, availability schedules and appointments\n• Visits\n• Doctor photos and doctor/center attachments\n\nPress OK to refresh the app.",
+                                refreshAfterAcknowledge = true
+                            )
                         } catch (error: Exception) {
-                            Toast.makeText(context, (if (isArabic) "فشلت استعادة النسخة: " else "Restore failed: ") + (error.localizedMessage ?: ""), Toast.LENGTH_LONG).show()
-                        }
+                            val reason = error.localizedMessage ?: error.javaClass.simpleName
+                            val rollbackIncomplete = reason.startsWith("Restore failed and rollback was incomplete:")
+                            localBackupResult = DashboardBackupResult(
+                                title = if (isArabic) "فشلت استعادة النسخة" else "Backup restore failed",
+                                message = if (isArabic)
+                                    "تعذر استعادة النسخة.\nالسبب: $reason\n\n" + if (rollbackIncomplete)
+                                        "تعذر تأكيد اكتمال التراجع عن الاستعادة. تم الاحتفاظ بملفات الاسترداد داخل ذاكرة التطبيق."
+                                    else "تم الاحتفاظ ببياناتك الحالية؛ لم تكتمل الاستعادة وتم التراجع عن التغييرات."
+                                else
+                                    "The backup could not be restored.\nReason: $reason\n\n" + if (rollbackIncomplete)
+                                        "The rollback could not be fully confirmed. Recovery files were preserved in the app cache."
+                                    else "Your existing data was kept; the restore did not complete and its changes were rolled back."
+                            )
+                        } finally { localBackupBusy = false }
                     }
                 }) { Text(if (isArabic) "استعادة واستبدال البيانات" else "Restore and replace") }
             },
@@ -225,6 +267,39 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                 androidx.compose.material3.TextButton(onClick = { pendingRestoreUri = null }) {
                     Text(if (isArabic) "إلغاء" else "Cancel")
                 }
+            }
+        )
+    }
+
+    if (localBackupBusy) {
+        androidx.compose.material3.AlertDialog(
+            containerColor = AppDialogContainerColor(),
+            shape = RoundedCornerShape(10.dp),
+            onDismissRequest = {},
+            title = { Text(localBackupBusyTitle) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    Text(if (isArabic) "من فضلك انتظر حتى تنتهي العملية. لا تغلق التطبيق." else "Please wait for the operation to finish. Do not close the app.")
+                }
+            },
+            confirmButton = {}
+        )
+    }
+
+    if (!localBackupBusy) localBackupResult?.let { result ->
+        androidx.compose.material3.AlertDialog(
+            containerColor = AppDialogContainerColor(),
+            shape = RoundedCornerShape(10.dp),
+            onDismissRequest = {},
+            title = { Text(result.title) },
+            text = { Text(result.message) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    val refresh = result.refreshAfterAcknowledge
+                    localBackupResult = null
+                    if (refresh) findDashboardActivity(context)?.recreate()
+                }) { Text(if (isArabic) "موافق" else "OK") }
             }
         )
     }
@@ -300,7 +375,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.md), modifier = Modifier.fillMaxWidth()) {
                 Box(modifier = Modifier.weight(1f)) {
-                    Button(onClick = { exportMenuExpanded = true }, modifier = Modifier.fillMaxWidth()) {
+                    Button(onClick = { exportMenuExpanded = true }, enabled = !localBackupBusy, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.FileUpload, contentDescription = null)
                         Text(if (isArabic) "تصدير" else "Export", modifier = Modifier.padding(start = 4.dp))
                     }
@@ -325,7 +400,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                     }
                 }
                 Box(modifier = Modifier.weight(1f)) {
-                    Button(onClick = { importMenuExpanded = true }, modifier = Modifier.fillMaxWidth()) {
+                    Button(onClick = { importMenuExpanded = true }, enabled = !localBackupBusy, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.FileDownload, contentDescription = null)
                         Text(if (isArabic) "استيراد" else "Import", modifier = Modifier.padding(start = 4.dp))
                     }

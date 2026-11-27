@@ -57,7 +57,7 @@ fun OutlinedSelectionField(
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
         ) {
             Text(
-                text = "$label: $value",
+                text = if (value.isBlank()) label else "$label: $value",
                 modifier = Modifier.weight(1f),
                 color = MaterialTheme.colorScheme.onSurface
             )

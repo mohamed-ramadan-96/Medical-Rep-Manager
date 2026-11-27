@@ -94,6 +94,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -144,6 +145,7 @@ import com.medicalrep.manager.domain.ContactPhoneRules
 import com.medicalrep.manager.data.MedicalCenterEntity
 import com.medicalrep.manager.data.MedicalRepDatabase
 import com.medicalrep.manager.data.SpecialtyEntity
+import com.medicalrep.manager.util.ImageCompression
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -1617,6 +1619,9 @@ private fun DoctorFormDialog(
     onSave: (DoctorEntity, Set<Long>, List<DoctorAvailabilityEntity>) -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var photoCompressing by remember { mutableStateOf(false) }
+    var photoError by remember { mutableStateOf<String?>(null) }
     var name by remember(initial) { mutableStateOf(initial?.name.orEmpty()) }
     var selectedSpecialtyId by remember(initial, specialties) { mutableStateOf(initial?.specialtyId ?: specialties.firstOrNull { it.name == initial?.specialty }?.id) }
     var showSpecialtyPicker by remember { mutableStateOf(false) }
@@ -1667,17 +1672,38 @@ private fun DoctorFormDialog(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         if (uri != null) {
-            try {
-                context.contentResolver.takePersistableUriPermission(
-                    uri,
-                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-            } catch (_: SecurityException) {
-                // Some picker providers grant temporary access only; keep the returned URI.
-            } catch (_: IllegalArgumentException) {
-                // Provider does not support persistable grants.
+            scope.launch {
+                photoCompressing = true
+                photoError = null
+                try {
+                    val compressedFile = withContext(Dispatchers.IO) {
+                        val directory = File(context.filesDir, "doctor_photos").apply { mkdirs() }
+                        val output = File(directory, "doctor_${UUID.randomUUID()}.jpg")
+                        if (ImageCompression.compressUriToJpeg(context, uri, output, 1000, 80)) output
+                        else { output.delete(); null }
+                    }
+                    if (compressedFile != null) {
+                        photoUri = Uri.fromFile(compressedFile).toString()
+                    } else {
+                        try {
+                            context.contentResolver.takePersistableUriPermission(
+                                uri,
+                                android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            )
+                        } catch (_: SecurityException) {
+                        } catch (_: IllegalArgumentException) {
+                        }
+                        photoUri = uri.toString()
+                        photoError = if (isArabic) {
+                            "تعذر ضغط الصورة؛ تم الاحتفاظ بالصورة الأصلية."
+                        } else {
+                            "Could not compress the photo; the original was kept."
+                        }
+                    }
+                } finally {
+                    photoCompressing = false
+                }
             }
-            photoUri = uri.toString()
         }
     }
 
@@ -1715,14 +1741,27 @@ private fun DoctorFormDialog(
                                 onClick = {
                                     photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                                 },
+                                enabled = !photoCompressing,
                                 shape = RoundedCornerShape(10.dp)
                             ) {
                                 Text(if (isArabic) "اختيار صورة" else "Choose photo")
                             }
                             if (!photoUri.isNullOrBlank()) {
-                                TextButton(onClick = { photoUri = null }) {
+                                TextButton(onClick = { photoUri = null }, enabled = !photoCompressing) {
                                     Text(if (isArabic) "إزالة الصورة" else "Remove photo")
                                 }
+                            }
+                            if (photoCompressing) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                                    Text(if (isArabic) "جارٍ ضغط الصورة..." else "Compressing photo...")
+                                }
+                            }
+                            photoError?.let {
+                                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }
@@ -2132,6 +2171,7 @@ private fun DoctorFormDialog(
                     ) }
                 }
             },
+                enabled = !photoCompressing,
                 modifier = Modifier.height(48.dp),
                 shape = RoundedCornerShape(10.dp)
             ) { Text(if (isArabic) "حفظ" else "Save") }

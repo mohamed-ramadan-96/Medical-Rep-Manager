@@ -1,6 +1,8 @@
 package com.medicalrep.manager.ui
 
 import android.content.ActivityNotFoundException
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.drawWithContent
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
@@ -564,24 +566,13 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 }
         }
         val searchControlHeight by animateDpAsState(if (searchHeaderExpanded) 60.dp else 44.dp, tween(AppMotion.Emphasized), label = "searchControlHeight")
-        val fadeStartOffset = with(LocalDensity.current) { 48.dp.roundToPx() }
-        val visibleFadeItems = listState.layoutInfo.visibleItemsInfo
-        val fadeScrollOffset = if (visibleFadeItems.isEmpty()) {
-            0
-        } else {
-            visibleFadeItems.firstOrNull { it.index == 0 }
-                ?.let { -it.offset }
-                ?: fadeStartOffset
-        }
-        val fadeTarget = (fadeScrollOffset.toFloat() / fadeStartOffset).coerceIn(0f, 1f)
-        val fadeAlpha by animateFloatAsState(
-            targetValue = fadeTarget,
-            animationSpec = tween(AppMotion.Emphasized),
-            label = "doctorsFadeAlpha"
-        )
         Column(modifier = Modifier.fillMaxSize().padding(inner)) {
             Box(Modifier.fillMaxSize().clipToBounds()) {
-            LazyColumn(state = listState, modifier = Modifier.fillMaxSize().clipToBounds(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
+            LazyColumn(state = listState, modifier = Modifier.fillMaxSize().clipToBounds().topFadeBehindStickyHeader(
+                listState = listState,
+                backgroundColor = MaterialTheme.colorScheme.background,
+                fadeStartOffsetPx = with(LocalDensity.current) { 48.dp.toPx() }
+            ), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
                 item {
                     Row(Modifier.fillMaxWidth().padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(if (isArabic) "إدارة الأطباء" else "Doctors", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
@@ -682,7 +673,6 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     )
                 }
             }
-            TopFadeOverlay(alpha = fadeAlpha, modifier = Modifier.align(Alignment.TopStart).padding(top = searchControlHeight + 8.dp).zIndex(1f))
         }
         }
     }

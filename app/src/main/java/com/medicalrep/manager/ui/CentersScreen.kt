@@ -1,6 +1,8 @@
 package com.medicalrep.manager.ui
 
 import com.medicalrep.manager.ui.theme.AppSpacing
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.drawWithContent
 import com.medicalrep.manager.ui.theme.AppDialogContainerColor
 import com.medicalrep.manager.ui.theme.AppCardContainerColor
 import com.medicalrep.manager.ui.theme.AppSelectionRowColor
@@ -266,21 +268,6 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val centerHeaderHeight by animateDpAsState(if (centerHeaderExpanded) 76.dp else 48.dp, animationSpec = tween(AppMotion.Emphasized), label = "centersHeaderHeight")
     val centerSearchHeight by animateDpAsState(if (centerHeaderExpanded) 60.dp else 44.dp, animationSpec = tween(AppMotion.Emphasized), label = "centersSearchHeight")
 
-        val fadeStartOffset = with(LocalDensity.current) { 48.dp.roundToPx() }
-    val visibleFadeItems = centerListState.layoutInfo.visibleItemsInfo
-    val fadeScrollOffset = if (visibleFadeItems.isEmpty()) {
-        0
-    } else {
-        visibleFadeItems.firstOrNull { it.index == 0 }
-            ?.let { -it.offset }
-            ?: fadeStartOffset
-    }
-    val fadeTarget = (fadeScrollOffset.toFloat() / fadeStartOffset).coerceIn(0f, 1f)
-    val fadeAlpha by animateFloatAsState(
-        targetValue = fadeTarget,
-        animationSpec = tween(AppMotion.Emphasized),
-        label = "centersFadeAlpha"
-    )
     Scaffold(
         modifier = Modifier.padding(padding),
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
@@ -293,7 +280,11 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
         Box(Modifier.fillMaxSize().padding(inner).clipToBounds()) {
         LazyColumn(
             state = centerListState,
-            modifier = Modifier.fillMaxSize().clipToBounds(),
+            modifier = Modifier.fillMaxSize().clipToBounds().topFadeBehindStickyHeader(
+                listState = centerListState,
+                backgroundColor = MaterialTheme.colorScheme.background,
+                fadeStartOffsetPx = with(LocalDensity.current) { 48.dp.toPx() }
+            ),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
         ) {
@@ -489,7 +480,6 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                         }
                     }
         }
-            TopFadeOverlay(alpha = fadeAlpha, modifier = Modifier.align(Alignment.TopStart).padding(top = centerSearchHeight + 8.dp).zIndex(1f))
         }
     }
 

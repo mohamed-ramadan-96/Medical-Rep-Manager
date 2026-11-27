@@ -32,8 +32,6 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.clickable
@@ -345,20 +343,12 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                         Box(Modifier.width(filterWidth).height(controlHeight).clipToBounds()) {
                             if (centerHeaderExpanded) {
                                 CenterFilterActionButton(
-                                    onClick = { showAreaFilter = !showAreaFilter },
+                                    onClick = { showAreaFilter = true },
                                     modifier = Modifier.alpha(filterAlpha)
                                 )
                             }
                         }
-                        DropdownMenu(expanded = showAreaFilter, onDismissRequest = { showAreaFilter = false }) {
-                            DropdownMenuItem(
-                                text = { Text(if (isArabic) "كل المناطق" else "All areas") },
-                                onClick = { selectedArea = "all"; showAreaFilter = false }
-                            )
-                            centerAreas.forEach { areaOption ->
-                                DropdownMenuItem(text = { Text(areaOption) }, onClick = { selectedArea = areaOption; showAreaFilter = false })
-                            }
-                        }
+
                     }
                 }
             }
@@ -506,6 +496,19 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                         }
                     }
         }
+    }
+
+    if (showAreaFilter) {
+        AppSelectionPickerSheet(
+            title = if (isArabic) "اختيار المنطقة" else "Choose area",
+            allOptionLabel = if (isArabic) "كل المناطق" else "All areas",
+            allOptionValue = "all",
+            options = centerAreas.map { it to it },
+            searchPlaceholder = if (isArabic) "ابحث عن منطقة..." else "Search areas...",
+            noResultsLabel = if (isArabic) "لا توجد نتائج" else "No results",
+            onDismiss = { showAreaFilter = false },
+            onSelect = { selectedArea = it; showAreaFilter = false }
+        )
     }
 
     if (showForm) {

@@ -13,6 +13,9 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
@@ -21,6 +24,8 @@ import com.medicalrep.manager.ui.handleMapShareIntent
 import com.medicalrep.manager.ui.theme.MedicalRepTheme
 
 class MainActivity : ComponentActivity() {
+    private var themeMode by mutableStateOf("system")
+
     private val updateDownloadReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action != DownloadManager.ACTION_DOWNLOAD_COMPLETE) return
@@ -42,10 +47,19 @@ class MainActivity : ComponentActivity() {
             ContextCompat.RECEIVER_EXPORTED
         )
         handleMapShareIntent(intent)
+        themeMode = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+            .getString("theme_mode", "system") ?: "system"
         setContent {
-            MedicalRepTheme {
+            MedicalRepTheme(themeMode = themeMode) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    MedicalRepApp()
+                    MedicalRepApp(
+                        themeMode = themeMode,
+                        onThemeModeChange = { selectedMode ->
+                            themeMode = selectedMode
+                            getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+                                .edit().putString("theme_mode", selectedMode).apply()
+                        }
+                    )
                 }
             }
         }

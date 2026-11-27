@@ -88,10 +88,15 @@ private val AppShapes = Shapes(
 
 @Composable
 fun MedicalRepTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: String = "system",
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
+    val darkTheme = when (themeMode) {
+        "light" -> false
+        "dark" -> true
+        else -> isSystemInDarkTheme()
+    }
     val context = LocalContext.current
     val view = LocalView.current
     val baseColors = when {

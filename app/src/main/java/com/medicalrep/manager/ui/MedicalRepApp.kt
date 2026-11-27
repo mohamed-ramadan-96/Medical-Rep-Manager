@@ -22,6 +22,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -43,6 +47,9 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.LocalHospital
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.outlined.PeopleAlt
 import androidx.compose.material3.Card
 import androidx.compose.material3.AlertDialog
@@ -55,7 +62,12 @@ import com.medicalrep.manager.downloadAppUpdate
 import com.medicalrep.manager.getAppUpdateDownloadProgress
 import com.medicalrep.manager.AppUpdateDownloadProgress
 import android.app.DownloadManager
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
+import com.medicalrep.manager.BuildConfig
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -69,6 +81,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -192,11 +205,17 @@ private fun AnimatedNavigationIcon(name: String, animationKey: Int) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MedicalRepApp() {
+fun MedicalRepApp(
+    themeMode: String,
+    onThemeModeChange: (String) -> Unit
+) {
     val context = LocalContext.current
     var availableUpdate by remember { mutableStateOf<AppUpdateInfo?>(null) }
     var updateDownloadId by rememberSaveable { mutableStateOf<Long?>(null) }
     var updateDownloadProgress by remember { mutableStateOf<AppUpdateDownloadProgress?>(null) }
+    var showSettings by rememberSaveable { mutableStateOf(false) }
+    var isCheckingUpdate by remember { mutableStateOf(false) }
+    val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
 
     LaunchedEffect(updateDownloadId) {
         val downloadId = updateDownloadId ?: return@LaunchedEffect
@@ -234,32 +253,47 @@ fun MedicalRepApp() {
         Scaffold(
             topBar = {
                 TopAppBar(
+                    navigationIcon = {
+                        if (showSettings) {
+                            IconButton(onClick = { showSettings = false }) {
+                                Icon(Icons.Outlined.ArrowBack, contentDescription = if (isArabic) "رجوع" else "Back")
+                            }
+                        }
+                    },
                     title = {
                         Column {
                             Text(
-                                if (isArabic) "مدير المندوب الطبي" else "Medical Rep Manager",
+                                if (showSettings) (if (isArabic) "الإعدادات" else "Settings")
+                                else if (isArabic) "مدير المندوب الطبي" else "Medical Rep Manager",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold
                             )
-                            Text(
-                                if (isArabic) "دليل بيانات الأطباء ومواعيدهم" else "Doctor directory and availability",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            if (!showSettings) {
+                                Text(
+                                    if (isArabic) "دليل بيانات الأطباء ومواعيدهم" else "Doctor directory and availability",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     },
                     actions = {
-                        IconButton(onClick = {
-                            language = if (isArabic) AppLanguage.English else AppLanguage.Arabic
-                            preferences.edit().putBoolean("arabic_language", language == AppLanguage.Arabic).apply()
-                        }) {
-                            Icon(Icons.Filled.Language, contentDescription = "Change language")
+                        if (!showSettings) {
+                            IconButton(onClick = {
+                                language = if (isArabic) AppLanguage.English else AppLanguage.Arabic
+                                preferences.edit().putBoolean("arabic_language", language == AppLanguage.Arabic).apply()
+                            }) {
+                                Icon(Icons.Filled.Language, contentDescription = "Change language")
+                            }
+                            IconButton(onClick = { showSettings = true }) {
+                                Icon(Icons.Outlined.Settings, contentDescription = if (isArabic) "الإعدادات" else "Settings")
+                            }
                         }
                     }
                 )
             },
             bottomBar = {
-                NavigationBar(containerColor = MaterialTheme.colorScheme.background, tonalElevation = 0.dp) {
+                if (!showSettings) NavigationBar(containerColor = MaterialTheme.colorScheme.background, tonalElevation = 0.dp) {
                     tabs.forEachIndexed { index, tab ->
                         NavigationBarItem(
                             selected = selectedTab == index,
@@ -291,6 +325,32 @@ fun MedicalRepApp() {
                 }
             }
         ) { innerPadding ->
+            if (showSettings) {
+                SettingsScreen(
+                    isArabic = isArabic,
+                    themeMode = themeMode,
+                    onThemeModeChange = onThemeModeChange,
+                    isCheckingUpdate = isCheckingUpdate,
+                    onCheckForUpdate = {
+                        if (!isCheckingUpdate) {
+                            coroutineScope.launch {
+                                isCheckingUpdate = true
+                                val update = checkForAppUpdate(context)
+                                isCheckingUpdate = false
+                                if (update != null) {
+                                    availableUpdate = update
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        if (isArabic) "لا يوجد تحديث متاح أو تعذر الاتصال بالإنترنت" else "No update available or unable to connect",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            }
+                        }
+                    }
+                )
+            } else {
             AnimatedContent(
                 targetState = selectedTab,
                 label = "main_tab_transition",
@@ -318,6 +378,7 @@ fun MedicalRepApp() {
                     4 -> FollowUpScreen(isArabic = isArabic, padding = innerPadding)
                     else -> DashboardScreen(isArabic, innerPadding)
                 }
+            }
             }
         }
         availableUpdate?.let { update ->
@@ -427,6 +488,102 @@ fun MedicalRepApp() {
                 }
             )
         }
+    }
+}
+
+
+@Composable
+private fun SettingsScreen(
+    isArabic: Boolean,
+    themeMode: String,
+    onThemeModeChange: (String) -> Unit,
+    isCheckingUpdate: Boolean,
+    onCheckForUpdate: () -> Unit
+) {
+    val context = LocalContext.current
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(if (isArabic) "المظهر" else "Appearance", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(10.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(
+                    "light" to (if (isArabic) "فاتح" else "Light"),
+                    "dark" to (if (isArabic) "داكن" else "Dark"),
+                    "system" to (if (isArabic) "تلقائي" else "System")
+                ).forEach { (mode, label) ->
+                    FilterChip(
+                        selected = themeMode == mode,
+                        onClick = { onThemeModeChange(mode) },
+                        label = { Text(label) },
+                        modifier = Modifier.fillMaxWidth().height(48.dp)
+                    )
+                }
+            }
+        }
+        Text(if (isArabic) "تواصل معنا" else "Contact us", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        OutlinedButton(
+            onClick = {
+                try {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/MRMEASY")))
+                } catch (_: Exception) {
+                    Toast.makeText(context, if (isArabic) "تعذر فتح الرابط" else "Unable to open link", Toast.LENGTH_SHORT).show()
+                }
+            },
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(10.dp)
+        ) {
+            Icon(Icons.Filled.Send, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(if (isArabic) "مجموعة تيليجرام" else "Telegram group")
+        }
+        OutlinedButton(
+            onClick = {
+                try {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/+s4NJGuWNsgU2NjU0")))
+                } catch (_: Exception) {
+                    Toast.makeText(context, if (isArabic) "تعذر فتح الرابط" else "Unable to open link", Toast.LENGTH_SHORT).show()
+                }
+            },
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(10.dp)
+        ) {
+            Icon(Icons.Filled.Send, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(if (isArabic) "شات تيليجرام" else "Telegram chat")
+        }
+        Text(if (isArabic) "التحديثات" else "Updates", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        OutlinedButton(
+            onClick = onCheckForUpdate,
+            enabled = !isCheckingUpdate,
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(10.dp)
+        ) {
+            Text(
+                when {
+                    isCheckingUpdate && isArabic -> "جارٍ البحث عن تحديث..."
+                    isCheckingUpdate -> "Checking for updates..."
+                    isArabic -> "البحث عن تحديث"
+                    else -> "Check for updates"
+                }
+            )
+        }
+        Spacer(Modifier.height(12.dp))
+        Text(
+            if (isArabic) "الإصدار ${BuildConfig.VERSION_NAME}" else "Version ${BuildConfig.VERSION_NAME}",
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

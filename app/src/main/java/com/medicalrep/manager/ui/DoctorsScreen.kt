@@ -82,8 +82,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -522,24 +520,15 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                                 Column(Modifier.weight(1f)) {
                                     OutlinedSelectionField(label = if (isArabic) "المنطقة" else "Area", value = if (selectedArea == "all") { if (isArabic) "كل المناطق" else "All areas" } else selectedArea, onClick = { areaMenu = true })
-                                    DropdownMenu(expanded = areaMenu, onDismissRequest = { areaMenu = false }) {
-                                        DropdownMenuItem(text = { Text(if (isArabic) "كل المناطق" else "All areas") }, onClick = { selectedArea = "all"; areaMenu = false })
-                                        availableAreas.forEach { area -> DropdownMenuItem(text = { Text(area) }, onClick = { selectedArea = area; areaMenu = false }) }
-                                    }
+
                                 }
                                 Column(Modifier.weight(1f)) {
                                     OutlinedSelectionField(label = if (isArabic) "التخصص" else "Specialty", value = if (selectedSpecialty == "all") { if (isArabic) "كل التخصصات" else "All specialties" } else selectedSpecialty, onClick = { specialtyMenu = true })
-                                    DropdownMenu(expanded = specialtyMenu, onDismissRequest = { specialtyMenu = false }) {
-                                        DropdownMenuItem(text = { Text(if (isArabic) "كل التخصصات" else "All specialties") }, onClick = { selectedSpecialty = "all"; specialtyMenu = false })
-                                        specialties.map { it.name }.plus(doctors.map { it.specialty }).filter { it.isNotBlank() }.distinct().sorted().forEach { name -> DropdownMenuItem(text = { Text(name) }, onClick = { selectedSpecialty = name; specialtyMenu = false }) }
-                                    }
+
                                 }
                             }
                             OutlinedSelectionField(label = if (isArabic) "المركز" else "Center", value = if (selectedCenter == "all") { if (isArabic) "كل المراكز" else "All centers" } else centers.firstOrNull { it.id.toString() == selectedCenter }?.name.orEmpty(), onClick = { centerMenu = true })
-                            DropdownMenu(expanded = centerMenu, onDismissRequest = { centerMenu = false }) {
-                                DropdownMenuItem(text = { Text(if (isArabic) "كل المراكز" else "All centers") }, onClick = { selectedCenter = "all"; centerMenu = false })
-                                centers.forEach { center -> DropdownMenuItem(text = { Text(center.name) }, onClick = { selectedCenter = center.id.toString(); centerMenu = false }) }
-                            }
+
                         }
                     }
                 }
@@ -549,6 +538,48 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 }
             }
         }    }
+    if (areaMenu) {
+        AppSelectionPickerSheet(
+            title = if (isArabic) "اختيار المنطقة" else "Choose area",
+            allOptionLabel = if (isArabic) "كل المناطق" else "All areas",
+            allOptionValue = "all",
+            options = availableAreas.map { it to it },
+            searchPlaceholder = if (isArabic) "ابحث عن منطقة..." else "Search areas...",
+            noResultsLabel = if (isArabic) "لا توجد نتائج" else "No results",
+            onDismiss = { areaMenu = false },
+            onSelect = { selectedArea = it; areaMenu = false }
+        )
+    }
+    if (specialtyMenu) {
+        AppSelectionPickerSheet(
+            title = if (isArabic) "اختيار التخصص" else "Choose specialty",
+            allOptionLabel = if (isArabic) "كل التخصصات" else "All specialties",
+            allOptionValue = "all",
+            options = specialties.map { it.name }
+                .plus(doctors.map { it.specialty })
+                .filter { it.isNotBlank() }
+                .distinct()
+                .sorted()
+                .map { it to it },
+            searchPlaceholder = if (isArabic) "ابحث عن تخصص..." else "Search specialties...",
+            noResultsLabel = if (isArabic) "لا توجد نتائج" else "No results",
+            onDismiss = { specialtyMenu = false },
+            onSelect = { selectedSpecialty = it; specialtyMenu = false }
+        )
+    }
+    if (centerMenu) {
+        AppSelectionPickerSheet(
+            title = if (isArabic) "اختيار المركز" else "Choose center",
+            allOptionLabel = if (isArabic) "كل المراكز" else "All centers",
+            allOptionValue = "all",
+            options = centers.map { it.id.toString() to it.name },
+            searchPlaceholder = if (isArabic) "ابحث عن مركز..." else "Search centers...",
+            noResultsLabel = if (isArabic) "لا توجد نتائج" else "No results",
+            onDismiss = { centerMenu = false },
+            onSelect = { selectedCenter = it; centerMenu = false }
+        )
+    }
+
     if (showForm) {
         DoctorFormDialog(
             isArabic = isArabic,

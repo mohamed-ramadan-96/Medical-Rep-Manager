@@ -235,11 +235,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
         Box(Modifier.fillMaxSize().padding(inner).clipToBounds()) {
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize().clipToBounds().topFadeBehindStickyHeader(
-                listState = listState,
-                backgroundColor = MaterialTheme.colorScheme.background,
-                fadeStartOffsetPx = with(LocalDensity.current) { 48.dp.toPx() }
-            ),
+            modifier = Modifier.fillMaxSize().clipToBounds(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
         ) {
@@ -260,7 +256,11 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
                 }
             }
             stickyHeader {
-            BoxWithConstraints(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(vertical = 4.dp)) {
+            BoxWithConstraints(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).topFadeBehindStickyHeader(
+                        listState = listState,
+                        backgroundColor = MaterialTheme.colorScheme.background,
+                        fadeStartOffsetPx = with(LocalDensity.current) { 48.dp.toPx() }
+                    ).padding(vertical = 4.dp)) {
                 val filterWidth by animateDpAsState(if (searchHeaderExpanded) 60.dp else 0.dp, tween(AppMotion.Emphasized), label = "scheduleFilterWidth")
                 val filterAlpha by animateFloatAsState(if (searchHeaderExpanded) 1f else 0f, tween(AppMotion.Fast), label = "scheduleFilterAlpha")
                 val searchWidth by animateDpAsState(if (searchHeaderExpanded) maxWidth - 68.dp else 44.dp, tween(AppMotion.Emphasized), label = "scheduleSearchWidth")

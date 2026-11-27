@@ -568,11 +568,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
         val searchControlHeight by animateDpAsState(if (searchHeaderExpanded) 60.dp else 44.dp, tween(AppMotion.Emphasized), label = "searchControlHeight")
         Column(modifier = Modifier.fillMaxSize().padding(inner)) {
             Box(Modifier.fillMaxSize().clipToBounds()) {
-            LazyColumn(state = listState, modifier = Modifier.fillMaxSize().clipToBounds().topFadeBehindStickyHeader(
-                listState = listState,
-                backgroundColor = MaterialTheme.colorScheme.background,
-                fadeStartOffsetPx = with(LocalDensity.current) { 48.dp.toPx() }
-            ), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
+            LazyColumn(state = listState, modifier = Modifier.fillMaxSize().clipToBounds(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
                 item {
                     Row(Modifier.fillMaxWidth().padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(if (isArabic) "إدارة الأطباء" else "Doctors", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
@@ -588,7 +584,11 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     }
                 }
                 stickyHeader {
-                    BoxWithConstraints(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(vertical = 4.dp)) {
+                    BoxWithConstraints(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).topFadeBehindStickyHeader(
+                        listState = listState,
+                        backgroundColor = MaterialTheme.colorScheme.background,
+                        fadeStartOffsetPx = with(LocalDensity.current) { 48.dp.toPx() }
+                    ).padding(vertical = 4.dp)) {
                         val filterWidth by animateDpAsState(if (searchHeaderExpanded) 60.dp else 0.dp, tween(AppMotion.Emphasized), label = "filterWidth")
                         val filterAlpha by animateFloatAsState(if (searchHeaderExpanded) 1f else 0f, tween(AppMotion.Fast), label = "filterAlpha")
                         val searchWidth by animateDpAsState(if (searchHeaderExpanded) maxWidth - 68.dp else 44.dp, tween(AppMotion.Emphasized), label = "searchWidth")

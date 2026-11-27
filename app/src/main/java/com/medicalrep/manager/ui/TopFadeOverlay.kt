@@ -10,8 +10,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 /**
- * Draws the fade in the LazyColumn's own drawing layer, immediately below its sticky search header.
- * Keeping it in the list layer makes it follow the same overscroll stretch as the header and cards.
+ * Draws below the sticky search header from inside the header's own list item.
+ * The fade therefore shares the header's z-order and the list's overscroll stretch.
  */
 internal fun Modifier.topFadeBehindStickyHeader(
     listState: LazyListState,
@@ -22,7 +22,7 @@ internal fun Modifier.topFadeBehindStickyHeader(
 
     val stickyHeader = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }
     if (stickyHeader != null) {
-        val fadeTop = (stickyHeader.offset + stickyHeader.size).toFloat()
+        val fadeTop = size.height
         val solidHeight = 16.dp.toPx()
         val fadeHeight = 72.dp.toPx()
         val fadeAlpha = ((fadeStartOffsetPx - stickyHeader.offset).toFloat() / fadeStartOffsetPx)
@@ -34,8 +34,6 @@ internal fun Modifier.topFadeBehindStickyHeader(
             topLeft = Offset(0f, fadeTop),
             size = Size(size.width, solidHeight)
         )
-        // The remaining band is a real transparent gradient, not a gradient painted over an
-        // opaque full-height rectangle.
         drawRect(
             brush = Brush.verticalGradient(
                 0f to backgroundColor.copy(alpha = fadeAlpha),

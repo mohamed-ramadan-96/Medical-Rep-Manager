@@ -280,11 +280,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
         Box(Modifier.fillMaxSize().padding(inner).clipToBounds()) {
         LazyColumn(
             state = centerListState,
-            modifier = Modifier.fillMaxSize().clipToBounds().topFadeBehindStickyHeader(
-                listState = centerListState,
-                backgroundColor = MaterialTheme.colorScheme.background,
-                fadeStartOffsetPx = with(LocalDensity.current) { 48.dp.toPx() }
-            ),
+            modifier = Modifier.fillMaxSize().clipToBounds(),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
         ) {
@@ -305,7 +301,11 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 }
             }
             stickyHeader {
-                BoxWithConstraints(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(top = 0.dp, bottom = 8.dp)) {
+                BoxWithConstraints(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).topFadeBehindStickyHeader(
+                        listState = centerListState,
+                        backgroundColor = MaterialTheme.colorScheme.background,
+                        fadeStartOffsetPx = with(LocalDensity.current) { 48.dp.toPx() }
+                    ).padding(top = 0.dp, bottom = 8.dp)) {
                     val filterWidth by animateDpAsState(if (centerHeaderExpanded) 60.dp else 0.dp, tween(AppMotion.Emphasized), label = "centerFilterWidth")
                     val filterAlpha by animateFloatAsState(if (centerHeaderExpanded) 1f else 0f, tween(AppMotion.Fast), label = "centerFilterAlpha")
                     val searchWidth by animateDpAsState(if (centerHeaderExpanded) maxWidth - 68.dp else 44.dp, tween(AppMotion.Emphasized), label = "centerSearchWidth")

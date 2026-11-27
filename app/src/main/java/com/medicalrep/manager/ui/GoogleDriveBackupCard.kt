@@ -51,8 +51,6 @@ import com.google.android.gms.common.api.Scope
 import com.medicalrep.manager.backup.DriveBackupEngine
 import com.medicalrep.manager.backup.DriveBackupItem
 import com.medicalrep.manager.backup.DriveBackupScheduler
-import com.medicalrep.manager.backup.ExistingImageCompression
-import com.medicalrep.manager.data.MedicalRepDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -71,11 +69,6 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
     var busy by remember { mutableStateOf(false) }
     var backupInProgress by remember { mutableStateOf(false) }
     var backupProgress by remember { mutableStateOf<Float?>(null) }
-    var showCompressionConfirmation by remember { mutableStateOf(false) }
-    var compressionInProgress by remember { mutableStateOf(false) }
-    var compressionProgress by remember { mutableStateOf(0f) }
-    var compressionProgressLabel by remember { mutableStateOf("") }
-    var compressionResultMessage by remember { mutableStateOf<String?>(null) }
     var token by remember { mutableStateOf<String?>(null) }
     var pendingAction by remember { mutableStateOf<((String) -> Unit)?>(null) }
     var showBackups by remember { mutableStateOf(false) }
@@ -141,7 +134,7 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
                 val result = withContext(Dispatchers.IO) {
                     val local = DriveBackupEngine.createLocalBackup(context)
                     try {
-                        DriveBackupEngine.upload(context, access, local) { uploadedBytes, totalBytes ->
+                        DriveBackupEngine.uploadAndRetain(context, access, local) { uploadedBytes, totalBytes ->
                             scope.launch {
                                 backupProgress = if (totalBytes > 0L) {
                                     (uploadedBytes.toFloat() / totalBytes.toFloat()).coerceIn(0f, 1f)
@@ -288,88 +281,8 @@ fun GoogleDriveBackupCard(isArabic: Boolean) {
                     Text(if (isArabic) "استعادة" else "Restore")
                 }
             }
-            OutlinedButton(
-                onClick = { showCompressionConfirmation = true },
-                enabled = !busy,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp)
-            ) {
-                Text(if (isArabic) "ضغط الصور الموجودة لتقليل حجم النسخة" else "Compress existing photos and images")
-            }
-            if (compressionInProgress) {
-                Text(compressionProgressLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                LinearProgressIndicator(
-                    progress = { compressionProgress },
-                    modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(10.dp))
-                )
-            }
-            compressionResultMessage?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
             Text(if (isArabic) "سيُطلب إذن Google Drive عند أول استخدام. النسخ التلقائي يعمل عند توفر الإنترنت والتصريح." else "Google Drive permission is requested on first use. Automatic backups run when internet and authorization are available.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-    }
-
-    if (showCompressionConfirmation) {
-        AlertDialog(
-            containerColor = AppDialogContainerColor(),
-            onDismissRequest = { if (!busy) showCompressionConfirmation = false },
-            title = { Text(if (isArabic) "ضغط الصور الموجودة؟" else "Compress existing images?") },
-            text = {
-                Text(
-                    if (isArabic) {
-                        "سيتم ضغط صور الأطباء ومرفقات الصور فقط. لن يتم تعديل ملفات PDF أو أي مرفقات أخرى، وسيتم الاحتفاظ بالأصل إذا تعذر الضغط أو لم يقلل الحجم."
-                    } else {
-                        "Only doctor photos and image attachments will be compressed. PDFs and other files stay unchanged. Originals are kept if compression fails or does not reduce the file size."
-                    }
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    showCompressionConfirmation = false
-                    compressionResultMessage = null
-                    compressionProgress = 0f
-                    compressionProgressLabel = if (isArabic) "جارٍ فحص الصور..." else "Preparing images..."
-                    compressionInProgress = true
-                    busy = true
-                    scope.launch {
-                        try {
-                            val result = withContext(Dispatchers.IO) {
-                                ExistingImageCompression.run(context, MedicalRepDatabase.getInstance(context)) { completed, total ->
-                                    scope.launch {
-                                        compressionProgress = if (total > 0) completed.toFloat() / total.toFloat() else 1f
-                                        compressionProgressLabel = if (isArabic) {
-                                            "تمت معالجة ${completed} من ${total}"
-                                        } else {
-                                            "Processed ${completed} of ${total}"
-                                        }
-                                    }
-                                }
-                            }
-                            val savedMb = result.savedBytes / (1024.0 * 1024.0)
-                            val savedText = String.format(Locale.US, "%.2f", savedMb)
-                            compressionResultMessage = if (isArabic) {
-                                "تم توفير ${savedText} ميجابايت. تم ضغط ${result.compressed} ملف، وتخطي ${result.skipped}، وتعذر ضغط ${result.failed}."
-                            } else {
-                                "Saved ${savedText} MB. Compressed ${result.compressed} files, skipped ${result.skipped}, failed ${result.failed}."
-                            }
-                            compressionProgressLabel = if (isArabic) "اكتملت معالجة الصور." else "Image processing complete."
-                        } catch (error: Exception) {
-                            compressionResultMessage = (if (isArabic) "تعذر إكمال ضغط الصور: " else "Image compression could not be completed: ") +
-                                (error.localizedMessage ?: error.javaClass.simpleName)
-                        } finally {
-                            compressionInProgress = false
-                            busy = false
-                        }
-                    }
-                }) { Text(if (isArabic) "بدء الضغط" else "Compress images") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showCompressionConfirmation = false }, enabled = !busy) {
-                    Text(if (isArabic) "إلغاء" else "Cancel")
-                }
-            }
-        )
     }
 
     errorMessage?.let { message ->

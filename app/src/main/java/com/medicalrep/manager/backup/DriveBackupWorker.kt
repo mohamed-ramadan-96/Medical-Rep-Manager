@@ -55,7 +55,7 @@ class DriveBackupWorker(context: Context, params: WorkerParameters) : CoroutineW
             val token = authorization.accessToken ?: return Result.retry()
             val file = DriveBackupEngine.createLocalBackup(applicationContext)
             try {
-                DriveBackupEngine.upload(applicationContext, token, file)
+                DriveBackupEngine.uploadAndRetain(applicationContext, token, file)
                 prefs.edit().putLong(DriveBackupScheduler.KEY_LAST_BACKUP, System.currentTimeMillis())
                     .remove(DriveBackupScheduler.KEY_LAST_ERROR).apply()
             } finally { file.delete() }

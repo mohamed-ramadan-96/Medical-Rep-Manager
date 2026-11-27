@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.database.sqlite.SQLiteDatabase
 import android.util.JsonWriter
+import android.util.Log
 import androidx.room.RoomDatabase
 import com.medicalrep.manager.data.MedicalRepDatabase
 import org.json.JSONArray
@@ -21,18 +22,27 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import java.time.OffsetDateTime
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
-data class DriveBackupItem(val id: String, val name: String, val modifiedTime: String)
+data class DriveBackupItem(val id: String, val name: String, val modifiedTime: String, val createdTime: String = "")
 
 object DriveBackupEngine {
+    private const val MAX_BACKUPS = 5
     private const val DRIVE = "https://www.googleapis.com/drive/v3"
     private const val UPLOAD = "https://www.googleapis.com/upload/drive/v3"
     private const val FOLDER_NAME = "Medical Rep Manager"
 
-    fun createLocalBackup(context: Context): File {
+    suspend fun createLocalBackup(context: Context): File {
+        // Compress existing images before the database snapshot is taken. A compression
+        // failure must never prevent a backup from being created.
+        try {
+            ExistingImageCompression.run(context, MedicalRepDatabase.getInstance(context)) { _, _ -> }
+        } catch (error: Exception) {
+            Log.w("DriveBackupEngine", "Pre-backup image compression failed; continuing with the backup", error)
+        }
         val database = MedicalRepDatabase.getInstance(context)
         val dbFile = context.getDatabasePath("medical_rep_manager.db")
         val snapshot = File(context.cacheDir, "medical-rep-db-snapshot-${UUID.randomUUID()}.db")
@@ -155,7 +165,7 @@ object DriveBackupEngine {
                 .put("parents", JSONArray().put(folderId))
 
             stage = "starting resumable upload session"
-            val initUrl = "$UPLOAD/files?uploadType=resumable&fields=id,name,modifiedTime"
+            val initUrl = "$UPLOAD/files?uploadType=resumable&fields=id,name,modifiedTime,createdTime"
             targetHost = URL(initUrl).host
             val init = URL(initUrl).openConnection() as HttpURLConnection
             init.connectTimeout = 20000
@@ -201,7 +211,7 @@ object DriveBackupEngine {
             check(put.responseCode in 200..299) { "Backup upload failed: ${responseText(put)}" }
             val result = JSONObject(put.inputStream.bufferedReader().use { it.readText() })
             put.disconnect()
-            return DriveBackupItem(result.getString("id"), result.optString("name", name), result.optString("modifiedTime", ""))
+            return DriveBackupItem(result.getString("id"), result.optString("name", name), result.optString("modifiedTime", ""), result.optString("createdTime", ""))
         } catch (error: Exception) {
             var cause: Throwable? = error
             var dnsFailure = false
@@ -218,6 +228,50 @@ object DriveBackupEngine {
         }
     }
 
+    /**
+     * Uploads a backup, then best-effort prunes the Drive folder to the five newest
+     * backups. The just-uploaded item is never eligible for deletion.
+     */
+    fun uploadAndRetain(
+        context: Context,
+        token: String,
+        backup: File,
+        onProgress: ((Long, Long) -> Unit)? = null
+    ): DriveBackupItem {
+        val uploaded = upload(context, token, backup, onProgress)
+        try {
+            val listed = list(token)
+            val candidates = if (listed.any { it.id == uploaded.id }) listed else listed + uploaded
+            val oldestFirst = candidates.sortedWith(
+                compareBy<DriveBackupItem>({ backupTimestamp(it) }, { it.name }, { it.id })
+            )
+            var remaining = candidates.size
+            for (item in oldestFirst) {
+                if (remaining <= MAX_BACKUPS) break
+                if (item.id == uploaded.id) continue
+                try {
+                    delete(token, item)
+                    remaining--
+                } catch (error: Exception) {
+                    Log.w("DriveBackupEngine", "Could not remove an expired backup: " + item.id, error)
+                }
+            }
+        } catch (error: Exception) {
+            // Cleanup is deliberately non-fatal: the upload has already succeeded.
+            Log.w("DriveBackupEngine", "Backup retention cleanup failed", error)
+        }
+        return uploaded
+    }
+
+    private fun backupTimestamp(item: DriveBackupItem): Long {
+        val remoteTime = item.createdTime.ifBlank { item.modifiedTime }
+        runCatching { OffsetDateTime.parse(remoteTime).toInstant().toEpochMilli() }.getOrNull()?.let { return it }
+        val stamp = item.name.removePrefix("MedicalRepManager_").removeSuffix(".zip")
+        return runCatching {
+            SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US).parse(stamp)?.time
+        }.getOrNull() ?: Long.MIN_VALUE
+    }
+
     fun list(token: String): List<DriveBackupItem> {
         val folder = findFolder(token) ?: return emptyList()
         val q = URLEncoder.encode("'$folder' in parents and trashed = false", "UTF-8")
@@ -225,7 +279,7 @@ object DriveBackupEngine {
         var pageToken: String? = null
         do {
             val page = pageToken?.let { "&pageToken=${URLEncoder.encode(it, "UTF-8")}" } ?: ""
-            val url = URL("$DRIVE/files?q=$q&orderBy=modifiedTime%20desc&pageSize=100&fields=nextPageToken,files(id,name,modifiedTime)$page")
+            val url = URL("$DRIVE/files?q=$q&orderBy=modifiedTime%20desc&pageSize=100&fields=nextPageToken,files(id,name,modifiedTime,createdTime)$page")
             val connection = url.openConnection() as HttpURLConnection
             connection.connectTimeout = 20000
             connection.readTimeout = 30000
@@ -236,7 +290,7 @@ object DriveBackupEngine {
                 val files = response.optJSONArray("files") ?: JSONArray()
                 for (index in 0 until files.length()) {
                     val item = files.getJSONObject(index)
-                    result += DriveBackupItem(item.getString("id"), item.optString("name"), item.optString("modifiedTime"))
+                    result += DriveBackupItem(item.getString("id"), item.optString("name"), item.optString("modifiedTime"), item.optString("createdTime"))
                 }
                 pageToken = response.optString("nextPageToken").takeIf { it.isNotBlank() && it != "null" }
             } finally {

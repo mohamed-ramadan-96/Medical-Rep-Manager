@@ -573,7 +573,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
         )
         val doctorsFadeColor = MaterialTheme.colorScheme.background
         Column(modifier = Modifier.fillMaxSize().padding(inner)) {
-            LazyColumn(state = listState, modifier = Modifier.fillMaxSize().drawWithContent {
+            LazyColumn(state = listState, overscrollEffect = null, modifier = Modifier.fillMaxSize().clipToBounds().drawWithContent {
                 drawContent()
                 val stickyHeader = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }
                 if (stickyHeader != null && fadeAlpha > 0f) {

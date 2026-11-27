@@ -240,7 +240,8 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
         val scheduleFadeColor = MaterialTheme.colorScheme.background
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize().padding(inner).drawWithContent {
+            overscrollEffect = null,
+            modifier = Modifier.fillMaxSize().padding(inner).clipToBounds().drawWithContent {
                 drawContent()
                 val stickyHeader = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }
                 if (stickyHeader != null && fadeAlpha > 0f) {

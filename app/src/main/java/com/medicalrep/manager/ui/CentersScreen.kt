@@ -286,7 +286,8 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     ) { inner ->
         LazyColumn(
             state = centerListState,
-            modifier = Modifier.fillMaxSize().padding(inner).drawWithContent {
+            overscrollEffect = null,
+            modifier = Modifier.fillMaxSize().padding(inner).clipToBounds().drawWithContent {
                 drawContent()
                 val stickyHeader = centerListState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 1 }
                 if (stickyHeader != null && fadeAlpha > 0f) {

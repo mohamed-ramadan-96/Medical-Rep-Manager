@@ -450,18 +450,32 @@ private fun VisitFormDialog(
                 )
                 OutlinedSelectionField(
                     label = if (isArabic) "الوقت" else "Time",
-                    value = time.ifBlank { if (isArabic) "اختر الوقت" else "Choose time" },
+                    value = remember(time) {
+                        runCatching {
+                            val parsedTime = SimpleDateFormat("HH:mm", Locale.US).parse(time)
+                            parsedTime?.let {
+                                SimpleDateFormat("hh:mm a", Locale.US).format(it)
+                            } ?: time
+                        }.getOrDefault(time)
+                    }.ifBlank { if (isArabic) "اختر الوقت" else "Choose time" },
                     onClick = { showVisitTimePicker = true }
                 )
-                OutlinedTextField(
-                    colors = AppFilledTextFieldColors(),
-                    shape = RoundedCornerShape(10.dp),
-                    value = outcome,
-                    onValueChange = { outcome = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text(if (isArabic) "نتيجة الزيارة" else "Visit outcome") }
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        if (isArabic) "نتيجة الزيارة" else "Visit outcome",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    OutlinedTextField(
+                        colors = AppFilledTextFieldColors(),
+                        shape = RoundedCornerShape(10.dp),
+                        value = outcome,
+                        onValueChange = { outcome = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        placeholder = { Text(if (isArabic) "اكتب نتيجة الزيارة" else "Enter visit outcome") }
+                    )
+                }
                 OutlinedTextField(
                     colors = AppFilledTextFieldColors(),
                     shape = RoundedCornerShape(10.dp),

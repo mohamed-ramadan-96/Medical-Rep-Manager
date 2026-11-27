@@ -32,7 +32,7 @@ internal fun Modifier.topFadeBehindStickyHeader(
             // Paint the exposed gap after the list content so stretched rows cannot show through it.
             if (headerTop > 0f) {
                 drawRect(
-                    color = backgroundColor,
+                    color = backgroundColor.copy(alpha = fadeAlpha),
                     topLeft = Offset(0f, -headerTop),
                     size = Size(size.width, headerTop)
                 )

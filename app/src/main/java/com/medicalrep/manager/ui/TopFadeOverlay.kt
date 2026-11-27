@@ -38,8 +38,8 @@ internal fun Modifier.topFadeBehindStickyHeader(
                 )
             }
 
-            val solidHeight = 16.dp.toPx()
-            val fadeHeight = 72.dp.toPx()
+            val solidHeight = 6.dp.toPx()
+            val fadeHeight = 28.dp.toPx()
 
             // The leading lip follows the same fade strength instead of hiding content at rest.
             drawRect(

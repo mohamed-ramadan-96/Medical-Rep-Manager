@@ -875,6 +875,7 @@ private fun CenterFormDialog(
                         title = if (isArabic) "أرقام الهاتف" else "Phone numbers",
                         expanded = phonesExpanded,
                         onToggle = { phonesExpanded = !phonesExpanded }
+                    ) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             phoneNumbers.forEachIndexed { index, phone ->
                                 Surface(

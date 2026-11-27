@@ -1,5 +1,10 @@
 package com.medicalrep.manager.ui
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
+
 import com.medicalrep.manager.ui.theme.AppSpacing
 import com.medicalrep.manager.ui.theme.AppDialogContainerColor
 import com.medicalrep.manager.ui.theme.AppCardContainerColor
@@ -68,6 +73,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Close
@@ -836,6 +843,17 @@ private fun DoctorCard(
     onAttachments: () -> Unit,
     onOpen: () -> Unit
 ) {
+    val context = LocalContext.current
+    val firstPhone = doctor.phoneNumbers
+        .split(Regex("\\r?\\n|\\\\n"))
+        .firstOrNull { it.trim().isNotEmpty() }
+        ?.trim()
+    val phoneDigits = firstPhone.orEmpty().filter { it.isDigit() }
+    val whatsappNumber = when {
+        phoneDigits.startsWith("0") -> "20" + phoneDigits.drop(1)
+        else -> phoneDigits
+    }
+    val hasPhone = firstPhone != null && phoneDigits.isNotEmpty()
     var expanded by remember(doctor.id) { mutableStateOf(false) }
     val cardInteractionSource = remember(doctor.id) { MutableInteractionSource() }
     val cardPressed by cardInteractionSource.collectIsPressedAsState()
@@ -906,6 +924,48 @@ private fun DoctorCard(
                         contentDescription = if (isArabic) if (expanded) "إخفاء التفاصيل" else "عرض التفاصيل" else if (expanded) "Hide details" else "Show details",
                         modifier = Modifier.size(20.dp).rotate(expandRotation)
                     )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        try {
+                            context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$firstPhone")))
+                        } catch (_: ActivityNotFoundException) {
+                            Toast.makeText(context, if (isArabic) "لا يوجد تطبيق للاتصال" else "No dialer app available", Toast.LENGTH_SHORT).show()
+                        } catch (_: Exception) {
+                            Toast.makeText(context, if (isArabic) "تعذر فتح الاتصال" else "Unable to open dialer", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    enabled = hasPhone,
+                    modifier = Modifier.weight(1f).height(40.dp),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.size(6.dp))
+                    Text(if (isArabic) "اتصال" else "Call", maxLines = 1)
+                }
+                OutlinedButton(
+                    onClick = {
+                        try {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$whatsappNumber")))
+                        } catch (_: ActivityNotFoundException) {
+                            Toast.makeText(context, if (isArabic) "تعذر فتح واتساب أو المتصفح" else "Unable to open WhatsApp or browser", Toast.LENGTH_SHORT).show()
+                        } catch (_: Exception) {
+                            Toast.makeText(context, if (isArabic) "تعذر فتح واتساب" else "Unable to open WhatsApp", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    enabled = hasPhone,
+                    modifier = Modifier.weight(1f).height(40.dp),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.size(6.dp))
+                    Text(if (isArabic) "واتساب" else "WhatsApp", maxLines = 1)
                 }
             }
             Row(

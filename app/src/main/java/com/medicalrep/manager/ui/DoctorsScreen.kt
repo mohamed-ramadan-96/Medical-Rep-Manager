@@ -1635,24 +1635,24 @@ private fun DoctorFormDialog(
                         expanded = centersExpanded,
                         onToggle = { centersExpanded = !centersExpanded }
                     ) {
-                        OutlinedSelectionField(
-                            label = if (isArabic) "المراكز المرتبط بها" else "Linked centers",
-                            value = if (selectedCenterIds.isEmpty()) ""
-                                else centers.filter { it.id in selectedCenterIds }.joinToString("، ") { it.name },
-                            onClick = { showCenterPicker = true }
-                        )
-                        if (selectedCenterIds.isNotEmpty()) {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                centers.filter { it.id in selectedCenterIds }.forEach { center ->
-                                    CompactOutlinedRemovableItem(
-                                        text = center.name,
-                                        contentDescription = if (isArabic) "إزالة المركز" else "Remove center",
-                                        onRemove = { selectedCenterIds = selectedCenterIds - center.id }
-                                    )
-                                }
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = { showCenterPicker = true },
+                                modifier = Modifier.fillMaxWidth().height(40.dp),
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null)
+                                Text(if (isArabic) "إضافة مركز" else "Add center")
+                            }
+                            centers.filter { it.id in selectedCenterIds }.forEach { center ->
+                                CompactOutlinedRemovableItem(
+                                    text = center.name,
+                                    contentDescription = if (isArabic) "إزالة المركز" else "Remove center",
+                                    onRemove = { selectedCenterIds = selectedCenterIds - center.id }
+                                )
                             }
                         }
-                        Text(if (isArabic) "يمكن إضافة مواعيد عامة حتى لو الطبيب غير مرتبط بمركز." else "General availability is allowed even when no center is linked.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 item {

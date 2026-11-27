@@ -2,7 +2,6 @@ package com.medicalrep.manager.ui
 
 import com.medicalrep.manager.ui.theme.AppDialogContainerColor
 
-import androidx.compose.material3.AlertDialogDefaults
 
 import com.medicalrep.manager.ui.theme.AppSpacing
 import com.medicalrep.manager.ui.theme.AppCardContainerColor
@@ -144,7 +143,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
 
     if (showExcelImportConfirmation) {
         androidx.compose.material3.AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
             onDismissRequest = { showExcelImportConfirmation = false },
             title = { Text(if (isArabic) "قبل استيراد ملف Excel" else "Before importing Excel") },
             text = {
@@ -168,7 +167,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
 
     if (showExcelExportConfirmation) {
         androidx.compose.material3.AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
             onDismissRequest = { showExcelExportConfirmation = false },
             title = { Text(if (isArabic) "تأكيد تصدير Excel" else "Confirm Excel export") },
             text = {
@@ -192,7 +191,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
 
     pendingRestoreUri?.let { selectedUri ->
         androidx.compose.material3.AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
             onDismissRequest = { pendingRestoreUri = null },
             title = { Text(if (isArabic) "استعادة النسخة الكاملة؟" else "Restore full backup?") },
             text = {

@@ -22,7 +22,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AlertDialogDefaults
+
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -130,7 +130,7 @@ fun SpecialtiesScreen(isArabic: Boolean, padding: androidx.compose.foundation.la
         var name by remember(editing) { mutableStateOf(editing?.name.orEmpty()) }
         var nameError by remember { mutableStateOf(false) }
         AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
             onDismissRequest = { showForm = false },
             title = {
                 Text(if (editing == null) {
@@ -184,7 +184,7 @@ fun SpecialtiesScreen(isArabic: Boolean, padding: androidx.compose.foundation.la
 
     pendingDelete?.let { specialty ->
         AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
             onDismissRequest = { pendingDelete = null },
             title = { Text(if (isArabic) "حذف التخصص؟" else "Delete specialty?") },
             text = {

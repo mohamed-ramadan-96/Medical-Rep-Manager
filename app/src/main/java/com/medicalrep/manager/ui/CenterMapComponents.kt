@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AlertDialogDefaults
+
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -176,7 +176,7 @@ fun CenterMapPickerDialog(
     }
 
     AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
         onDismissRequest = onDismiss,
         title = { Text(if (isArabic) "تحديد الموقع" else "Set location") },
         text = {

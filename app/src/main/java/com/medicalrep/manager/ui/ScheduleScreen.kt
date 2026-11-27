@@ -78,7 +78,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AlertDialogDefaults
+
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -565,7 +565,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
 
     if (showPageDescription) {
         AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
             onDismissRequest = { showPageDescription = false },
             title = { Text(if (isArabic) "جدول المواعيد المتاحة" else "Weekly availability") },
             text = { Text(if (isArabic) "استعرض الأطباء حسب اليوم أو المركز أو التخصص، ويمكنك إضافة وتعديل مواعيد التواجد." else "Browse doctors by day, center or specialty, and add or edit their availability.") },
@@ -593,7 +593,7 @@ fun ScheduleScreen(isArabic: Boolean, padding: androidx.compose.foundation.layou
 
     pendingDelete?.let { group ->
         AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
             onDismissRequest = { pendingDelete = null },
             title = { Text(if (isArabic) "حذف الفترة؟" else "Delete time slot?") },
             text = { Text(if (isArabic) "سيتم حذف الأيام التابعة لهذه الفترة فقط." else "Only the days belonging to this time slot will be deleted.") },
@@ -671,7 +671,7 @@ private fun AvailabilityFormDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
         title = {
             Text(
                 if (initialGroup.isEmpty()) { if (isArabic) "إضافة مواعيد للطبيب" else "Add doctor availability" }
@@ -1100,7 +1100,7 @@ private fun AvailabilityTimePickerDialog(
         is24Hour = false
     )
     AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
         onDismissRequest = onDismiss,
         title = { Text(if (isArabic) "اختيار الوقت" else "Choose time") },
         text = { TimePicker(state = state) },

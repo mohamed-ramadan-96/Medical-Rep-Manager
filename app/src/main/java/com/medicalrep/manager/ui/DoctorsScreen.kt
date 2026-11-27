@@ -77,7 +77,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AlertDialogDefaults
+
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -607,7 +607,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
 
     pendingDelete?.let { doctor ->
         AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
             onDismissRequest = { pendingDelete = null },
             title = { Text(if (isArabic) "حذف الطبيب؟" else "Delete doctor?") },
             text = {
@@ -636,7 +636,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     }
     if (showSpecialtiesManager) {
         AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
             onDismissRequest = { showSpecialtiesManager = false },
             title = { Text(if (isArabic) "إدارة التخصصات" else "Manage specialties") },
             text = {
@@ -685,7 +685,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
 
     if (showAddSpecialtyDialog) {
         AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
             onDismissRequest = { showAddSpecialtyDialog = false },
             title = { Text(if (isArabic) "إضافة تخصص جديد" else "Add new specialty") },
             text = {
@@ -717,7 +717,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
 
     specialtyPendingDelete?.let { specialty ->
         AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
             onDismissRequest = { specialtyPendingDelete = null },
             title = { Text(if (isArabic) "حذف التخصص؟" else "Delete specialty?") },
             text = {
@@ -891,7 +891,7 @@ internal fun DoctorDetailsDialog(
     val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
     AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
         onDismissRequest = onDismiss,
         title = { Text(doctor.name, fontWeight = FontWeight.Bold) },
         text = {
@@ -1096,7 +1096,7 @@ internal fun DoctorDetailsDialog(
 
     directionsCenter?.let { center ->
         AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
             onDismissRequest = { directionsCenter = null },
             title = { Text(if (isArabic) "فتح الاتجاهات؟" else "Open directions?") },
             text = {
@@ -1138,7 +1138,7 @@ internal fun DoctorDetailsDialog(
     directionsDoctor.let { show ->
         if (show) {
             AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
                 onDismissRequest = { directionsDoctor = false },
                 title = { Text(if (isArabic) "فتح الاتجاهات؟" else "Open directions?") },
                 text = {
@@ -1362,7 +1362,7 @@ private fun DoctorFormDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
         title = { Text(if (initial == null) { if (isArabic) "إضافة طبيب" else "Add doctor" } else { if (isArabic) "تعديل بيانات الطبيب" else "Edit doctor" }, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
         text = {
             LazyColumn(
@@ -1988,7 +1988,7 @@ private fun DoctorFormDialog(
 
     if (showAreaRequiredDialog) {
         AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
             onDismissRequest = { showAreaRequiredDialog = false },
             title = { Text(if (isArabic) "المنطقة مطلوبة" else "Area required") },
             text = { Text(if (isArabic) "من فضلك اختار منطقة واحدة على الأقل للطبيب قبل الحفظ." else "Please select at least one area for this doctor before saving.") },

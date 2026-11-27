@@ -33,7 +33,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AlertDialogDefaults
+
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -540,7 +540,7 @@ fun WeeklyPlanScreen(
 
     if (showPlanDescription) {
         AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
             onDismissRequest = { showPlanDescription = false },
             title = { Text(if (isArabic) "خطة الزيارات الأسبوعية" else "Weekly visit plan") },
             text = { Text(if (isArabic) "اختر التاريخ والمنطقة، ثم اختر الأطباء المتاحين في هذا اليوم." else "Choose a date and area, then select doctors available on that day.") },
@@ -557,7 +557,7 @@ fun WeeklyPlanScreen(
             .filter { it.id !in assignedDoctorIdsThisWeek }
             .sortedBy { it.name.lowercase(Locale.ROOT) }
         AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
             onDismissRequest = { showAllDoctorsDialog = false },
             title = { Text(if (isArabic) "اختيار دكتور آخر" else "Choose another doctor") },
             text = {
@@ -595,7 +595,7 @@ fun WeeklyPlanScreen(
 
     showExportError?.let { message ->
         AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
             onDismissRequest = { showExportError = null },
             title = { Text(if (isArabic) "خطأ في التصدير" else "Export error") },
             text = { Text(message) },

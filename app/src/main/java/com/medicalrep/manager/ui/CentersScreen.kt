@@ -58,7 +58,7 @@ import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AlertDialogDefaults
+
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -540,7 +540,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
 
     directionsCenter?.let { center ->
         AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
             onDismissRequest = { directionsCenter = null },
             title = { Text(if (isArabic) "فتح الاتجاهات؟" else "Open directions?") },
             text = {
@@ -567,7 +567,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
 
     pendingDelete?.let { center ->
         AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
             onDismissRequest = { pendingDelete = null },
             title = { Text(if (isArabic) "حذف المركز؟" else "Delete center?") },
             text = {
@@ -677,7 +677,7 @@ private fun CenterWorkingHoursTimePickerDialog(
         is24Hour = false
     )
     AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
         onDismissRequest = onDismiss,
         title = { Text(if (isArabic) "اختيار الوقت" else "Choose time") },
         text = { androidx.compose.material3.TimePicker(state = state) },
@@ -740,7 +740,7 @@ private fun CenterFormDialog(
 
     if (showWorkingHoursInfo) {
         AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
             onDismissRequest = { showWorkingHoursInfo = false },
             title = { Text(if (isArabic) "مواعيد عمل المركز" else "Center working hours") },
             text = {
@@ -759,7 +759,7 @@ private fun CenterFormDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
         title = { Text(if (initial == null) { if (isArabic) "إضافة مركز أو عيادة" else "Add center or clinic" } else { if (isArabic) "تعديل المركز" else "Edit center" }, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
         text = {
             LazyColumn(
@@ -1158,7 +1158,7 @@ private fun CenterFormDialog(
 
     if (showNewAreaDialog) {
         AlertDialog(
-        colors = AlertDialogDefaults.colors(containerColor = AppDialogContainerColor()),
+        containerColor = AppDialogContainerColor(),
             onDismissRequest = { showNewAreaDialog = false },
             title = { Text(if (isArabic) "إضافة منطقة جديدة" else "Add new area") },
             text = {

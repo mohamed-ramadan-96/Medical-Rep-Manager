@@ -43,7 +43,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -85,6 +84,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalDensity
@@ -781,7 +781,13 @@ private fun CenterFormDialog(
                     colors = AppFilledTextFieldColors(),
                     value = name,
                     onValueChange = { name = it; nameError = false },
-                    modifier = Modifier.fillMaxWidth().offset(y = (-8).dp),
+                    modifier = Modifier.fillMaxWidth().layout { measurable, constraints ->
+                        val placeable = measurable.measure(constraints)
+                        val overlap = 8.dp.roundToPx()
+                        layout(placeable.width, placeable.height - overlap) {
+                            placeable.place(0, -overlap)
+                        }
+                    },
                     singleLine = true,
                     shape = RoundedCornerShape(10.dp),
                     label = { Text(if (isArabic) "اسم المركز *" else "Center name *") },
@@ -795,7 +801,13 @@ private fun CenterFormDialog(
                     value = area,
                     onValueChange = {},
                     readOnly = true,
-                    modifier = Modifier.fillMaxWidth().offset(y = (-8).dp).clickable { showAreaPicker = true },
+                    modifier = Modifier.fillMaxWidth().layout { measurable, constraints ->
+                            val placeable = measurable.measure(constraints)
+                            val overlap = 8.dp.roundToPx()
+                            layout(placeable.width, placeable.height - overlap) {
+                                placeable.place(0, -overlap)
+                            }
+                        }.clickable { showAreaPicker = true },
                     singleLine = true,
                     shape = RoundedCornerShape(10.dp),
                     label = { Text(if (isArabic) "المنطقة *" else "Area *") },

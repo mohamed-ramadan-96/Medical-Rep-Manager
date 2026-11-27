@@ -55,6 +55,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
@@ -791,7 +792,7 @@ private fun CenterFormDialog(
                     shape = RoundedCornerShape(10.dp),
                     label = { Text(if (isArabic) "المنطقة *" else "Area *") },
                     isError = areaError,
-                    trailingIcon = { Icon(Icons.Default.ExpandMore, contentDescription = null) }
+                    trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, contentDescription = null) }
                 )
                         androidx.compose.foundation.layout.Box(
                             Modifier.matchParentSize().clickable { showAreaPicker = true }

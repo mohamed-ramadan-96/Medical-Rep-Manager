@@ -785,7 +785,6 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                         val result = snackbarHostState.showSnackbar(
                             message = if (isArabic) "سيتم حذف ${doctor.name}" else "${doctor.name} will be deleted",
                             actionLabel = if (isArabic) "تراجع" else "Undo",
-                            withDismissAction = true,
                             duration = SnackbarDuration.Short
                         )
                         if (result != SnackbarResult.ActionPerformed) {

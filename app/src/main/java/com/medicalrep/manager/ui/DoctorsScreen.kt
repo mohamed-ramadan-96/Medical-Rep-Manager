@@ -1446,7 +1446,7 @@ private fun DoctorFormDialog(
                     onValueChange = { name = it; nameError = false },
                     modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
                     singleLine = true,
-                    label = { Text(if (isArabic) "اسم الطبيب *" else "Doctor name *") },
+                    label = { Text(if (isArabic) "اسم الطبيب" else "Doctor name") },
                     isError = nameError
                 )
                 }
@@ -1454,7 +1454,7 @@ private fun DoctorFormDialog(
                     OutlinedSelectionField(
                         label = if (isArabic) "التخصص" else "Specialty",
                         value = specialties.firstOrNull { it.id == selectedSpecialtyId }?.name
-                            ?: if (isArabic) "بدون تخصص — اختر من القائمة" else "No specialty — choose one",
+                            ?: "",
                         onClick = { showSpecialtyPicker = true }
                     )
                 }
@@ -1497,9 +1497,9 @@ private fun DoctorFormDialog(
                 }
                 item {
                     OutlinedSelectionField(
-                        label = if (isArabic) "المنطقة *" else "Area *",
+                        label = if (isArabic) "المنطقة" else "Area",
                         value = if (selectedAreas.isEmpty()) {
-                            if (isArabic) "اختر منطقة أو أكثر" else "Choose one or more areas"
+                            ""
                         } else selectedAreas.sorted().joinToString("، "),
                         onClick = { showAreaPicker = true }
                     )
@@ -1557,7 +1557,7 @@ private fun DoctorFormDialog(
                     ) {
                         OutlinedSelectionField(
                             label = if (isArabic) "المراكز المرتبط بها" else "Linked centers",
-                            value = if (selectedCenterIds.isEmpty()) if (isArabic) "بدون مركز مسجل" else "No linked center"
+                            value = if (selectedCenterIds.isEmpty()) ""
                                 else centers.filter { it.id in selectedCenterIds }.joinToString("، ") { it.name },
                             onClick = { showCenterPicker = true }
                         )

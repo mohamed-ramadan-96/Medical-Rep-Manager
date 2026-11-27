@@ -720,6 +720,7 @@ private fun CenterFormDialog(
     var phoneNumbers by remember(initial) {
         mutableStateOf(ContactPhoneRules.split(initial?.phone.orEmpty()).ifEmpty { listOf("") })
     }
+    var phonesExpanded by remember { mutableStateOf(false) }
     var notes by remember(initial) { mutableStateOf(initial?.notes.orEmpty()) }
     var workSlots by remember(initial, initialAvailability) {
         mutableStateOf(
@@ -869,46 +870,40 @@ private fun CenterFormDialog(
                 )
                 }
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                    FormExpandableSection(
+                        title = if (isArabic) "أرقام الهاتف" else "Phone numbers",
+                        expanded = phonesExpanded,
+                        onToggle = { phonesExpanded = !phonesExpanded }
+                    ) {
                         phoneNumbers.forEachIndexed { index, phone ->
-                            Row(
+                            OutlinedTextField(
+                                colors = AppFilledTextFieldColors(),
+                                shape = RoundedCornerShape(10.dp),
+                                value = phone,
+                                onValueChange = { value ->
+                                    phoneNumbers = phoneNumbers.toMutableList().also { it[index] = value }
+                                },
                                 modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                OutlinedTextField(
-                                    colors = AppFilledTextFieldColors(),
-                                    value = phone,
-                                    onValueChange = { value ->
-                                        phoneNumbers = phoneNumbers.toMutableList().also { it[index] = value }
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                    singleLine = true,
-                                    shape = RoundedCornerShape(10.dp),
-                                    placeholder = { Text(if (isArabic) "رقم الهاتف" else "Phone") }
-                                )
-                                if (index > 0) {
-                                    IconButton(
-                                        onClick = {
-                                            phoneNumbers = phoneNumbers.toMutableList().also { it.removeAt(index) }
-                                        },
-                                        modifier = Modifier.size(48.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Delete,
-                                            contentDescription = if (isArabic) "حذف رقم الهاتف" else "Remove phone number"
-                                        )
+                                singleLine = true,
+                                label = { Text(if (isArabic) "رقم الهاتف ${index + 1}" else "Phone number ${index + 1}") },
+                                trailingIcon = {
+                                    IconButton(onClick = {
+                                        phoneNumbers = phoneNumbers.toMutableList().also { list ->
+                                            if (list.size > 1) list.removeAt(index) else list[0] = ""
+                                        }
+                                    }) {
+                                        Icon(Icons.Default.Delete, contentDescription = if (isArabic) "حذف الرقم" else "Delete number")
                                     }
                                 }
-                            }
+                            )
                         }
                         OutlinedButton(
                             onClick = { phoneNumbers = phoneNumbers + "" },
-                            modifier = Modifier.fillMaxWidth().height(46.dp),
+                            modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(10.dp)
                         ) {
                             Icon(Icons.Default.Add, contentDescription = null)
-                            Text(if (isArabic) "إضافة رقم" else "Add number")
+                            Text(if (isArabic) "إضافة رقم هاتف" else "Add phone number")
                         }
                     }
                 }

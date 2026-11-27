@@ -638,7 +638,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     }
                 }
                 item {
-                    AnimatedVisibility(visible = showFilters, enter = expandVertically(tween(AppMotion.Emphasized)) + fadeIn(tween(AppMotion.Standard)), exit = shrinkVertically(tween(AppMotion.Standard)) + fadeOut(tween(AppMotion.Fast))) {
+                    androidx.compose.animation.AnimatedVisibility(visible = showFilters, enter = expandVertically(tween(AppMotion.Emphasized)) + fadeIn(tween(AppMotion.Standard)), exit = shrinkVertically(tween(AppMotion.Standard)) + fadeOut(tween(AppMotion.Fast))) {
                         Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.md)) {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                                 Column(Modifier.weight(1f)) {
@@ -682,7 +682,6 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                     )
                 }
             }
-        }
             TopFadeOverlay(alpha = fadeAlpha, modifier = Modifier.align(Alignment.TopStart).padding(top = searchControlHeight + 8.dp).zIndex(1f))
         }
     }

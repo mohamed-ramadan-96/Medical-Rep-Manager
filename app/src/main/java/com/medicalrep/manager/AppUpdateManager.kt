@@ -91,7 +91,7 @@ fun downloadAppUpdate(context: Context, update: AppUpdateInfo): Long? {
             setAllowedOverRoaming(true)
             setDestinationInExternalPublicDir(
                 android.os.Environment.DIRECTORY_DOWNLOADS,
-                "MedicalRepManager-${update.versionName}.apk"
+                "MRM-${update.versionName}.apk"
             )
         }
         val manager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager

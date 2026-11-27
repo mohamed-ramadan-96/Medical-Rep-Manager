@@ -13,6 +13,20 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.Alignment
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -50,16 +64,45 @@ class MainActivity : ComponentActivity() {
         themeMode = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
             .getString("theme_mode", "system") ?: "system"
         setContent {
+            var splashVisible by remember { mutableStateOf(true) }
+            LaunchedEffect(Unit) {
+                delay(1_000)
+                splashVisible = false
+            }
             MedicalRepTheme(themeMode = themeMode) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    MedicalRepApp(
-                        themeMode = themeMode,
-                        onThemeModeChange = { selectedMode ->
-                            themeMode = selectedMode
-                            getSharedPreferences("app_settings", Context.MODE_PRIVATE)
-                                .edit().putString("theme_mode", selectedMode).apply()
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        MedicalRepApp(
+                            themeMode = themeMode,
+                            onThemeModeChange = { selectedMode ->
+                                themeMode = selectedMode
+                                getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+                                    .edit().putString("theme_mode", selectedMode).apply()
+                            }
+                        )
+                        AnimatedVisibility(
+                            visible = splashVisible,
+                            modifier = Modifier.fillMaxSize(),
+                            exit = fadeOut(animationSpec = tween(durationMillis = 400))
+                        ) {
+                            Surface(
+                                modifier = Modifier.fillMaxSize(),
+                                color = MaterialTheme.colorScheme.primary
+                            ) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "MRM",
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        style = MaterialTheme.typography.displayLarge,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
                         }
-                    )
+                    }
                 }
             }
         }

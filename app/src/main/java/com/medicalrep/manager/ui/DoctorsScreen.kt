@@ -87,6 +87,8 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
 
 import androidx.compose.material3.Button
@@ -454,6 +456,12 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val availability by database.doctorAvailabilityDao().observeAll().collectAsState(initial = emptyList())
     val doctorCenterLinks by database.doctorCenterLinkDao().observeAll().collectAsState(initial = emptyList())
     val visits by database.doctorVisitDao().observeAll().collectAsState(initial = emptyList())
+    val pinnedPreferences = remember(context) {
+        context.getSharedPreferences("doctor_pins", android.content.Context.MODE_PRIVATE)
+    }
+    var pinnedDoctorIds by remember(pinnedPreferences) {
+        mutableStateOf(pinnedPreferences.getStringSet("pinned_doctor_ids", emptySet()).orEmpty().toSet())
+    }
     val specialties by specialtyDao.observeAll().collectAsState(initial = emptyList())
     val centers by centerDao.observeAll().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
@@ -484,13 +492,13 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             doctor.id to names.ifBlank { doctor.medicalCenter }
         }
     }
-    val filteredDoctors = remember(doctors, selectedArea, selectedSpecialty, selectedCenter, centerIdsByDoctor) {
+    val filteredDoctors = remember(doctors, selectedArea, selectedSpecialty, selectedCenter, centerIdsByDoctor, pinnedDoctorIds) {
         doctors.filter { doctor ->
             (selectedArea == "all" || doctorAreas(doctor.area).any { it.equals(selectedArea, ignoreCase = true) }) &&
             (selectedSpecialty == "all" || doctor.specialty.equals(selectedSpecialty, ignoreCase = true)) &&
             (selectedCenter == "all" || (centerIdsByDoctor[doctor.id]?.any { it.toString() == selectedCenter }
                 ?: (doctor.centerId?.toString() == selectedCenter)))
-        }
+        }.sortedByDescending { it.id.toString() in pinnedDoctorIds }
     }
     var editingDoctor by remember { mutableStateOf<DoctorEntity?>(null) }
     var showForm by remember { mutableStateOf(false) }
@@ -661,7 +669,20 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                         doctor = doctor,
                         centerName = centerNameByDoctor[doctor.id].orEmpty(),
                         lastVisitAt = visits.asSequence().filter { it.doctorId == doctor.id }.maxOfOrNull { it.visitedAt },
+                        isPinned = doctor.id.toString() in pinnedDoctorIds,
                         isArabic = isArabic,
+                        onTogglePin = {
+                            val doctorIdKey = doctor.id.toString()
+                            val updatedPinnedIds = if (doctorIdKey in pinnedDoctorIds) {
+                                pinnedDoctorIds - doctorIdKey
+                            } else {
+                                pinnedDoctorIds + doctorIdKey
+                            }
+                            pinnedDoctorIds = updatedPinnedIds
+                            pinnedPreferences.edit()
+                                .putStringSet("pinned_doctor_ids", updatedPinnedIds.toSet())
+                                .apply()
+                        },
                         onEdit = { editingDoctor = doctor; showForm = true },
                         onDelete = { pendingDelete = doctor },
                         onAttachments = { attachmentsDoctor = doctor },
@@ -919,7 +940,9 @@ private fun DoctorCard(
     doctor: DoctorEntity,
     centerName: String,
     lastVisitAt: Long?,
+    isPinned: Boolean,
     isArabic: Boolean,
+    onTogglePin: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onAttachments: () -> Unit,
@@ -1018,6 +1041,21 @@ private fun DoctorCard(
                             maxLines = 1
                         )
                     }
+                }
+                IconButton(
+                    modifier = Modifier.size(32.dp),
+                    onClick = onTogglePin
+                ) {
+                    Icon(
+                        imageVector = if (isPinned) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                        contentDescription = if (isArabic) {
+                            if (isPinned) "إزالة التثبيت" else "تثبيت الطبيب"
+                        } else {
+                            if (isPinned) "Unpin doctor" else "Pin doctor"
+                        },
+                        tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
                 IconButton(
                     modifier = Modifier.size(32.dp),

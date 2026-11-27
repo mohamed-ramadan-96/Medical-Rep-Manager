@@ -132,8 +132,8 @@ jobs:
           }
 
           mkdir -p dist
-          cp "$APK_PATH" "dist/MedicalRepManager-$VERSION_NAME.apk"
-          echo "APK_PATH=dist/MedicalRepManager-$VERSION_NAME.apk" >> "$GITHUB_ENV"
+          cp "$APK_PATH" "dist/MRM-$VERSION_NAME.apk"
+          echo "APK_PATH=dist/MRM-$VERSION_NAME.apk" >> "$GITHUB_ENV"
 
       - name: Distribute to Firebase tester group
         if: inputs.build_type == 'tester'
@@ -188,7 +188,7 @@ jobs:
           name: Medical Rep Manager v${{ inputs.version_name }}
           body: ${{ inputs.release_notes }}
           files: |
-            dist/MedicalRepManager-${{ inputs.version_name }}.apk
+            dist/MRM-${{ inputs.version_name }}.apk
             dist/latest.json
           draft: false
           prerelease: false

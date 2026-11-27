@@ -791,7 +791,7 @@ private fun CenterFormDialog(
                     },
                     singleLine = true,
                     shape = RoundedCornerShape(10.dp),
-                    label = { Text(if (isArabic) "اسم المركز *" else "Center name *") },
+                    label = { Text(if (isArabic) "اسم المركز" else "Center name") },
                     isError = nameError
                 )
                 }
@@ -811,7 +811,7 @@ private fun CenterFormDialog(
                         }.clickable { showAreaPicker = true },
                     singleLine = true,
                     shape = RoundedCornerShape(10.dp),
-                    label = { Text(if (isArabic) "المنطقة *" else "Area *") },
+                    label = { Text(if (isArabic) "المنطقة" else "Area") },
                     isError = areaError,
                     trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, contentDescription = null) }
                 )

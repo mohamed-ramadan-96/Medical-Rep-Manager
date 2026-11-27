@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.outlined.HelpOutline
@@ -31,8 +32,15 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.rememberModalBottomSheetState
 
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -57,6 +65,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.medicalrep.manager.data.MedicalRepDatabase
@@ -91,6 +100,7 @@ private fun dayLabel(date: LocalDate, isArabic: Boolean): String {
     return if (isArabic) day?.second.orEmpty() else day?.first.orEmpty()
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WeeklyPlanScreen(
     isArabic: Boolean,
@@ -168,7 +178,9 @@ fun WeeklyPlanScreen(
         mutableStateOf(emptySet<Long>())
     }
     var doctorMenu by remember { mutableStateOf(false) }
+    var doctorSearch by remember { mutableStateOf("") }
     var showAllDoctorsDialog by remember { mutableStateOf(false) }
+    var allDoctorsSearch by remember { mutableStateOf("") }
     var showPlanDescription by remember { mutableStateOf(false) }
     var detailsDoctorId by remember { mutableStateOf<Long?>(null) }
 
@@ -329,35 +341,105 @@ fun WeeklyPlanScreen(
                         onClick = { doctorMenu = true },
                         enabled = selectedRegion.isNotBlank() && doctors.any { it.id !in assignedDoctorIdsThisWeek }
                     )
-                    DropdownMenu(expanded = doctorMenu, onDismissRequest = { doctorMenu = false }) {
-                        eligibleDoctors.forEach { doctor ->
-                            DropdownMenuItem(
-                                text = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        androidx.compose.material3.Checkbox(
-                                            checked = doctor.id in selectedDoctorIds,
-                                            onCheckedChange = null
-                                        )
-                                        Column {
-                                            Text(doctor.name)
-                                            if (doctor.specialty.isNotBlank()) {
-                                                Text(doctor.specialty, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (doctorMenu) {
+                        ModalBottomSheet(
+                            onDismissRequest = {
+                                doctorMenu = false
+                                doctorSearch = ""
+                            },
+                            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                            containerColor = AppDialogContainerColor()
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Text(
+                                    if (isArabic) "الأطباء المتاحون" else "Available doctors",
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                OutlinedTextField(
+                                    value = doctorSearch,
+                                    onValueChange = { doctorSearch = it },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = AppFilledTextFieldColors(),
+                                    placeholder = { Text(if (isArabic) "ابحث عن دكتور..." else "Search doctors...") },
+                                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
+                                )
+                                val filteredEligibleDoctors = eligibleDoctors.filter { doctor ->
+                                    doctor.name.contains(doctorSearch.trim(), ignoreCase = true) ||
+                                        doctor.specialty.contains(doctorSearch.trim(), ignoreCase = true)
+                                }
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxWidth().height(360.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    lazyItems(filteredEligibleDoctors, key = { it.id }) { doctor ->
+                                        Surface(
+                                            color = AppSelectionRowColor(),
+                                            shape = RoundedCornerShape(10.dp),
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth().clickable {
+                                                    selectedDoctorIds = if (doctor.id in selectedDoctorIds) selectedDoctorIds - doctor.id else selectedDoctorIds + doctor.id
+                                                }.padding(horizontal = 12.dp, vertical = 8.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Checkbox(
+                                                    checked = doctor.id in selectedDoctorIds,
+                                                    onCheckedChange = { checked ->
+                                                        selectedDoctorIds = if (checked) selectedDoctorIds + doctor.id else selectedDoctorIds - doctor.id
+                                                    }
+                                                )
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(doctor.name)
+                                                    if (doctor.specialty.isNotBlank()) {
+                                                        Text(doctor.specialty, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                    }
+                                                }
                                             }
                                         }
                                     }
-                                },
-                                onClick = {
-                                    selectedDoctorIds = if (doctor.id in selectedDoctorIds) selectedDoctorIds - doctor.id else selectedDoctorIds + doctor.id
+                                    if (filteredEligibleDoctors.isEmpty()) item {
+                                        Text(
+                                            if (isArabic) "لا توجد نتائج" else "No results",
+                                            modifier = Modifier.fillMaxWidth().padding(20.dp),
+                                            textAlign = TextAlign.Center,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    item {
+                                        Surface(
+                                            onClick = {
+                                                doctorMenu = false
+                                                doctorSearch = ""
+                                                allDoctorsSearch = ""
+                                                showAllDoctorsDialog = true
+                                            },
+                                            color = AppSelectionRowColor(),
+                                            shape = RoundedCornerShape(10.dp),
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                                        ) {
+                                            Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 15.dp), contentAlignment = Alignment.Center) {
+                                                Text(if (isArabic) "دكتور آخر — من كل الأطباء" else "Other doctor — browse all doctors", textAlign = TextAlign.Center)
+                                            }
+                                        }
+                                    }
                                 }
-                            )
-                        }
-                        DropdownMenuItem(
-                            text = { Text(if (isArabic) "دكتور آخر — من كل الأطباء" else "Other doctor — browse all doctors") },
-                            onClick = {
-                                doctorMenu = false
-                                showAllDoctorsDialog = true
+                                Button(onClick = {
+                                    doctorMenu = false
+                                    doctorSearch = ""
+                                }, modifier = Modifier.fillMaxWidth()) {
+                                    Text(if (isArabic) "تم" else "Done")
+                                }
                             }
-                        )
+                        }
                     }
                 }
             }
@@ -554,41 +636,96 @@ fun WeeklyPlanScreen(
         val otherDoctors = doctors
             .filter { it.id !in assignedDoctorIdsThisWeek }
             .sortedBy { it.name.lowercase(Locale.ROOT) }
-        AlertDialog(
-        containerColor = AppDialogContainerColor(),
-            onDismissRequest = { showAllDoctorsDialog = false },
-            title = { Text(if (isArabic) "اختيار دكتور آخر" else "Choose another doctor") },
-            text = {
+        val filteredOtherDoctors = otherDoctors.filter { doctor ->
+            doctor.name.contains(allDoctorsSearch.trim(), ignoreCase = true) ||
+                doctor.area.contains(allDoctorsSearch.trim(), ignoreCase = true) ||
+                doctor.specialty.contains(allDoctorsSearch.trim(), ignoreCase = true)
+        }
+        ModalBottomSheet(
+            onDismissRequest = {
+                showAllDoctorsDialog = false
+                allDoctorsSearch = ""
+            },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = AppDialogContainerColor()
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    if (isArabic) "اختيار دكتور آخر" else "Choose another doctor",
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                OutlinedTextField(
+                    value = allDoctorsSearch,
+                    onValueChange = { allDoctorsSearch = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp),
+                    colors = AppFilledTextFieldColors(),
+                    placeholder = { Text(if (isArabic) "ابحث بالاسم أو المنطقة أو التخصص..." else "Search by name, area or specialty...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
+                )
                 if (otherDoctors.isEmpty()) {
-                    Text(if (isArabic) "لا يوجد أطباء آخرون متاحون للإضافة؛ تم إضافة باقي الأطباء بالفعل إلى خطة هذا الأسبوع." else "There are no other doctors to add; the remaining doctors are already assigned this week.")
+                    Text(
+                        if (isArabic) "لا يوجد أطباء آخرون متاحون للإضافة؛ تم إضافة باقي الأطباء بالفعل إلى خطة هذا الأسبوع." else "There are no other doctors to add; the remaining doctors are already assigned this week.",
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp),
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 } else {
-                    LazyColumn(modifier = Modifier.height(360.dp)) {
-                        lazyItems(otherDoctors, key = { it.id }) { doctor ->
-                            DropdownMenuItem(
-                                text = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        androidx.compose.material3.Checkbox(
-                                            checked = doctor.id in selectedDoctorIds,
-                                            onCheckedChange = null
-                                        )
-                                        Column {
-                                            Text(doctor.name)
-                                            if (doctor.area.isNotBlank()) Text(doctor.area, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                            if (doctor.specialty.isNotBlank()) Text(doctor.specialty, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().height(360.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        lazyItems(filteredOtherDoctors, key = { it.id }) { doctor ->
+                            Surface(
+                                color = AppSelectionRowColor(),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().clickable {
+                                        selectedDoctorIds = if (doctor.id in selectedDoctorIds) selectedDoctorIds - doctor.id else selectedDoctorIds + doctor.id
+                                    }.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Checkbox(
+                                        checked = doctor.id in selectedDoctorIds,
+                                        onCheckedChange = { checked ->
+                                            selectedDoctorIds = if (checked) selectedDoctorIds + doctor.id else selectedDoctorIds - doctor.id
                                         }
+                                    )
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(doctor.name)
+                                        if (doctor.area.isNotBlank()) Text(doctor.area, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        if (doctor.specialty.isNotBlank()) Text(doctor.specialty, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
-                                },
-                                onClick = {
-                                    selectedDoctorIds = if (doctor.id in selectedDoctorIds) selectedDoctorIds - doctor.id else selectedDoctorIds + doctor.id
                                 }
+                            }
+                        }
+                        if (filteredOtherDoctors.isEmpty()) item {
+                            Text(
+                                if (isArabic) "لا توجد نتائج" else "No results",
+                                modifier = Modifier.fillMaxWidth().padding(20.dp),
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 }
-            },
-            confirmButton = { TextButton(onClick = { showAllDoctorsDialog = false }) { Text(if (isArabic) "تم" else "Done") } },
-            dismissButton = { TextButton(onClick = { showAllDoctorsDialog = false }) { Text(if (isArabic) "إلغاء" else "Cancel") } }
-        )
+                Button(onClick = {
+                    showAllDoctorsDialog = false
+                    allDoctorsSearch = ""
+                }, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (isArabic) "تم" else "Done")
+                }
+            }
+        }
     }
 
     showExportError?.let { message ->

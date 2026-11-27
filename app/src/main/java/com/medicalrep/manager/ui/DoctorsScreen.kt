@@ -45,6 +45,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Surface
@@ -107,6 +110,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
@@ -833,14 +837,30 @@ private fun DoctorCard(
     onOpen: () -> Unit
 ) {
     var expanded by remember(doctor.id) { mutableStateOf(false) }
+    val cardInteractionSource = remember(doctor.id) { MutableInteractionSource() }
+    val cardPressed by cardInteractionSource.collectIsPressedAsState()
+    val cardScale by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (cardPressed) 0.99f else 1f,
+        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.78f, stiffness = 850f),
+        label = "doctorCardPressScale"
+    )
     val expandRotation by androidx.compose.animation.core.animateFloatAsState(
         targetValue = if (expanded) 180f else 0f,
         animationSpec = androidx.compose.animation.core.tween(AppMotion.Standard),
         label = "doctorExpandRotation"
     )
     Card(
-        modifier = Modifier.fillMaxWidth()
-            .clickable(onClick = onOpen),
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = cardScale
+                scaleY = cardScale
+            }
+            .clickable(
+                interactionSource = cardInteractionSource,
+                indication = LocalIndication.current,
+                onClick = onOpen
+            ),
         shape = MaterialTheme.shapes.small,
         colors = CardDefaults.cardColors(containerColor = AppCardContainerColor())
     ) {

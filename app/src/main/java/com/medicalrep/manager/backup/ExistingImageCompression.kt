@@ -83,15 +83,36 @@ object ExistingImageCompression {
             return null
         }
         if (temporary.length() >= originalSize) { temporary.delete(); return 0L }
-        if (!original.renameTo(backup)) { temporary.delete(); return null }
-        if (!temporary.renameTo(original)) { backup.renameTo(original); temporary.delete(); return null }
+        if (!runCatching { original.copyTo(backup, overwrite = false) }.isSuccess) {
+            temporary.delete()
+            backup.delete()
+            return null
+        }
+        try {
+            android.system.Os.rename(temporary.absolutePath, original.absolutePath)
+        } catch (_: Exception) {
+            temporary.delete()
+            backup.delete()
+            return null
+        }
         return try {
             updateRecord()
             backup.delete()
             originalSize - original.length()
         } catch (error: Exception) {
-            original.delete()
-            backup.renameTo(original)
+            val restored = runCatching {
+                android.system.Os.rename(backup.absolutePath, original.absolutePath)
+            }.isSuccess || runCatching {
+                backup.copyTo(original, overwrite = true)
+                true
+            }.getOrDefault(false)
+            if (!restored) {
+                throw java.io.IOException(
+                    "Attachment metadata update failed and the original image could not be restored from ${backup.absolutePath}",
+                    error
+                )
+            }
+            backup.delete()
             throw error
         }
     }

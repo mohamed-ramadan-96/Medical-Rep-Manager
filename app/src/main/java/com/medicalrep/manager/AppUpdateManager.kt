@@ -89,7 +89,8 @@ fun downloadAppUpdate(context: Context, update: AppUpdateInfo): Long? {
             setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
             setAllowedOverMetered(true)
             setAllowedOverRoaming(true)
-            setDestinationInExternalPublicDir(
+            setDestinationInExternalFilesDir(
+                context,
                 android.os.Environment.DIRECTORY_DOWNLOADS,
                 "MRM-${update.versionName}.apk"
             )

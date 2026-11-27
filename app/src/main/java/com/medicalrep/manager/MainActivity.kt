@@ -8,6 +8,8 @@ import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import java.io.File
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -19,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import com.medicalrep.manager.ui.MedicalRepApp
 import com.medicalrep.manager.ui.handleMapShareIntent
 import com.medicalrep.manager.ui.theme.MedicalRepTheme
@@ -46,6 +49,7 @@ class MainActivity : ComponentActivity() {
             IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
             ContextCompat.RECEIVER_EXPORTED
         )
+        cleanupCompletedAppUpdateDownloads()
         handleMapShareIntent(intent)
         themeMode = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
             .getString("theme_mode", "system") ?: "system"
@@ -85,20 +89,105 @@ class MainActivity : ComponentActivity() {
     private fun canInstallPackages(): Boolean =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.O || packageManager.canRequestPackageInstalls()
 
+    private fun installedVersionName(): String =
+        packageManager.getPackageInfo(packageName, 0).versionName.orEmpty()
+
+    private fun updateVersionFromTitle(title: String?): String? =
+        title?.takeIf { it.startsWith("Medical Rep Manager ") }
+            ?.removePrefix("Medical Rep Manager ")
+            ?.takeIf { it.isNotBlank() }
+
+    private fun compareVersionNames(first: String, second: String): Int {
+        val firstParts = Regex("\\d+").findAll(first).mapNotNull { it.value.toLongOrNull() }.toList()
+        val secondParts = Regex("\\d+").findAll(second).mapNotNull { it.value.toLongOrNull() }.toList()
+        if (firstParts.isEmpty() || secondParts.isEmpty()) return first.compareTo(second, ignoreCase = true)
+        for (index in 0 until maxOf(firstParts.size, secondParts.size)) {
+            val comparison = (firstParts.getOrNull(index) ?: 0L).compareTo(secondParts.getOrNull(index) ?: 0L)
+            if (comparison != 0) return comparison
+        }
+        return 0
+    }
+
+    private fun updateApkFile(versionName: String): File? =
+        getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)?.let { File(it, "MRM-$versionName.apk") }
+
+    private fun deleteUpdateApkFile(versionName: String?) {
+        if (!versionName.isNullOrBlank()) updateApkFile(versionName)?.delete()
+    }
+
+    private fun cleanupCompletedAppUpdateDownloads() {
+        val manager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        val preferences = getSharedPreferences("app_update", Context.MODE_PRIVATE)
+        val pendingId = preferences.getLong("pending_download_id", -1L)
+        val installedVersion = installedVersionName()
+        var pendingVersion: String? = null
+
+        if (pendingId != -1L) {
+            manager.query(DownloadManager.Query().setFilterById(pendingId))?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val titleIndex = cursor.getColumnIndex(DownloadManager.COLUMN_TITLE)
+                    if (titleIndex >= 0) pendingVersion = updateVersionFromTitle(cursor.getString(titleIndex))
+                }
+            }
+        }
+
+        val completedIds = mutableListOf<Long>()
+        manager.query(DownloadManager.Query())?.use { cursor ->
+            val idIndex = cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_ID)
+            val titleIndex = cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TITLE)
+            val statusIndex = cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)
+            while (cursor.moveToNext()) {
+                val id = cursor.getLong(idIndex)
+                if (id == pendingId) continue
+                val status = cursor.getInt(statusIndex)
+                if (status != DownloadManager.STATUS_SUCCESSFUL && status != DownloadManager.STATUS_FAILED) continue
+                val version = updateVersionFromTitle(cursor.getString(titleIndex)) ?: continue
+                if (compareVersionNames(version, installedVersion) <= 0) completedIds += id
+            }
+        }
+        if (completedIds.isNotEmpty()) manager.remove(*completedIds.toLongArray())
+
+        getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)?.listFiles()?.forEach { file ->
+            if (!file.isFile || !file.name.startsWith("MRM-") || !file.name.endsWith(".apk")) return@forEach
+            val version = file.name.removePrefix("MRM-").removeSuffix(".apk")
+            if (version == pendingVersion) return@forEach
+            if (compareVersionNames(version, installedVersion) <= 0) file.delete()
+        }
+    }
+
     private fun handleCompletedUpdate(downloadId: Long, requestInstallPermission: Boolean) {
         val manager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val query = DownloadManager.Query().setFilterById(downloadId)
-        manager.query(query).use { cursor ->
-            if (!cursor.moveToFirst()) return
-            val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
-            if (status == DownloadManager.STATUS_FAILED) {
-                getSharedPreferences("app_update", Context.MODE_PRIVATE).edit()
-                    .remove("pending_download_id").apply()
-                Toast.makeText(this, "Update download failed. Please try again.", Toast.LENGTH_LONG).show()
-                return
+        var downloadVersion: String? = null
+        var status = -1
+        val found = manager.query(query)?.use { cursor ->
+            if (!cursor.moveToFirst()) {
+                false
+            } else {
+                status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+                val titleIndex = cursor.getColumnIndex(DownloadManager.COLUMN_TITLE)
+                if (titleIndex >= 0) downloadVersion = updateVersionFromTitle(cursor.getString(titleIndex))
+                true
             }
-            if (status != DownloadManager.STATUS_SUCCESSFUL) return
+        } ?: false
+
+        if (!found) {
+            manager.remove(downloadId)
+            deleteUpdateApkFile(downloadVersion)
+            getSharedPreferences("app_update", Context.MODE_PRIVATE).edit()
+                .remove("pending_download_id").apply()
+            Toast.makeText(this, "Downloaded APK could not be found.", Toast.LENGTH_LONG).show()
+            return
         }
+        if (status == DownloadManager.STATUS_FAILED) {
+            manager.remove(downloadId)
+            deleteUpdateApkFile(downloadVersion)
+            getSharedPreferences("app_update", Context.MODE_PRIVATE).edit()
+                .remove("pending_download_id").apply()
+            Toast.makeText(this, "Update download failed. Please try again.", Toast.LENGTH_LONG).show()
+            return
+        }
+        if (status != DownloadManager.STATUS_SUCCESSFUL) return
 
         if (!canInstallPackages()) {
             if (requestInstallPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -113,7 +202,16 @@ class MainActivity : ComponentActivity() {
         }
 
         val apkUri = manager.getUriForDownloadedFile(downloadId)
+            ?: downloadVersion?.let { version ->
+                updateApkFile(version)?.takeIf { it.isFile }?.let {
+                    FileProvider.getUriForFile(this, "$packageName.fileprovider", it)
+                }
+            }
         if (apkUri == null) {
+            manager.remove(downloadId)
+            deleteUpdateApkFile(downloadVersion)
+            getSharedPreferences("app_update", Context.MODE_PRIVATE).edit()
+                .remove("pending_download_id").apply()
             Toast.makeText(this, "Downloaded APK could not be opened.", Toast.LENGTH_LONG).show()
             return
         }
@@ -126,6 +224,8 @@ class MainActivity : ComponentActivity() {
         try {
             startActivity(installIntent)
         } catch (_: Exception) {
+            manager.remove(downloadId)
+            deleteUpdateApkFile(downloadVersion)
             Toast.makeText(this, "Android could not open the APK installer.", Toast.LENGTH_LONG).show()
         }
     }

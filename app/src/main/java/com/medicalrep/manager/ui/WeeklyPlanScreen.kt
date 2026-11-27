@@ -7,6 +7,7 @@ import com.medicalrep.manager.ui.theme.AppSpacing
 import com.medicalrep.manager.ui.theme.AppCardContainerColor
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -321,8 +322,18 @@ fun WeeklyPlanScreen(
                             selectedDoctorIds.isEmpty() -> if (isArabic) "اضغط لاختيار الأطباء" else "Tap to choose doctors"
                             else -> doctors.filter { it.id in selectedDoctorIds }.joinToString("، ") { it.name }
                         },
-                        onClick = { doctorMenu = true },
-                        enabled = selectedRegion.isNotBlank() && doctors.any { it.id !in assignedDoctorIdsThisWeek }
+                        onClick = {
+                            if (selectedRegion.isBlank()) {
+                                Toast.makeText(
+                                    context,
+                                    if (isArabic) "اختر المنطقة الأول" else "Choose the area first",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            } else {
+                                doctorMenu = true
+                            }
+                        },
+                        enabled = doctors.any { it.id !in assignedDoctorIdsThisWeek }
                     )
                     if (doctorMenu) {
                         ModalBottomSheet(

@@ -195,6 +195,48 @@ private fun DoctorFormBaseBottomSheet(
     }
 }
 @Composable
+private fun CompactOutlinedRemovableItem(
+    text: String,
+    contentDescription: String,
+    onRemove: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(10.dp),
+        color = Color.Transparent,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        modifier = Modifier.fillMaxWidth().height(40.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(40.dp)
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clickable(onClick = onRemove),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = contentDescription,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
 internal fun FormExpandableSection(
     title: String,
     expanded: Boolean,
@@ -1599,6 +1641,17 @@ private fun DoctorFormDialog(
                                 else centers.filter { it.id in selectedCenterIds }.joinToString("، ") { it.name },
                             onClick = { showCenterPicker = true }
                         )
+                        if (selectedCenterIds.isNotEmpty()) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                centers.filter { it.id in selectedCenterIds }.forEach { center ->
+                                    CompactOutlinedRemovableItem(
+                                        text = center.name,
+                                        contentDescription = if (isArabic) "إزالة المركز" else "Remove center",
+                                        onRemove = { selectedCenterIds = selectedCenterIds - center.id }
+                                    )
+                                }
+                            }
+                        }
                         Text(if (isArabic) "يمكن إضافة مواعيد عامة حتى لو الطبيب غير مرتبط بمركز." else "General availability is allowed even when no center is linked.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }

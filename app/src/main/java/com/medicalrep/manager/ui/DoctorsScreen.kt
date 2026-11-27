@@ -102,6 +102,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -149,6 +153,34 @@ import java.util.UUID
 
 private fun doctorAreas(value: String): List<String> =
     value.split("|").map { it.trim() }.filter { it.isNotBlank() }.distinctBy { it.lowercase(Locale.ROOT) }
+
+private fun lastVisitRelativeLabel(visitedAt: Long, now: Long = System.currentTimeMillis()): String {
+    val zone = java.util.TimeZone.getDefault()
+    val today = java.util.Calendar.getInstance().apply {
+        timeInMillis = now
+        set(java.util.Calendar.HOUR_OF_DAY, 0)
+        set(java.util.Calendar.MINUTE, 0)
+        set(java.util.Calendar.SECOND, 0)
+        set(java.util.Calendar.MILLISECOND, 0)
+    }
+    val visitDay = java.util.Calendar.getInstance().apply {
+        timeInMillis = visitedAt
+        set(java.util.Calendar.HOUR_OF_DAY, 0)
+        set(java.util.Calendar.MINUTE, 0)
+        set(java.util.Calendar.SECOND, 0)
+        set(java.util.Calendar.MILLISECOND, 0)
+    }
+    val days = ((today.timeInMillis - visitDay.timeInMillis +
+        zone.getOffset(today.timeInMillis) - zone.getOffset(visitDay.timeInMillis)) / 86_400_000L).toInt()
+    val count = java.text.NumberFormat.getIntegerInstance(Locale("ar"))
+    return when {
+        days <= 0 -> "اليوم"
+        days == 1 -> "أمس"
+        days < 7 -> "من ${count.format(days)} أيام"
+        days < 30 -> "من ${count.format(days / 7)} أسابيع"
+        else -> "من ${count.format(days / 30)} شهور"
+    }
+}
 
 private data class DoctorAvatarPalette(
     val lightBackground: Color,
@@ -463,6 +495,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     var editingDoctor by remember { mutableStateOf<DoctorEntity?>(null) }
     var showForm by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<DoctorEntity?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
     var attachmentsDoctor by remember { mutableStateOf<DoctorEntity?>(null) }
     var detailsDoctor by remember { mutableStateOf<DoctorEntity?>(null) }
     var showSpecialtiesManager by remember { mutableStateOf(false) }
@@ -473,6 +506,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     Scaffold(
         modifier = Modifier.padding(padding),
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(onClick = {
                 editingDoctor = null
@@ -623,7 +657,16 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                 }
                 if (filteredDoctors.isEmpty()) item { Text(if (doctors.isEmpty()) { if (isArabic) "لا يوجد أطباء حتى الآن. اضغط + لإضافة أول طبيب." else "No doctors yet. Tap + to add your first doctor." } else { if (isArabic) "لا توجد نتائج مطابقة للفلاتر المحددة." else "No doctors match the selected filters." }, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 24.dp)) }
                 else items(filteredDoctors, key = { it.id }) { doctor ->
-                    DoctorCard(doctor = doctor, centerName = centerNameByDoctor[doctor.id].orEmpty(), isArabic = isArabic, onEdit = { editingDoctor = doctor; showForm = true }, onDelete = { pendingDelete = doctor }, onAttachments = { attachmentsDoctor = doctor }, onOpen = { detailsDoctor = doctor })
+                    DoctorCard(
+                        doctor = doctor,
+                        centerName = centerNameByDoctor[doctor.id].orEmpty(),
+                        lastVisitAt = visits.asSequence().filter { it.doctorId == doctor.id }.maxOfOrNull { it.visitedAt },
+                        isArabic = isArabic,
+                        onEdit = { editingDoctor = doctor; showForm = true },
+                        onDelete = { pendingDelete = doctor },
+                        onAttachments = { attachmentsDoctor = doctor },
+                        onOpen = { detailsDoctor = doctor }
+                    )
                 }
             }
         }    }
@@ -737,14 +780,22 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
             },
             confirmButton = {
                 TextButton(onClick = {
-                    scope.launch {
-                        val attachments = database.doctorAttachmentDao().getForDoctor(doctor.id)
-                        withContext(Dispatchers.IO) {
-                            attachments.forEach { File(it.localPath).delete() }
-                        }
-                        dao.delete(doctor)
-                    }
                     pendingDelete = null
+                    scope.launch {
+                        val result = snackbarHostState.showSnackbar(
+                            message = if (isArabic) "سيتم حذف ${doctor.name}" else "${doctor.name} will be deleted",
+                            actionLabel = if (isArabic) "تراجع" else "Undo",
+                            withDismissAction = true,
+                            duration = SnackbarDuration.Short
+                        )
+                        if (result != SnackbarResult.ActionPerformed) {
+                            val attachments = database.doctorAttachmentDao().getForDoctor(doctor.id)
+                            withContext(Dispatchers.IO) {
+                                attachments.forEach { File(it.localPath).delete() }
+                            }
+                            dao.delete(doctor)
+                        }
+                    }
                 }) { Text(if (isArabic) "حذف" else "Delete") }
             },
             dismissButton = {
@@ -868,6 +919,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
 private fun DoctorCard(
     doctor: DoctorEntity,
     centerName: String,
+    lastVisitAt: Long?,
     isArabic: Boolean,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -1009,6 +1061,15 @@ private fun DoctorCard(
                         modifier = Modifier.fillMaxWidth().padding(start = 52.dp, top = 2.dp, bottom = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
+                    Text(
+                        if (lastVisitAt != null) {
+                            "آخر زيارة: ${lastVisitRelativeLabel(lastVisitAt)}"
+                        } else {
+                            "لا توجد زيارات"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     if (doctor.phoneNumbers.isNotBlank()) {
                         Text(
                             (if (isArabic) "الهاتف: " else "Phone: ") + doctor.phoneNumbers.replace("\\n", " • "),

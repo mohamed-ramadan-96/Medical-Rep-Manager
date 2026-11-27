@@ -413,7 +413,7 @@ fun MedicalRepApp(
                             },
                             onDragEnd = {
                                 if (abs(totalHorizontalDrag) >= 72.dp.toPx()) {
-                                    val movingToNextVisualTab = (totalHorizontalDrag < 0f) == isArabic
+                                    val movingToNextVisualTab = (totalHorizontalDrag < 0f) != isArabic
                                     val targetTab = (selectedTab + if (movingToNextVisualTab) 1 else -1)
                                         .coerceIn(tabs.indices)
                                     if (targetTab != selectedTab) {

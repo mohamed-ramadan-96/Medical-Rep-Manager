@@ -267,10 +267,14 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val centerSearchHeight by animateDpAsState(if (centerHeaderExpanded) 60.dp else 44.dp, animationSpec = tween(AppMotion.Emphasized), label = "centersSearchHeight")
 
         val fadeStartOffset = with(LocalDensity.current) { 48.dp.roundToPx() }
-    val fadeScrollOffset = centerListState.layoutInfo.visibleItemsInfo
-        .firstOrNull { it.index == 0 }
-        ?.let { -it.offset }
-        ?: fadeStartOffset
+    val visibleFadeItems = centerListState.layoutInfo.visibleItemsInfo
+    val fadeScrollOffset = if (visibleFadeItems.isEmpty()) {
+        0
+    } else {
+        visibleFadeItems.firstOrNull { it.index == 0 }
+            ?.let { -it.offset }
+            ?: fadeStartOffset
+    }
     val fadeTarget = (fadeScrollOffset.toFloat() / fadeStartOffset).coerceIn(0f, 1f)
     val fadeAlpha by animateFloatAsState(
         targetValue = fadeTarget,
@@ -485,7 +489,7 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                         }
                     }
         }
-            TopFadeOverlay(alpha = fadeAlpha, modifier = Modifier.align(Alignment.TopStart).padding(top = centerSearchHeight + 16.dp).zIndex(1f))
+            TopFadeOverlay(alpha = fadeAlpha, modifier = Modifier.align(Alignment.TopStart).padding(top = centerSearchHeight + 8.dp).zIndex(1f))
         }
     }
 

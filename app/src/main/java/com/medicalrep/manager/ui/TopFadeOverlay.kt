@@ -21,21 +21,23 @@ internal fun TopFadeOverlay(alpha: Float, modifier: Modifier = Modifier) {
         modifier = modifier
             .fillMaxWidth()
             .height(72.dp)
-            .drawBehind {
-                val solidHeight = 20.dp.toPx()
-                drawRect(color = backgroundColor)
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        0f to backgroundColor,
-                        0.65f to backgroundColor.copy(alpha = 0.96f),
-                        1f to backgroundColor.copy(alpha = 0f),
-                        startY = solidHeight,
-                        endY = size.height
-                    ),
-                    topLeft = Offset(0f, solidHeight),
-                    size = Size(size.width, size.height - solidHeight)
-                )
-            }
             .graphicsLayer { this.alpha = alpha }
+            .drawBehind {
+                if (alpha > 0f) {
+                    val solidHeight = 20.dp.toPx()
+                    drawRect(color = backgroundColor)
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            0f to backgroundColor,
+                            0.65f to backgroundColor.copy(alpha = 0.96f),
+                            1f to backgroundColor.copy(alpha = 0f),
+                            startY = solidHeight,
+                            endY = size.height
+                        ),
+                        topLeft = Offset(0f, solidHeight),
+                        size = Size(size.width, size.height - solidHeight)
+                    )
+                }
+            }
     )
 }

@@ -407,6 +407,9 @@ interface CenterAvailabilityDao {
     @Query("SELECT * FROM center_availability WHERE centerId = :centerId ORDER BY dayOfWeek ASC, startTime ASC")
     suspend fun getForCenter(centerId: Long): List<CenterAvailabilityEntity>
 
+    @Query("SELECT * FROM center_availability WHERE centerId = :centerId ORDER BY dayOfWeek ASC, startTime ASC, id ASC")
+    suspend fun getForShare(centerId: Long): List<CenterAvailabilityEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(slot: CenterAvailabilityEntity): Long
 

@@ -6,6 +6,7 @@ import com.medicalrep.manager.BuildConfig
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
 import java.io.InputStream
 import java.io.OutputStream
@@ -67,7 +68,7 @@ object SharePackageExporter {
         val centerAvailability = linkedMapOf<Long, List<CenterAvailabilityEntity>>()
         val centerAttachments = linkedMapOf<Long, List<CenterAttachmentEntity>>()
         centersById.keys.forEach { centerId ->
-            centerAvailability[centerId] = database.centerAvailabilityDao().getForCenter(centerId)
+            centerAvailability[centerId] = database.centerAvailabilityDao().getForShare(centerId)
             if (includeAttachments) {
                 centerAttachments[centerId] = database.centerAttachmentDao().getForShare(centerId)
             }
@@ -203,7 +204,7 @@ object SharePackageExporter {
         }
 
         manifest.put("centers", centerArray).put("doctors", doctorArray)
-        zip.putNextEntry(ZipEntry("manifest.json"))
+        zip.putNextEntry(ZipEntry("manifest.json").apply { time = 0L })
         zip.write(manifest.toString().toByteArray(Charsets.UTF_8))
         zip.closeEntry()
         zip.finish()
@@ -214,7 +215,7 @@ object SharePackageExporter {
         "MRM-share-${SimpleDateFormat("yyyyMMdd", Locale.US).format(Date())}.zip"
 
     private fun addFile(zip: ZipOutputStream, file: File, entryName: String) {
-        zip.putNextEntry(ZipEntry(entryName))
+        zip.putNextEntry(ZipEntry(entryName).apply { time = 0L })
         FileInputStream(file).use { it.copyTo(zip) }
         zip.closeEntry()
     }
@@ -238,11 +239,12 @@ object SharePackageExporter {
                 context.contentResolver.openInputStream(uri)
             }
             if (input == null) return null
-            input.use {
-                zip.putNextEntry(ZipEntry(entryName))
-                it.copyTo(zip)
-                zip.closeEntry()
+            val photoBytes = input.use { stream ->
+                ByteArrayOutputStream().also { buffer -> stream.copyTo(buffer) }.toByteArray()
             }
+            zip.putNextEntry(ZipEntry(entryName).apply { time = 0L })
+            zip.write(photoBytes)
+            zip.closeEntry()
             entryName
         } catch (_: Exception) {
             null

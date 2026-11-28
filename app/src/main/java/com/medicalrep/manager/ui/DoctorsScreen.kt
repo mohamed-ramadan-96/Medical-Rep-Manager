@@ -448,7 +448,13 @@ private fun DoctorSearchField(
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout.PaddingValues, onManageSpecialties: () -> Unit = {}) {
+fun DoctorsScreen(
+    isArabic: Boolean,
+    padding: androidx.compose.foundation.layout.PaddingValues,
+    onManageSpecialties: () -> Unit = {},
+    initialOpenDoctorId: Long? = null,
+    onOpenDoctorHandled: () -> Unit = {}
+) {
     val context = LocalContext.current
     val database = remember { MedicalRepDatabase.getInstance(context) }
     val dao = database.doctorDao()
@@ -513,6 +519,13 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val snackbarHostState = remember { SnackbarHostState() }
     var attachmentsDoctor by remember { mutableStateOf<DoctorEntity?>(null) }
     var detailsDoctor by remember { mutableStateOf<DoctorEntity?>(null) }
+    LaunchedEffect(doctors, initialOpenDoctorId) {
+        val requestedDoctor = initialOpenDoctorId?.let { id -> doctors.firstOrNull { it.id == id } }
+        if (requestedDoctor != null) {
+            detailsDoctor = requestedDoctor
+            onOpenDoctorHandled()
+        }
+    }
     var showSpecialtiesManager by remember { mutableStateOf(false) }
     var showAddSpecialtyDialog by remember { mutableStateOf(false) }
     var newSpecialtyName by remember { mutableStateOf("") }

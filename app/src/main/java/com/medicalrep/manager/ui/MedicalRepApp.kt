@@ -211,6 +211,8 @@ private fun AnimatedNavigationIcon(name: String, animationKey: Int) {
 @Composable
 fun MedicalRepApp(
     themeMode: String,
+    openDoctorId: Long? = null,
+    onOpenDoctorHandled: () -> Unit = {},
     onThemeModeChange: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -261,6 +263,13 @@ fun MedicalRepApp(
     var navigationAnimationKey by remember { mutableIntStateOf(0) }
     val hapticFeedback = LocalHapticFeedback.current
     var showSpecialtiesManagement by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(openDoctorId) {
+        if (openDoctorId != null) {
+            selectedTab = tabs.indexOfFirst { it.icon == "doctors" }.coerceAtLeast(0)
+            showSettings = false
+            showSpecialtiesManagement = false
+        }
+    }
     LaunchedEffect(Unit) { if (selectedTab !in tabs.indices) selectedTab = 0 }
     val isArabic = language == AppLanguage.Arabic
 

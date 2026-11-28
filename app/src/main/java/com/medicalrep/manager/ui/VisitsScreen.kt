@@ -61,6 +61,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -79,6 +85,7 @@ import androidx.compose.ui.unit.dp
 import com.medicalrep.manager.data.DoctorEntity
 import com.medicalrep.manager.data.DoctorVisitEntity
 import com.medicalrep.manager.data.MedicalRepDatabase
+import com.medicalrep.manager.followup.FollowUpReminderScheduler
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.Instant
@@ -290,7 +297,13 @@ fun VisitsScreen(
             onDismiss = { showForm = false },
             onSave = { visit ->
                 scope.launch {
-                    if (visit.id == 0L) visitDao.insert(visit) else visitDao.update(visit)
+                    if (visit.id == 0L) {
+                        val insertedId = visitDao.insert(visit)
+                        FollowUpReminderScheduler.schedule(context, visit.copy(id = insertedId))
+                    } else {
+                        visitDao.update(visit)
+                        FollowUpReminderScheduler.schedule(context, visit)
+                    }
                 }
                 showForm = false
             }
@@ -305,7 +318,10 @@ fun VisitsScreen(
             text = { Text(if (isArabic) "سيتم حذف سجل هذه الزيارة فقط." else "Only this visit record will be deleted.") },
             confirmButton = {
                 TextButton(onClick = {
-                    scope.launch { visitDao.delete(visit) }
+                    scope.launch {
+                        visitDao.delete(visit)
+                        FollowUpReminderScheduler.cancel(context, visit.id)
+                    }
                     pendingDelete = null
                 }) { Text(if (isArabic) "حذف" else "Delete") }
             },
@@ -379,6 +395,10 @@ private fun VisitFormDialog(
     var showVisitTimePicker by remember { mutableStateOf(false) }
     var showFollowUpDatePicker by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* Reminder delivery is optional; saving the visit is never blocked. */ }
 
     AlertDialog(
         containerColor = AppDialogContainerColor(),
@@ -534,17 +554,36 @@ private fun VisitFormDialog(
                     outcome.isBlank() -> error = if (isArabic) "اكتب نتيجة الزيارة." else "Enter the visit outcome."
                     followUpDate.isNotBlank() && followUpAt == null -> error = if (isArabic) "تأكد من تاريخ المتابعة." else "Check the follow-up date."
                     followUpAt != null && followUpAt < visitedAt -> error = if (isArabic) "المتابعة لا يمكن أن تسبق الزيارة." else "Follow-up cannot be before the visit."
-                    else -> onSave(
-                        DoctorVisitEntity(
-                            id = initial?.id ?: 0L,
-                            doctorId = selectedDoctorId!!,
-                            visitedAt = visitedAt,
-                            outcome = outcome.trim(),
-                            notes = notes.trim(),
-                            nextFollowUpAt = followUpAt,
-                            createdAt = initial?.createdAt ?: System.currentTimeMillis()
+                    else -> {
+                        onSave(
+                            DoctorVisitEntity(
+                                id = initial?.id ?: 0L,
+                                doctorId = selectedDoctorId!!,
+                                visitedAt = visitedAt,
+                                outcome = outcome.trim(),
+                                notes = notes.trim(),
+                                nextFollowUpAt = followUpAt,
+                                createdAt = initial?.createdAt ?: System.currentTimeMillis()
+                            )
                         )
-                    )
+                        if (
+                            followUpAt != null &&
+                            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                            ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            ) != PackageManager.PERMISSION_GRANTED
+                        ) {
+                            val permissionPreferences = context.getSharedPreferences(
+                                "follow_up_notifications",
+                                android.content.Context.MODE_PRIVATE
+                            )
+                            if (!permissionPreferences.getBoolean("permission_requested", false)) {
+                                permissionPreferences.edit().putBoolean("permission_requested", true).apply()
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                        }
+                    }
                 }
                 }, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(10.dp)) { Text(if (isArabic) "حفظ" else "Save") }
                 OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(10.dp)) { Text(if (isArabic) "إلغاء" else "Cancel") }

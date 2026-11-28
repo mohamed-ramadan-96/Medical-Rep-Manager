@@ -13,6 +13,10 @@ import java.io.File
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import com.medicalrep.manager.followup.FollowUpReminderScheduler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +32,7 @@ import com.medicalrep.manager.ui.theme.MedicalRepTheme
 
 class MainActivity : ComponentActivity() {
     private var themeMode by mutableStateOf("system")
+    private var openDoctorId by mutableStateOf<Long?>(null)
 
     private val updateDownloadReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -50,6 +55,10 @@ class MainActivity : ComponentActivity() {
             ContextCompat.RECEIVER_EXPORTED
         )
         cleanupCompletedAppUpdateDownloads()
+        openDoctorId = intent.getLongExtra("open_doctor_id", -1L).takeIf { it > 0L }
+        lifecycleScope.launch(Dispatchers.IO) {
+            FollowUpReminderScheduler.rescheduleAll(applicationContext)
+        }
         handleMapShareIntent(intent)
         themeMode = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
             .getString("theme_mode", "system") ?: "system"
@@ -58,6 +67,8 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     MedicalRepApp(
                         themeMode = themeMode,
+                        openDoctorId = openDoctorId,
+                        onOpenDoctorHandled = { openDoctorId = null },
                         onThemeModeChange = { selectedMode ->
                             themeMode = selectedMode
                             getSharedPreferences("app_settings", Context.MODE_PRIVATE)
@@ -67,6 +78,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        openDoctorId = intent.getLongExtra("open_doctor_id", -1L).takeIf { it > 0L }
     }
 
     override fun onResume() {

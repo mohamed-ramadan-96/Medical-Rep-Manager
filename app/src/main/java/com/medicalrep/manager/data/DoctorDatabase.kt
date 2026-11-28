@@ -168,6 +168,12 @@ interface DoctorVisitDao {
     @Query("SELECT * FROM doctor_visits WHERE doctorId = :doctorId ORDER BY visitedAt DESC")
     fun observeForDoctor(doctorId: Long): Flow<List<DoctorVisitEntity>>
 
+    @Query("SELECT * FROM doctor_visits WHERE id = :id")
+    suspend fun getById(id: Long): DoctorVisitEntity?
+
+    @Query("SELECT * FROM doctor_visits WHERE nextFollowUpAt IS NOT NULL AND nextFollowUpAt >= :from")
+    suspend fun getUpcomingFollowUps(from: Long): List<DoctorVisitEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(visit: DoctorVisitEntity): Long
 
@@ -314,6 +320,9 @@ interface CenterAttachmentDao {
 
 @Dao
 interface DoctorDao {
+    @Query("SELECT * FROM doctors WHERE id = :id")
+    suspend fun getById(id: Long): DoctorEntity?
+
     @Query("SELECT * FROM doctors ORDER BY name COLLATE NOCASE ASC")
     fun observeAll(): Flow<List<DoctorEntity>>
 

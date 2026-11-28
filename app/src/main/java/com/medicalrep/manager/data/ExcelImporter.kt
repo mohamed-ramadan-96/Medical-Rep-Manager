@@ -7,7 +7,12 @@ import org.xmlpull.v1.XmlPullParser
 import java.io.ByteArrayOutputStream
 import java.util.zip.ZipInputStream
 
-data class ImportedDoctorRow(val name: String, val phone: String)
+data class ImportedDoctorRow(
+    val name: String,
+    val phone: String,
+    val specialty: String = "",
+    val area: String = ""
+)
 
 object ExcelImporter {
     fun readDoctors(resolver: ContentResolver, uri: Uri): List<ImportedDoctorRow> {
@@ -35,25 +40,35 @@ object ExcelImporter {
         val rows = parseSheet(sheet, shared)
         check(rows.isNotEmpty()) { "Excel sheet is empty" }
 
-        check(rows.all { row -> row.keys.all { it == 0 || it == 1 } }) {
-            "Excel file must not contain more than two columns"
+        check(rows.all { row -> row.keys.all { it in 0..3 } }) {
+            "Excel file must not contain more than four columns"
         }
         val nameHeaders = setOf("name", "doctor name", "الاسم", "اسم الطبيب", "اسم الدكتور")
         val phoneHeaders = setOf("phone", "phone number", "phone numbers", "الهاتف", "رقم الهاتف", "أرقام الهاتف", "رقم التليفون")
+        val specialtyHeaders = setOf("specialty", "التخصص", "تخصص")
+        val areaHeaders = setOf("area", "المنطقة", "منطقة")
         val header = rows.first().mapValues { it.value.trim().lowercase() }
         val hasHeader = header[0] in nameHeaders
-        val phoneColumn = if (hasHeader && header[1].isNullOrBlank()) null else if (hasHeader) {
+        val phoneColumn = if (hasHeader && header[1].isNullOrBlank()) {
+            null
+        } else if (hasHeader) {
             check(header[1] in phoneHeaders) {
                 "Second column must be Phone Number"
             }
             1
-        } else null
+        } else {
+            1.takeIf { rows.any { row -> it in row.keys } }
+        }
+        val specialtyColumn = if (hasHeader) 2.takeIf { header[2] in specialtyHeaders } else 2
+        val areaColumn = if (hasHeader) 3.takeIf { header[3] in areaHeaders } else 3
 
         val dataRows = if (hasHeader) rows.drop(1) else rows
         return dataRows.mapNotNull { row ->
             val name = row[0]?.trim().orEmpty()
-            val phone = if (phoneColumn != null) row[phoneColumn]?.trim().orEmpty() else ""
-            if (name.isBlank()) null else ImportedDoctorRow(name, phone)
+            val phone = phoneColumn?.let { row[it]?.trim().orEmpty() }.orEmpty()
+            val specialty = specialtyColumn?.let { row[it]?.trim().orEmpty() }.orEmpty()
+            val area = areaColumn?.let { row[it]?.trim().orEmpty() }.orEmpty()
+            if (name.isBlank()) null else ImportedDoctorRow(name, phone, specialty, area)
         }
     }
 

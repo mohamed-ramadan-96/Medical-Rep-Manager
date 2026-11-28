@@ -77,7 +77,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Chat
-import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
@@ -459,9 +458,11 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val availability by database.doctorAvailabilityDao().observeAll().collectAsState(initial = emptyList())
     val doctorCenterLinks by database.doctorCenterLinkDao().observeAll().collectAsState(initial = emptyList())
     val visits by database.doctorVisitDao().observeAll().collectAsState(initial = emptyList())
-    val doctorIdsWithAttachments by database.doctorAttachmentDao()
-        .observeDoctorIdsWithAttachments().collectAsState(initial = emptyList())
-    val doctorIdsWithAttachmentsSet = remember(doctorIdsWithAttachments) { doctorIdsWithAttachments.toSet() }
+    val doctorAttachmentCounts by database.doctorAttachmentDao()
+        .observeAttachmentCounts().collectAsState(initial = emptyList())
+    val doctorAttachmentCountById = remember(doctorAttachmentCounts) {
+        doctorAttachmentCounts.associate { it.ownerId to it.count }
+    }
     val pinnedPreferences = remember(context) {
         context.getSharedPreferences("doctor_pins", android.content.Context.MODE_PRIVATE)
     }
@@ -656,7 +657,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                         centerName = centerNameByDoctor[doctor.id].orEmpty(),
                         lastVisitAt = visits.asSequence().filter { it.doctorId == doctor.id }.maxOfOrNull { it.visitedAt },
                         isPinned = doctor.id.toString() in pinnedDoctorIds,
-                        hasAttachments = doctor.id in doctorIdsWithAttachmentsSet,
+                        attachmentCount = doctorAttachmentCountById[doctor.id] ?: 0,
                         isArabic = isArabic,
                         onTogglePin = {
                             val doctorIdKey = doctor.id.toString()
@@ -930,7 +931,7 @@ private fun DoctorCard(
     centerName: String,
     lastVisitAt: Long?,
     isPinned: Boolean,
-    hasAttachments: Boolean,
+    attachmentCount: Int,
     isArabic: Boolean,
     onTogglePin: () -> Unit,
     onEdit: () -> Unit,
@@ -1063,15 +1064,11 @@ private fun DoctorCard(
                 horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.End),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(modifier = Modifier.size(32.dp), onClick = onAttachments) {
-                    Icon(
-                        Icons.Default.AttachFile,
-                        contentDescription = if (isArabic) "المرفقات" else "Attachments",
-                        tint = if (hasAttachments) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
+                AttachmentsButton(
+                    count = attachmentCount,
+                    contentDescription = if (isArabic) "المرفقات" else "Attachments",
+                    onClick = onAttachments
+                )
                 IconButton(modifier = Modifier.size(32.dp), onClick = onEdit) {
                     Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit", modifier = Modifier.size(18.dp))
                 }

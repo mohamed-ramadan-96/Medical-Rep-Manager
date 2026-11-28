@@ -49,7 +49,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
@@ -208,9 +207,11 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val doctorDao = database.doctorDao()
     val centerAvailabilityDao = database.centerAvailabilityDao()
     val centerAvailability by centerAvailabilityDao.observeAll().collectAsState(initial = emptyList())
-    val centerIdsWithAttachments by database.centerAttachmentDao()
-        .observeCenterIdsWithAttachments().collectAsState(initial = emptyList())
-    val centerIdsWithAttachmentsSet = remember(centerIdsWithAttachments) { centerIdsWithAttachments.toSet() }
+    val centerAttachmentCounts by database.centerAttachmentDao()
+        .observeAttachmentCounts().collectAsState(initial = emptyList())
+    val centerAttachmentCountById = remember(centerAttachmentCounts) {
+        centerAttachmentCounts.associate { it.ownerId to it.count }
+    }
     val doctorCenterLinks by database.doctorCenterLinkDao().observeAll().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     val centers by dao.observeAll().collectAsState(initial = emptyList())
@@ -436,15 +437,11 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                             Icon(Icons.Default.LocationOn, contentDescription = if (isArabic) "الاتجاهات إلى المركز" else "Directions to center", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                                         }
                                     }
-                                    IconButton(modifier = Modifier.size(32.dp), onClick = { attachmentsCenter = center }) {
-                                        Icon(
-                                            Icons.Default.AttachFile,
-                                            contentDescription = if (isArabic) "المرفقات" else "Attachments",
-                                            tint = if (center.id in centerIdsWithAttachmentsSet) MaterialTheme.colorScheme.primary
-                                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
+                                    AttachmentsButton(
+                                        count = centerAttachmentCountById[center.id] ?: 0,
+                                        contentDescription = if (isArabic) "المرفقات" else "Attachments",
+                                        onClick = { attachmentsCenter = center }
+                                    )
                                     IconButton(modifier = Modifier.size(32.dp), onClick = { editing = center; showForm = true }) {
                                         Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit", modifier = Modifier.size(18.dp))
                                     }

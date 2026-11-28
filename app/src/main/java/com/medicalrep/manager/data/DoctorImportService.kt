@@ -18,6 +18,10 @@ class DoctorImportService(
     suspend fun import(rows: List<ImportedDoctorRow>): DoctorImportResult =
         database.withTransaction {
             val dao = database.doctorDao()
+            val specialtyDao = database.specialtyDao()
+            val specialtiesByName = specialtyDao.getAll()
+                .associateBy { it.name.trim().lowercase() }
+                .toMutableMap()
             val knownPhones = dao.getAllForImport()
                 .flatMap { ContactPhoneRules.split(it.phoneNumbers) }
                 .mapNotNull(ContactPhoneRules::normalize)
@@ -32,7 +36,26 @@ class DoctorImportService(
                 if (rowPhones.isNotEmpty() && rowPhones.any(knownPhones::contains)) {
                     skipped++
                 } else {
-                    dao.insert(DoctorEntity(name = row.name, phoneNumbers = row.phone))
+                    val specialtyName = row.specialty.trim()
+                    val specialtyId = if (specialtyName.isBlank()) {
+                        null
+                    } else {
+                        val key = specialtyName.lowercase()
+                        specialtiesByName[key]?.id ?: specialtyDao.insert(
+                            SpecialtyEntity(name = specialtyName)
+                        ).also { insertedId ->
+                            specialtiesByName[key] = SpecialtyEntity(id = insertedId, name = specialtyName)
+                        }
+                    }
+                    dao.insert(
+                        DoctorEntity(
+                            name = row.name,
+                            phoneNumbers = row.phone,
+                            specialty = specialtyName,
+                            specialtyId = specialtyId,
+                            area = row.area
+                        )
+                    )
                     knownPhones.addAll(rowPhones)
                     added++
                 }

@@ -83,6 +83,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        handleMapShareIntent(intent)
         openDoctorId = intent.getLongExtra("open_doctor_id", -1L).takeIf { it > 0L }
     }
 
@@ -247,9 +248,4 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        handleMapShareIntent(intent)
-    }
 }

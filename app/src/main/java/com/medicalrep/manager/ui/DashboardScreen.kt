@@ -1,5 +1,17 @@
 package com.medicalrep.manager.ui
 
+import androidx.compose.ui.Alignment
+
+import androidx.compose.material3.OutlinedTextField
+
+import androidx.compose.material3.Checkbox
+
+import androidx.compose.foundation.layout.heightIn
+
+import androidx.core.content.FileProvider
+
+import android.content.Intent
+
 import com.medicalrep.manager.ui.theme.AppDialogContainerColor
 
 
@@ -74,6 +86,8 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
+private const val NO_SPECIALTY_EXPORT_ID = -1L
+
 private data class DashboardBackupResult(
     val title: String,
     val message: String,
@@ -85,6 +99,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
     val context = LocalContext.current
     val database = remember { MedicalRepDatabase.getInstance(context) }
     val doctors by database.doctorDao().observeAll().collectAsState(initial = emptyList())
+    val specialties by database.specialtyDao().observeAll().collectAsState(initial = emptyList())
     val centers by database.medicalCenterDao().observeAll().collectAsState(initial = emptyList())
     val visits by database.doctorVisitDao().observeAll().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
@@ -95,6 +110,41 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
     var localBackupBusyTitle by remember { mutableStateOf("") }
     var localBackupResult by remember { mutableStateOf<DashboardBackupResult?>(null) }
     var showExcelExportConfirmation by remember { mutableStateOf(false) }
+    var exportDoctorSearch by remember { mutableStateOf("") }
+    var selectedExportSpecialtyIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    var selectedExportDoctorIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    val specialtyNames = remember(specialties) { specialties.associate { it.id to it.name } }
+    val doctorsWithoutSpecialty = remember(doctors, specialtyNames) {
+        doctors.filter { doctor ->
+            doctor.specialty.trim().ifBlank { doctor.specialtyId?.let(specialtyNames::get)?.trim().orEmpty() }.isBlank()
+        }
+    }
+    val filteredExportDoctors = remember(doctors, specialties, selectedExportSpecialtyIds, selectedExportDoctorIds) {
+        if (selectedExportSpecialtyIds.isEmpty() && selectedExportDoctorIds.isEmpty()) {
+            doctors
+        } else {
+            doctors.filter { doctor ->
+                val resolvedSpecialty = doctor.specialty.trim()
+                    .ifBlank { doctor.specialtyId?.let(specialtyNames::get)?.trim().orEmpty() }
+                doctor.id in selectedExportDoctorIds ||
+                    (NO_SPECIALTY_EXPORT_ID in selectedExportSpecialtyIds && resolvedSpecialty.isBlank()) ||
+                    selectedExportSpecialtyIds.any { specialtyId ->
+                        specialtyId != NO_SPECIALTY_EXPORT_ID &&
+                            (doctor.specialtyId == specialtyId ||
+                                resolvedSpecialty.equals(specialtyNames[specialtyId], ignoreCase = true))
+                    }
+            }
+        }
+    }
+    val visibleExportDoctors = remember(doctors, exportDoctorSearch) {
+        val query = exportDoctorSearch.trim()
+        if (query.isBlank()) doctors else doctors.filter {
+            it.name.contains(query, ignoreCase = true) ||
+                it.phoneNumbers.contains(query, ignoreCase = true) ||
+                it.specialty.contains(query, ignoreCase = true) ||
+                it.area.contains(query, ignoreCase = true)
+        }
+    }
     var showExcelImportConfirmation by remember { mutableStateOf(false) }
 
     val excelExportLauncher = rememberLauncherForActivityResult(
@@ -102,8 +152,8 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
     ) { uri ->
         if (uri != null) scope.launch {
             try {
-                withContext(Dispatchers.IO) { ExcelExporter.export(context, uri, doctors, isArabic) }
-                Toast.makeText(context, if (isArabic) "تم تصدير أسماء وأرقام الأطباء بنجاح" else "Doctor names and phone numbers exported", Toast.LENGTH_LONG).show()
+                withContext(Dispatchers.IO) { ExcelExporter.export(context, uri, filteredExportDoctors, isArabic, specialtyNames) }
+                Toast.makeText(context, if (isArabic) "تم تصدير بيانات ${filteredExportDoctors.size} طبيب بنجاح" else "Exported ${filteredExportDoctors.size} doctors successfully", Toast.LENGTH_LONG).show()
             } catch (error: Exception) {
                 Toast.makeText(context, (if (isArabic) "فشل تصدير Excel: " else "Excel export failed: ") + (error.localizedMessage ?: ""), Toast.LENGTH_LONG).show()
             }
@@ -188,19 +238,136 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
 
     if (showExcelExportConfirmation) {
         androidx.compose.material3.AlertDialog(
-        containerColor = AppDialogContainerColor(),
+            containerColor = AppDialogContainerColor(),
+            shape = RoundedCornerShape(10.dp),
             onDismissRequest = { showExcelExportConfirmation = false },
-            title = { Text(if (isArabic) "تأكيد تصدير Excel" else "Confirm Excel export") },
+            title = { Text(if (isArabic) "تصدير قائمة الأطباء" else "Export doctors") },
             text = {
-                Text(if (isArabic)
-                    "سيحتوي ملف Excel على اسم الطبيب ورقم الهاتف فقط، دون أي بيانات أخرى."
-                    else "The Excel file will contain only the doctor's name and phone number, with no other data.")
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 560.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        if (isArabic) "سيحتوي الملف على اسم الطبيب ورقم الهاتف والتخصص والمنطقة فقط."
+                        else "The file will contain doctor name, phone number, specialty and area only."
+                    )
+                    Text(if (isArabic) "التخصصات" else "Specialties", fontWeight = FontWeight.SemiBold)
+                    specialties.forEach { specialty ->
+                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = specialty.id in selectedExportSpecialtyIds,
+                                onCheckedChange = { checked ->
+                                    selectedExportSpecialtyIds = if (checked) selectedExportSpecialtyIds + specialty.id
+                                    else selectedExportSpecialtyIds - specialty.id
+                                }
+                            )
+                            Text(specialty.name)
+                        }
+                    }
+                    if (doctorsWithoutSpecialty.isNotEmpty()) {
+                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = NO_SPECIALTY_EXPORT_ID in selectedExportSpecialtyIds,
+                                onCheckedChange = { checked ->
+                                    selectedExportSpecialtyIds = if (checked) selectedExportSpecialtyIds + NO_SPECIALTY_EXPORT_ID
+                                    else selectedExportSpecialtyIds - NO_SPECIALTY_EXPORT_ID
+                                }
+                            )
+                            Text(if (isArabic) "بدون تخصص" else "No specialty")
+                        }
+                    }
+                    Text(if (isArabic) "اختيار الأطباء" else "Select doctors", fontWeight = FontWeight.SemiBold)
+                    OutlinedTextField(
+                        value = exportDoctorSearch,
+                        onValueChange = { exportDoctorSearch = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp),
+                        placeholder = { Text(if (isArabic) "ابحث عن طبيب..." else "Search doctors...") }
+                    )
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        androidx.compose.material3.TextButton(
+                            onClick = { selectedExportDoctorIds = selectedExportDoctorIds + visibleExportDoctors.map { it.id } }
+                        ) { Text(if (isArabic) "تحديد الكل" else "Select all") }
+                        androidx.compose.material3.TextButton(
+                            onClick = { selectedExportDoctorIds = selectedExportDoctorIds - visibleExportDoctors.map { it.id }.toSet() }
+                        ) { Text(if (isArabic) "مسح التحديد" else "Clear") }
+                    }
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().weight(1f, fill = false).heightIn(min = 100.dp)
+                    ) {
+                        items(visibleExportDoctors, key = { it.id }) { doctor ->
+                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = doctor.id in selectedExportDoctorIds,
+                                    onCheckedChange = { checked ->
+                                        selectedExportDoctorIds = if (checked) selectedExportDoctorIds + doctor.id
+                                        else selectedExportDoctorIds - doctor.id
+                                    }
+                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(doctor.name)
+                                    val details = listOf(doctor.specialty, doctor.area)
+                                        .filter { it.isNotBlank() }.joinToString(" • ")
+                                    if (details.isNotBlank()) {
+                                        Text(details, style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Text(
+                        (if (isArabic) "عدد الأطباء المُصدّرين: " else "Doctors to export: ") + filteredExportDoctors.size,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             },
             confirmButton = {
-                androidx.compose.material3.TextButton(onClick = {
-                    showExcelExportConfirmation = false
-                    excelExportLauncher.launch("Doctors.xlsx")
-                }) { Text(if (isArabic) "تأكيد" else "Confirm") }
+                Row {
+                    androidx.compose.material3.TextButton(onClick = {
+                        showExcelExportConfirmation = false
+                        excelExportLauncher.launch("Doctors.xlsx")
+                    }) { Text(if (isArabic) "حفظ الملف" else "Save file") }
+                    androidx.compose.material3.TextButton(onClick = {
+                        showExcelExportConfirmation = false
+                        scope.launch {
+                            try {
+                                val sharedFile = withContext(Dispatchers.IO) {
+                                    val directory = File(context.cacheDir, "shared_exports")
+                                    if (!directory.exists() && !directory.mkdirs()) {
+                                        error("Unable to create shared export directory")
+                                    }
+                                    val file = File(directory, "Doctors.xlsx")
+                                    file.outputStream().use { output ->
+                                        ExcelExporter.export(output, filteredExportDoctors, isArabic, specialtyNames)
+                                    }
+                                    file
+                                }
+                                val uri = FileProvider.getUriForFile(
+                                    context,
+                                    "${context.packageName}.fileprovider",
+                                    sharedFile
+                                )
+                                val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                                    putExtra(Intent.EXTRA_STREAM, uri)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                context.startActivity(
+                                    Intent.createChooser(sendIntent, if (isArabic) "مشاركة ملف الأطباء" else "Share doctors file")
+                                )
+                            } catch (error: Exception) {
+                                Toast.makeText(
+                                    context,
+                                    (if (isArabic) "فشل تصدير Excel: " else "Excel export failed: ") +
+                                        (error.localizedMessage ?: ""),
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+                    }) { Text(if (isArabic) "مشاركة" else "Share") }
+                }
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(onClick = { showExcelExportConfirmation = false }) {

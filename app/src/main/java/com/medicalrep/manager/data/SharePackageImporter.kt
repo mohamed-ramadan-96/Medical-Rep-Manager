@@ -2,12 +2,16 @@ package com.medicalrep.manager.data
 
 import android.content.Context
 import android.net.Uri
+import androidx.room.withTransaction
 import com.medicalrep.manager.domain.ContactPhoneRules
 import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedInputStream
 import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileOutputStream
+import java.util.UUID
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -56,8 +60,316 @@ object SharePackageImporter {
     suspend fun plan(context: Context, database: MedicalRepDatabase, uri: Uri): SharePlan =
         computeMerge(database, readManifest(context, uri)).toPlan()
 
+    private const val MAX_ENTRY_BYTES = 32L * 1024L * 1024L
+    private const val MAX_TOTAL_ATTACHMENT_BYTES = 128L * 1024L * 1024L
+
+    private data class PackageFile(
+        val entry: String,
+        val ownerKey: String,
+        val displayName: String,
+        val mimeType: String,
+        val isPhoto: Boolean,
+        val shouldCopy: Boolean,
+        var file: File? = null,
+        var byteSize: Long = 0L
+    )
+
     suspend fun apply(context: Context, database: MedicalRepDatabase, uri: Uri): ShareApplyResult {
-        throw NotImplementedError("Share package apply is implemented in the next stage.")
+        val parsed = readManifest(context, uri)
+        val merged = computeMerge(database, parsed)
+        val createdFiles = mutableListOf<File>()
+        var copiedCount = 0
+        try {
+            val packageFiles = if (merged.includesAttachments) {
+                buildPackageFiles(parsed, merged, database)
+            } else emptyList()
+            if (merged.includesAttachments) {
+                copiedCount = copyPackageFiles(context, uri, packageFiles, createdFiles)
+            }
+
+            database.withTransaction {
+                val specialtyDao = database.specialtyDao()
+                val specialtiesByName = specialtyDao.getAll()
+                    .associateBy { normalize(it.name) }
+                    .toMutableMap()
+                val specialtyIds = linkedMapOf<String, Long>()
+                merged.specialtyNames.forEach { rawName ->
+                    val name = rawName.trim()
+                    if (name.isNotBlank()) {
+                        val key = normalize(name)
+                        val existing = specialtiesByName[key]
+                        val id = existing?.id ?: specialtyDao.insert(SpecialtyEntity(name = name)).also {
+                            specialtiesByName[key] = SpecialtyEntity(id = it, name = name)
+                        }
+                        specialtyIds[key] = id
+                    }
+                }
+
+                val centerIdMap = linkedMapOf<Long, Long>()
+                merged.centers.groupBy { it.localId }.values.map { it.last() }.forEach { plan ->
+                    val entity = plan.entity
+                    val realId = if (plan.existing) {
+                        database.medicalCenterDao().update(entity)
+                        plan.localId
+                    } else {
+                        database.medicalCenterDao().insert(entity.copy(id = 0L))
+                    }
+                    centerIdMap[plan.localId] = realId
+                }
+
+                val doctorIdMap = linkedMapOf<Long, Long>()
+                merged.doctors.groupBy { it.localId }.values.map { it.last() }.forEach { plan ->
+                    val entity = plan.entity
+                    val specialtyKey = normalize(plan.specialtyName)
+                    val specialtyId = if (specialtyKey.isBlank()) null else specialtyIds[specialtyKey]
+                    val mappedCenterId = entity.centerId?.let { centerIdMap[it] ?: it }
+                    val mergedEntity = entity.copy(
+                        specialtyId = specialtyId ?: entity.specialtyId,
+                        centerId = mappedCenterId
+                    )
+                    val realId = if (plan.existing) {
+                        database.doctorDao().update(mergedEntity)
+                        plan.localId
+                    } else {
+                        database.doctorDao().insert(mergedEntity.copy(id = 0L))
+                    }
+                    doctorIdMap[plan.localId] = realId
+                }
+
+                val linksToInsert = merged.links.mapNotNull { (doctorId, centerId) ->
+                    val realDoctorId = doctorIdMap[doctorId] ?: doctorId
+                    val realCenterId = centerIdMap[centerId] ?: centerId
+                    DoctorCenterLinkEntity(realDoctorId, realCenterId)
+                }.distinct()
+                if (linksToInsert.isNotEmpty()) {
+                    database.doctorCenterLinkDao().insertAll(linksToInsert)
+                }
+
+                merged.doctorSlots.forEach { slot ->
+                    val doctorId = doctorIdMap[slot.doctorId] ?: slot.doctorId
+                    val centerId = slot.centerId?.let { centerIdMap[it] ?: it }
+                    database.doctorAvailabilityDao().insert(
+                        slot.copy(id = 0L, doctorId = doctorId, centerId = centerId)
+                    )
+                }
+                merged.centerSlots.forEach { slot ->
+                    val centerId = centerIdMap[slot.centerId] ?: slot.centerId
+                    database.centerAvailabilityDao().insert(
+                        slot.copy(id = 0L, centerId = centerId)
+                    )
+                }
+
+                packageFiles.filter { it.file != null }.forEach { item ->
+                    val file = item.file ?: return@forEach
+                    if (item.isPhoto) {
+                        val packageKey = item.ownerKey.removePrefix("d:")
+                        val localId = merged.localIds["doctor:$packageKey"] ?: return@forEach
+                        val doctorId = doctorIdMap[localId] ?: localId
+                        val doctor = database.doctorDao().getById(doctorId) ?: return@forEach
+                        if (doctor.photoUri.isNullOrBlank()) {
+                            database.doctorDao().update(
+                                doctor.copy(photoUri = Uri.fromFile(file).toString())
+                            )
+                        } else {
+                            file.delete()
+                            createdFiles.remove(file)
+                            copiedCount--
+                        }
+                    } else if (item.ownerKey.startsWith("d:")) {
+                        val packageKey = item.ownerKey.removePrefix("d:")
+                        val localId = merged.localIds["doctor:$packageKey"] ?: return@forEach
+                        val doctorId = doctorIdMap[localId] ?: localId
+                        val existing = database.doctorAttachmentDao().getForDoctor(doctorId)
+                        val duplicate = existing.any { attachment ->
+                            attachment.displayName == item.displayName &&
+                                File(attachment.localPath).length() == item.byteSize
+                        }
+                        if (duplicate) {
+                            file.delete()
+                            createdFiles.remove(file)
+                            copiedCount--
+                        } else {
+                            database.doctorAttachmentDao().insert(
+                                DoctorAttachmentEntity(
+                                    doctorId = doctorId, displayName = item.displayName,
+                                    mimeType = item.mimeType, localPath = file.absolutePath
+                                )
+                            )
+                        }
+                    } else {
+                        val packageKey = item.ownerKey.removePrefix("c:")
+                        val localId = merged.localIds["center:$packageKey"] ?: return@forEach
+                        val centerId = centerIdMap[localId] ?: localId
+                        val existing = database.centerAttachmentDao().getForCenter(centerId)
+                        val duplicate = existing.any { attachment ->
+                            attachment.displayName == item.displayName &&
+                                File(attachment.localPath).length() == item.byteSize
+                        }
+                        if (duplicate) {
+                            file.delete()
+                            createdFiles.remove(file)
+                            copiedCount--
+                        } else {
+                            database.centerAttachmentDao().insert(
+                                CenterAttachmentEntity(
+                                    centerId = centerId, displayName = item.displayName,
+                                    mimeType = item.mimeType, localPath = file.absolutePath
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+
+            return ShareApplyResult(
+                newDoctors = merged.newDoctors,
+                updatedDoctors = merged.updatedDoctors,
+                sameNameDifferentPhone = merged.sameNameDifferentPhone,
+                newCenters = merged.newCenters,
+                updatedCenters = merged.updatedCenters,
+                doctorSlotsToAdd = merged.doctorSlots.size,
+                centerSlotsToAdd = merged.centerSlots.size,
+                attachmentsToCopy = copiedCount,
+                includesAttachments = merged.includesAttachments,
+                warnings = merged.warnings
+            )
+        } catch (error: Exception) {
+            createdFiles.forEach { file -> runCatching { file.delete() } }
+            throw error
+        }
+    }
+
+    private suspend fun buildPackageFiles(
+        parsed: ParsedPackage,
+        merged: MergeResult,
+        database: MedicalRepDatabase
+    ): List<PackageFile> {
+        val files = mutableListOf<PackageFile>()
+        val doctorByKey = merged.doctors.associateBy { it.key }
+        val centerByKey = merged.centers.associateBy { it.key }
+        val doctorAttachments = database.doctorAttachmentDao().getAll()
+        val centerAttachments = database.centerAttachmentDao().getAll()
+        parsed.doctors.let { array ->
+            forEachObject(array) { doctor ->
+                val key = requiredString(doctor, "key")
+                val plan = doctorByKey[key] ?: return@forEachObject
+                val existing = if (plan.existing) doctorAttachments.filter { it.doctorId == plan.localId } else emptyList()
+                val attachments = doctor.optJSONArray("attachments") ?: JSONArray()
+                forEachObject(attachments) { attachment ->
+                    val entry = requiredString(attachment, "entry")
+                    validateEntryName(entry)
+                    val name = requiredString(attachment, "displayName")
+                    files.add(PackageFile(
+                        entry, "d:$key", name, attachment.optString("mimeType").ifBlank { "application/octet-stream" },
+                        false, true
+                    ))
+                }
+                nullableString(doctor, "photoEntry")?.let { entry ->
+                    validateEntryName(entry)
+                    val currentPhoto = plan.entity.photoUri
+                    files.add(PackageFile(entry, "d:$key", "photo", "image/jpeg", true, currentPhoto.isNullOrBlank()))
+                }
+            }
+        }
+        parsed.centers.let { array ->
+            forEachObject(array) { center ->
+                val key = requiredString(center, "key")
+                val plan = centerByKey[key] ?: return@forEachObject
+                val existing = if (plan.existing) centerAttachments.filter { it.centerId == plan.localId } else emptyList()
+                val attachments = center.optJSONArray("attachments") ?: JSONArray()
+                forEachObject(attachments) { attachment ->
+                    val entry = requiredString(attachment, "entry")
+                    validateEntryName(entry)
+                    val name = requiredString(attachment, "displayName")
+                    files.add(PackageFile(
+                        entry, "c:$key", name, attachment.optString("mimeType").ifBlank { "application/octet-stream" },
+                        false, true
+                    ))
+                }
+            }
+        }
+        if (files.map { it.entry }.distinct().size != files.size) {
+            throw IllegalStateException("The package references the same attachment entry more than once.")
+        }
+        return files
+    }
+
+    private fun copyPackageFiles(
+        context: Context,
+        uri: Uri,
+        packageFiles: List<PackageFile>,
+        createdFiles: MutableList<File>
+    ): Int {
+        if (packageFiles.isEmpty()) return 0
+        val byEntry = packageFiles.associateBy { it.entry }
+        val seenEntries = mutableSetOf<String>()
+        var totalBytes = 0L
+        var copied = 0
+        val stream = context.contentResolver.openInputStream(uri)
+            ?: throw IllegalStateException("Cannot reopen the selected share package.")
+        try {
+            ZipInputStream(BufferedInputStream(stream)).use { zip ->
+                while (true) {
+                    val entry = zip.nextEntry ?: break
+                    validateEntryName(entry.name)
+                    if (!entry.isDirectory && !seenEntries.add(entry.name)) {
+                        throw IllegalStateException("The package contains duplicate ZIP entries.")
+                    }
+                    val item = byEntry[entry.name]
+                    if (item == null || entry.isDirectory) {
+                        while (zip.read() != -1) Unit
+                    } else {
+                        val directory = when {
+                            item.isPhoto -> File(context.filesDir, "doctor_photos")
+                            item.ownerKey.startsWith("d:") -> File(context.filesDir, "doctor_attachments")
+                            else -> File(context.filesDir, "center_attachments")
+                        }
+                        if (item.shouldCopy) {
+                            if (!directory.exists() && !directory.mkdirs()) {
+                                throw IllegalStateException("Cannot create the private attachment folder.")
+                            }
+                            val extension = item.displayName.substringAfterLast('.', "")
+                                .lowercase(Locale.ROOT).filter { it.isLetterOrDigit() }.take(8)
+                                .ifBlank { entry.name.substringAfterLast('.', "").filter { it.isLetterOrDigit() }.take(8) }
+                            val file = File(directory, UUID.randomUUID().toString() + if (extension.isBlank()) "" else ".$extension")
+                            if (!file.createNewFile()) throw IllegalStateException("Cannot create an imported attachment file.")
+                            createdFiles.add(file)
+                            item.file = file
+                        }
+                        val output = item.file?.let { FileOutputStream(it) }
+                        try {
+                            val buffer = ByteArray(8192)
+                            var entryBytes = 0L
+                            while (true) {
+                                val count = zip.read(buffer)
+                                if (count < 0) break
+                                entryBytes += count
+                                totalBytes += count
+                                if (entryBytes > MAX_ENTRY_BYTES) {
+                                    throw IllegalStateException("An attachment exceeds the 32 MB size limit.")
+                                }
+                                if (totalBytes > MAX_TOTAL_ATTACHMENT_BYTES) {
+                                    throw IllegalStateException("Attachments exceed the 128 MB total size limit.")
+                                }
+                                output?.write(buffer, 0, count)
+                            }
+                            item.byteSize = entryBytes
+                            if (item.file != null) copied++
+                        } finally {
+                            output?.close()
+                        }
+                    }
+                    zip.closeEntry()
+                }
+            }
+        } catch (error: IllegalStateException) {
+            throw error
+        } catch (error: Exception) {
+            throw IllegalStateException("The package attachments could not be extracted.", error)
+        }
+        val missing = byEntry.keys - seenEntries
+        if (missing.isNotEmpty()) throw IllegalStateException("The package is missing a referenced attachment.")
+        return copied
     }
 
     private suspend fun computeMerge(database: MedicalRepDatabase, parsed: ParsedPackage): MergeResult {

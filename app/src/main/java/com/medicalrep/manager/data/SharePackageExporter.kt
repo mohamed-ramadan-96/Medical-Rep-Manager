@@ -2,7 +2,6 @@ package com.medicalrep.manager.data
 
 import android.content.Context
 import android.net.Uri
-import com.medicalrep.manager.BuildConfig
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -30,7 +29,8 @@ object SharePackageExporter {
         val doctors = if (doctorIds.isEmpty()) {
             emptyList()
         } else {
-            database.doctorDao().getByIds(doctorIds.toList())
+            doctorIds.toList().chunked(500)
+                .flatMap { database.doctorDao().getByIds(it) }
                 .sortedWith(compareBy<DoctorEntity> { it.name.lowercase(Locale.ROOT) }.thenBy { it.id })
         }
         val specialtiesById = database.specialtyDao().getAll().associateBy { it.id }
@@ -57,7 +57,8 @@ object SharePackageExporter {
 
         val centersById = linkedMapOf<Long, MedicalCenterEntity>()
         if (linkedCenterIds.isNotEmpty()) {
-            database.medicalCenterDao().getByIds(linkedCenterIds.toList())
+            linkedCenterIds.toList().chunked(500)
+                .flatMap { database.medicalCenterDao().getByIds(it) }
                 .forEach { centersById[it.id] = it }
         }
         val centerKeys = centersById.keys.sortedWith(
@@ -81,10 +82,15 @@ object SharePackageExporter {
             resolved.takeIf { it.isNotBlank() }
         }.distinct().sortedWith(String.CASE_INSENSITIVE_ORDER)
 
+        val appVersion = try {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName.orEmpty()
+        } catch (_: Exception) {
+            ""
+        }
         val manifest = JSONObject()
             .put("format", "mrm-share")
             .put("formatVersion", 1)
-            .put("appVersion", BuildConfig.VERSION_NAME)
+            .put("appVersion", appVersion)
             .put("createdAt", System.currentTimeMillis())
             .put("includesAttachments", includeAttachments)
             .put("specialties", JSONArray().apply { specialtiesUsed.forEach { put(it) } })

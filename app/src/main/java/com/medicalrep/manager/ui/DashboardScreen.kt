@@ -219,8 +219,8 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
             title = { Text(if (isArabic) "قبل استيراد ملف Excel" else "Before importing Excel") },
             text = {
                 Text(if (isArabic)
-                    "يُقبل ملف Excel بعمود واحد لأسماء الأطباء فقط، أو بعمودين: اسم الطبيب ورقم الهاتف. وجود أي عمود ثالث أو إضافي سيؤدي إلى فشل الاستيراد."
-                    else "The Excel file may contain one column with doctor names only, or two columns: Doctor Name and Phone Number. Any third or additional column will cause the import to fail.")
+                    "يُقبل ملف Excel بعمود واحد أو عمودين (اسم الطبيب ورقم الهاتف)، أو حتى 4 أعمدة بالترتيب: اسم الطبيب، رقم الهاتف، التخصص، المنطقة. عند وجود عناوين، يُقرأ العمود الثالث والرابع فقط إذا كان عنوانهما التخصص والمنطقة؛ أما الملفات بلا عناوين فتُقرأ الأعمدة الثالثة والرابعة كتخصص ومنطقة."
+                    else "Excel files may contain one to four columns in this order: Doctor name, Phone number, Specialty, Area. With headers, columns three and four are read only when labeled Specialty and Area; without headers, columns three and four are treated as specialty and area.")
             },
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = {

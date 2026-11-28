@@ -37,7 +37,6 @@ object SharePackageExporter {
         val linkedCenterIds = linkedSetOf<Long>()
         val linksByDoctor = linkedMapOf<Long, List<DoctorCenterLinkEntity>>()
         val doctorAvailabilityByDoctor = linkedMapOf<Long, List<DoctorAvailabilityEntity>>()
-        val visitsByDoctor = linkedMapOf<Long, List<DoctorVisitEntity>>()
         val doctorAttachmentsByDoctor = linkedMapOf<Long, List<DoctorAttachmentEntity>>()
 
         doctors.forEach { doctor ->
@@ -45,7 +44,6 @@ object SharePackageExporter {
             val availability = database.doctorAvailabilityDao().getForDoctor(doctor.id)
             linksByDoctor[doctor.id] = links
             doctorAvailabilityByDoctor[doctor.id] = availability
-            visitsByDoctor[doctor.id] = database.doctorVisitDao().getForDoctor(doctor.id)
             links.forEach { linkedCenterIds.add(it.centerId) }
             doctor.centerId?.let { linkedCenterIds.add(it) }
             availability.mapNotNullTo(linkedCenterIds) { it.centerId }
@@ -173,16 +171,6 @@ object SharePackageExporter {
                             .put("endTime", slot.endTime)
                             .put("notes", slot.notes)
                             .put("centerKey", slot.centerId?.let { centerKeys[it] } ?: JSONObject.NULL))
-                    }
-                })
-                .put("visits", JSONArray().apply {
-                    visitsByDoctor[doctor.id].orEmpty().forEach { visit ->
-                        put(JSONObject()
-                            .put("visitedAt", visit.visitedAt)
-                            .put("outcome", visit.outcome)
-                            .put("notes", visit.notes)
-                            .putNullable("nextFollowUpAt", visit.nextFollowUpAt)
-                            .put("createdAt", visit.createdAt))
                     }
                 })
                 .put("attachments", JSONArray())

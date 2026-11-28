@@ -48,6 +48,8 @@ import com.medicalrep.manager.backup.DriveBackupEngine
 import com.medicalrep.manager.data.ExcelExporter
 import com.medicalrep.manager.data.ExcelImporter
 import com.medicalrep.manager.data.SharePackageExporter
+import com.medicalrep.manager.data.SharePackageImporter
+import com.medicalrep.manager.data.SharePlan
 import com.medicalrep.manager.data.DoctorEntity
 import com.medicalrep.manager.data.DoctorImportService
 import java.io.File
@@ -100,6 +102,11 @@ private data class DashboardBackupResult(
     val refreshAfterAcknowledge: Boolean = false
 )
 
+private data class DashboardSharePackageResult(
+    val title: String,
+    val message: String
+)
+
 @Composable
 fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
     val context = LocalContext.current
@@ -112,6 +119,10 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
     var exportMenuExpanded by remember { mutableStateOf(false) }
     var importMenuExpanded by remember { mutableStateOf(false) }
     var pendingRestoreUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingSharePackageUri by remember { mutableStateOf<Uri?>(null) }
+    var sharePackagePlan by remember { mutableStateOf<SharePlan?>(null) }
+    var sharePackageImportBusy by remember { mutableStateOf(false) }
+    var sharePackageImportResult by remember { mutableStateOf<DashboardSharePackageResult?>(null) }
     var localBackupBusy by remember { mutableStateOf(false) }
     var localBackupBusyTitle by remember { mutableStateOf("") }
     var localBackupResult by remember { mutableStateOf<DashboardBackupResult?>(null) }
@@ -231,6 +242,29 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
     val fullBackupImportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri -> pendingRestoreUri = uri }
+    val sharePackageImportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            pendingSharePackageUri = uri
+            sharePackageImportBusy = true
+            scope.launch {
+                try {
+                    sharePackagePlan = withContext(Dispatchers.IO) {
+                        SharePackageImporter.plan(context, database, uri)
+                    }
+                } catch (error: Exception) {
+                    pendingSharePackageUri = null
+                    Toast.makeText(
+                        context,
+                        (if (isArabic) "تعذر فحص ملف المشاركة: " else "Could not inspect share package: ") +
+                            (error.localizedMessage ?: error.javaClass.simpleName),
+                        Toast.LENGTH_LONG
+                    ).show()
+                } finally { sharePackageImportBusy = false }
+            }
+        }
+    }
     val excelImportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
@@ -684,6 +718,154 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
         )
     }
 
+    sharePackagePlan?.let { plan ->
+        androidx.compose.material3.AlertDialog(
+            containerColor = AppDialogContainerColor(),
+            shape = RoundedCornerShape(10.dp),
+            onDismissRequest = {
+                if (!sharePackageImportBusy) {
+                    sharePackagePlan = null
+                    pendingSharePackageUri = null
+                }
+            },
+            title = { Text(if (isArabic) "تأكيد استيراد ملف المشاركة" else "Confirm share package import") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(if (isArabic) "ملخص البيانات التي سيتم دمجها:" else "Summary of the data to be merged:")
+                    Text(
+                        (if (isArabic) "أطباء جدد: " else "New doctors: ") + plan.newDoctors
+                    )
+                    Text(
+                        (if (isArabic) "أطباء سيتم تحديث بياناتهم: " else "Doctors to update: ") + plan.updatedDoctors
+                    )
+                    Text(
+                        (if (isArabic) "أسماء متطابقة بأرقام مختلفة: " else "Same name, different phone: ") + plan.sameNameDifferentPhone
+                    )
+                    Text(
+                        (if (isArabic) "مراكز جديدة: " else "New centers: ") + plan.newCenters
+                    )
+                    Text(
+                        (if (isArabic) "مراكز سيتم تحديثها: " else "Centers to update: ") + plan.updatedCenters
+                    )
+                    Text(
+                        (if (isArabic) "مواعيد الإتاحة المضافة (الأطباء): " else "Availability slots to add (doctors): ") + plan.doctorSlotsToAdd
+                    )
+                    Text(
+                        (if (isArabic) "مواعيد الإتاحة المضافة (المراكز): " else "Availability slots to add (centers): ") + plan.centerSlotsToAdd
+                    )
+                    Text(
+                        (if (isArabic) "يتضمن المرفقات والصور: " else "Includes attachments and photos: ") +
+                            if (plan.includesAttachments) (if (isArabic) "نعم" else "Yes") else (if (isArabic) "لا" else "No")
+                    )
+                    Text(
+                        if (isArabic) "لا يتضمن الزيارات أو الخطة الأسبوعية أو المتابعات"
+                        else "Visits, weekly plan and follow-ups are not included.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (plan.warnings.isNotEmpty()) {
+                        plan.warnings.forEach { warning ->
+                            Text(warning, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    enabled = !sharePackageImportBusy,
+                    onClick = {
+                        val selectedUri = pendingSharePackageUri
+                        if (selectedUri != null) {
+                            sharePackagePlan = null
+                            pendingSharePackageUri = null
+                            sharePackageImportBusy = true
+                            scope.launch {
+                                try {
+                                    val result = withContext(Dispatchers.IO) {
+                                        SharePackageImporter.apply(context, database, selectedUri)
+                                    }
+                                    sharePackageImportResult = DashboardSharePackageResult(
+                                        title = if (isArabic) "تم استيراد ملف المشاركة" else "Share package imported",
+                                        message = buildString {
+                                            append(if (isArabic) "أطباء جدد: " else "New doctors: ")
+                                            append(result.newDoctors)
+                                            append('\\n')
+                                            append(if (isArabic) "أطباء تم تحديثهم: " else "Doctors updated: ")
+                                            append(result.updatedDoctors)
+                                            append('\\n')
+                                            append(if (isArabic) "أسماء متطابقة بأرقام مختلفة: " else "Same name, different phone: ")
+                                            append(result.sameNameDifferentPhone)
+                                            append('\\n')
+                                            append(if (isArabic) "مراكز جديدة: " else "New centers: ")
+                                            append(result.newCenters)
+                                            append('\\n')
+                                            append(if (isArabic) "مراكز تم تحديثها: " else "Centers updated: ")
+                                            append(result.updatedCenters)
+                                            append('\\n')
+                                            append(if (isArabic) "مواعيد إتاحة الأطباء المضافة: " else "Doctor availability slots added: ")
+                                            append(result.doctorSlotsToAdd)
+                                            append('\\n')
+                                            append(if (isArabic) "مواعيد إتاحة المراكز المضافة: " else "Center availability slots added: ")
+                                            append(result.centerSlotsToAdd)
+                                            append('\\n')
+                                            append(if (isArabic) "المرفقات والصور المنسوخة: " else "Attachments and photos copied: ")
+                                            append(result.attachmentsToCopy)
+                                        }
+                                    )
+                                } catch (error: Exception) {
+                                    sharePackageImportResult = DashboardSharePackageResult(
+                                        title = if (isArabic) "فشل استيراد ملف المشاركة" else "Share package import failed",
+                                        message = error.localizedMessage ?: error.javaClass.simpleName
+                                    )
+                                } finally { sharePackageImportBusy = false }
+                            }
+                        }
+                    }
+                ) { Text(if (isArabic) "استيراد" else "Import") }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(
+                    enabled = !sharePackageImportBusy,
+                    onClick = {
+                        sharePackagePlan = null
+                        pendingSharePackageUri = null
+                    }
+                ) { Text(if (isArabic) "إلغاء" else "Cancel") }
+            }
+        )
+    }
+
+    if (!sharePackageImportBusy) sharePackageImportResult?.let { result ->
+        androidx.compose.material3.AlertDialog(
+            containerColor = AppDialogContainerColor(),
+            shape = RoundedCornerShape(10.dp),
+            onDismissRequest = { sharePackageImportResult = null },
+            title = { Text(result.title) },
+            text = { Text(result.message) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { sharePackageImportResult = null }) {
+                    Text(if (isArabic) "موافق" else "OK")
+                }
+            }
+        )
+    }
+
+    if (sharePackageImportBusy) {
+        androidx.compose.material3.AlertDialog(
+            containerColor = AppDialogContainerColor(),
+            shape = RoundedCornerShape(10.dp),
+            onDismissRequest = {},
+            title = { Text(if (isArabic) "جارٍ استيراد ملف المشاركة..." else "Importing share package...") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    Text(if (isArabic) "من فضلك انتظر حتى تنتهي العملية." else "Please wait for the operation to finish.")
+                }
+            },
+            confirmButton = {}
+        )
+    }
+
     pendingRestoreUri?.let { selectedUri ->
         androidx.compose.material3.AlertDialog(
             containerColor = AppDialogContainerColor(),
@@ -865,7 +1047,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.md), modifier = Modifier.fillMaxWidth()) {
                 Box(modifier = Modifier.weight(1f)) {
-                    Button(onClick = { exportMenuExpanded = true }, enabled = !localBackupBusy, modifier = Modifier.fillMaxWidth()) {
+                    Button(onClick = { exportMenuExpanded = true }, enabled = !localBackupBusy && !sharePackageExportBusy && !sharePackageImportBusy, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.FileUpload, contentDescription = null)
                         Text(if (isArabic) "تصدير" else "Export", modifier = Modifier.padding(start = 4.dp))
                     }
@@ -898,7 +1080,7 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                     }
                 }
                 Box(modifier = Modifier.weight(1f)) {
-                    Button(onClick = { importMenuExpanded = true }, enabled = !localBackupBusy, modifier = Modifier.fillMaxWidth()) {
+                    Button(onClick = { importMenuExpanded = true }, enabled = !localBackupBusy && !sharePackageExportBusy && !sharePackageImportBusy, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.FileDownload, contentDescription = null)
                         Text(if (isArabic) "استيراد" else "Import", modifier = Modifier.padding(start = 4.dp))
                     }
@@ -917,6 +1099,13 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                             onClick = {
                                 importMenuExpanded = false
                                 showExcelImportConfirmation = true
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(if (isArabic) "استيراد ملف مشاركة" else "Import shared package") },
+                            onClick = {
+                                importMenuExpanded = false
+                                sharePackageImportLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
                             }
                         )
                         DropdownMenuItem(

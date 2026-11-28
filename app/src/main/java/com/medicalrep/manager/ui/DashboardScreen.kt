@@ -1,5 +1,9 @@
 package com.medicalrep.manager.ui
 
+import com.medicalrep.manager.ui.theme.AppSelectionRowColor
+
+import androidx.compose.material3.Surface
+
 import androidx.compose.ui.Alignment
 
 import androidx.compose.material3.OutlinedTextField
@@ -244,81 +248,150 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
             title = { Text(if (isArabic) "تصدير قائمة الأطباء" else "Export doctors") },
             text = {
                 Column(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 560.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 480.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        if (isArabic) "سيحتوي الملف على اسم الطبيب ورقم الهاتف والتخصص والمنطقة فقط."
-                        else "The file will contain doctor name, phone number, specialty and area only."
-                    )
-                    Text(if (isArabic) "التخصصات" else "Specialties", fontWeight = FontWeight.SemiBold)
-                    specialties.forEach { specialty ->
-                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(
-                                checked = specialty.id in selectedExportSpecialtyIds,
-                                onCheckedChange = { checked ->
-                                    selectedExportSpecialtyIds = if (checked) selectedExportSpecialtyIds + specialty.id
-                                    else selectedExportSpecialtyIds - specialty.id
-                                }
-                            )
-                            Text(specialty.name)
-                        }
-                    }
-                    if (doctorsWithoutSpecialty.isNotEmpty()) {
-                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(
-                                checked = NO_SPECIALTY_EXPORT_ID in selectedExportSpecialtyIds,
-                                onCheckedChange = { checked ->
-                                    selectedExportSpecialtyIds = if (checked) selectedExportSpecialtyIds + NO_SPECIALTY_EXPORT_ID
-                                    else selectedExportSpecialtyIds - NO_SPECIALTY_EXPORT_ID
-                                }
-                            )
-                            Text(if (isArabic) "بدون تخصص" else "No specialty")
-                        }
-                    }
-                    Text(if (isArabic) "اختيار الأطباء" else "Select doctors", fontWeight = FontWeight.SemiBold)
-                    OutlinedTextField(
-                        value = exportDoctorSearch,
-                        onValueChange = { exportDoctorSearch = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        shape = RoundedCornerShape(10.dp),
-                        placeholder = { Text(if (isArabic) "ابحث عن طبيب..." else "Search doctors...") }
-                    )
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        androidx.compose.material3.TextButton(
-                            onClick = { selectedExportDoctorIds = selectedExportDoctorIds + visibleExportDoctors.map { it.id } }
-                        ) { Text(if (isArabic) "تحديد الكل" else "Select all") }
-                        androidx.compose.material3.TextButton(
-                            onClick = { selectedExportDoctorIds = selectedExportDoctorIds - visibleExportDoctors.map { it.id }.toSet() }
-                        ) { Text(if (isArabic) "مسح التحديد" else "Clear") }
-                    }
                     LazyColumn(
-                        modifier = Modifier.fillMaxWidth().weight(1f, fill = false).heightIn(min = 100.dp)
+                        modifier = Modifier.fillMaxWidth().weight(1f)
                     ) {
-                        items(visibleExportDoctors, key = { it.id }) { doctor ->
-                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = doctor.id in selectedExportDoctorIds,
-                                    onCheckedChange = { checked ->
-                                        selectedExportDoctorIds = if (checked) selectedExportDoctorIds + doctor.id
-                                        else selectedExportDoctorIds - doctor.id
+                        item {
+                            Text(
+                                if (isArabic) "سيحتوي الملف على اسم الطبيب ورقم الهاتف والتخصص والمنطقة فقط."
+                                else "The file will contain doctor name, phone number, specialty and area only."
+                            )
+                            Text(
+                                if (isArabic) "التخصصات" else "Specialties",
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        item {
+                            Column {
+                                specialties.forEach { specialty ->
+                                    Surface(
+                                        color = AppSelectionRowColor(),
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Checkbox(
+                                                checked = specialty.id in selectedExportSpecialtyIds,
+                                                onCheckedChange = { checked ->
+                                                    selectedExportSpecialtyIds = if (checked) {
+                                                        selectedExportSpecialtyIds + specialty.id
+                                                    } else {
+                                                        selectedExportSpecialtyIds - specialty.id
+                                                    }
+                                                }
+                                            )
+                                            Text(specialty.name, modifier = Modifier.weight(1f))
+                                        }
                                     }
+                                }
+                                if (doctorsWithoutSpecialty.isNotEmpty()) {
+                                    Surface(
+                                        color = AppSelectionRowColor(),
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Checkbox(
+                                                checked = NO_SPECIALTY_EXPORT_ID in selectedExportSpecialtyIds,
+                                                onCheckedChange = { checked ->
+                                                    selectedExportSpecialtyIds = if (checked) {
+                                                        selectedExportSpecialtyIds + NO_SPECIALTY_EXPORT_ID
+                                                    } else {
+                                                        selectedExportSpecialtyIds - NO_SPECIALTY_EXPORT_ID
+                                                    }
+                                                }
+                                            )
+                                            Text(
+                                                if (isArabic) "بدون تخصص" else "No specialty",
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        item {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    if (isArabic) "اختيار الأطباء" else "Select doctors",
+                                    fontWeight = FontWeight.SemiBold
                                 )
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(doctor.name)
-                                    val details = listOf(doctor.specialty, doctor.area)
-                                        .filter { it.isNotBlank() }.joinToString(" • ")
-                                    if (details.isNotBlank()) {
-                                        Text(details, style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                OutlinedTextField(
+                                    value = exportDoctorSearch,
+                                    onValueChange = { exportDoctorSearch = it },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = AppFilledTextFieldColors(),
+                                    placeholder = { Text(if (isArabic) "ابحث عن طبيب..." else "Search doctors...") }
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    androidx.compose.material3.TextButton(
+                                        onClick = {
+                                            selectedExportDoctorIds =
+                                                selectedExportDoctorIds + visibleExportDoctors.map { it.id }
+                                        }
+                                    ) { Text(if (isArabic) "تحديد الكل" else "Select all") }
+                                    androidx.compose.material3.TextButton(
+                                        onClick = {
+                                            selectedExportDoctorIds =
+                                                selectedExportDoctorIds - visibleExportDoctors.map { it.id }.toSet()
+                                        }
+                                    ) { Text(if (isArabic) "مسح التحديد" else "Clear") }
+                                }
+                            }
+                        }
+                        items(visibleExportDoctors, key = { it.id }) { doctor ->
+                            Surface(
+                                color = AppSelectionRowColor(),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Checkbox(
+                                        checked = doctor.id in selectedExportDoctorIds,
+                                        onCheckedChange = { checked ->
+                                            selectedExportDoctorIds = if (checked) {
+                                                selectedExportDoctorIds + doctor.id
+                                            } else {
+                                                selectedExportDoctorIds - doctor.id
+                                            }
+                                        }
+                                    )
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(doctor.name)
+                                        val details = listOf(doctor.specialty, doctor.area)
+                                            .filter { it.isNotBlank() }.joinToString(" • ")
+                                        if (details.isNotBlank()) {
+                                            Text(
+                                                details,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                     Text(
-                        (if (isArabic) "عدد الأطباء المُصدّرين: " else "Doctors to export: ") + filteredExportDoctors.size,
+                        (if (isArabic) "عدد الأطباء المُصدّرين: " else "Doctors to export: ") +
+                            filteredExportDoctors.size,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -355,7 +428,10 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                 }
                                 context.startActivity(
-                                    Intent.createChooser(sendIntent, if (isArabic) "مشاركة ملف الأطباء" else "Share doctors file")
+                                    Intent.createChooser(
+                                        sendIntent,
+                                        if (isArabic) "مشاركة ملف الأطباء" else "Share doctors file"
+                                    )
                                 )
                             } catch (error: Exception) {
                                 Toast.makeText(

@@ -42,7 +42,7 @@ object SharePackageImporter {
     private data class MergeResult(
         val centers: List<CenterMerge>, val doctors: List<DoctorMerge>,
         val doctorSlots: List<DoctorAvailabilityEntity>, val centerSlots: List<CenterAvailabilityEntity>,
-        val links: Set<Pair<Long, Long>>, val localIds: Map<String, Long>,
+        val links: Set<Pair<Long, Long>>, val localIds: Map<String, Long>, val specialtyNames: List<String>,
         val newDoctors: Int, val updatedDoctors: Int, val sameNameDifferentPhone: Int,
         val newCenters: Int, val updatedCenters: Int,
         val includesAttachments: Boolean, val warnings: List<String>
@@ -73,6 +73,8 @@ object SharePackageImporter {
         var newDoctors = 0
         var updatedDoctors = 0
         var differentPhones = 0
+        val updatedCenterIds = mutableSetOf<Long>()
+        val updatedDoctorIds = mutableSetOf<Long>()
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
 
         fun allocate(type: String, key: String, existingId: Long?): Long =
@@ -105,9 +107,9 @@ object SharePackageImporter {
                     latitude = match.latitude ?: nullableDouble(source, "latitude"),
                     longitude = match.longitude ?: nullableDouble(source, "longitude"),
                     mapUrl = if (match.mapUrl.isNullOrBlank()) nullableString(source, "mapUrl") else match.mapUrl
-                ).also { if (it != match) updatedCenters++ }
+                ).also { if (match.id > 0 && it != match && updatedCenterIds.add(match.id)) updatedCenters++ }
             }
-            centerPlans[key] = CenterMerge(key, localId, match != null, entity)
+            centerPlans[key] = CenterMerge(key, localId, match != null && match.id > 0, entity)
             val index = centers.indexOfFirst { it.id == localId }
             if (index >= 0) centers[index] = entity else centers.add(entity)
         }
@@ -157,9 +159,9 @@ object SharePackageImporter {
                     phoneNumbers = appendPhones(match.phoneNumbers, source.optString("phoneNumbers")),
                     notes = mergeNotes(match.notes, source.optString("notes"), today),
                     centerId = match.centerId ?: primaryCenterKey?.let { localIds["center:$it"] }
-                ).also { if (it != match) updatedDoctors++ }
+                ).also { if (match.id > 0 && it != match && updatedDoctorIds.add(match.id)) updatedDoctors++ }
             }
-            val plan = DoctorMerge(key, localId, match != null, entity, entity.specialty.trim(), centerKeys, primaryCenterKey)
+            val plan = DoctorMerge(key, localId, match != null && match.id > 0, entity, entity.specialty.trim(), centerKeys, primaryCenterKey)
             doctorPlansByKey[key] = plan
             doctorPlansById[localId] = plan
             val index = doctors.indexOfFirst { it.id == localId }
@@ -234,8 +236,8 @@ object SharePackageImporter {
 
         return MergeResult(
             centerPlans.values.toList(), doctorPlansByKey.values.toList(), doctorSlots, centerSlots,
-            links, localIds.toMap(), newDoctors, updatedDoctors, differentPhones, newCenters, updatedCenters,
-            parsed.includesAttachments, emptyList()
+            links, localIds.toMap(), (parsed.specialties + doctorPlansByKey.values.map { it.specialtyName }).filter { it.isNotBlank() }.distinctBy(::normalize),
+            newDoctors, updatedDoctors, differentPhones, newCenters, updatedCenters, parsed.includesAttachments, emptyList()
         )
     }
 

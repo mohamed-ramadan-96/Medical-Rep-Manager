@@ -482,7 +482,9 @@ fun MedicalRepApp(
                             DoctorsScreen(
                                 isArabic = isArabic,
                                 padding = innerPadding,
-                                onManageSpecialties = { showSpecialtiesManagement = true }
+                                onManageSpecialties = { showSpecialtiesManagement = true },
+                                initialOpenDoctorId = openDoctorId,
+                                onOpenDoctorHandled = onOpenDoctorHandled
                             )
                         }
                     }

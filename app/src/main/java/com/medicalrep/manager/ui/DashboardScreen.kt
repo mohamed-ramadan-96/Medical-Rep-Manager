@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.material3.OutlinedTextField
 
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Switch
 
 import androidx.compose.foundation.layout.heightIn
 
@@ -46,6 +47,7 @@ import kotlinx.coroutines.withContext
 import com.medicalrep.manager.backup.DriveBackupEngine
 import com.medicalrep.manager.data.ExcelExporter
 import com.medicalrep.manager.data.ExcelImporter
+import com.medicalrep.manager.data.SharePackageExporter
 import com.medicalrep.manager.data.DoctorEntity
 import com.medicalrep.manager.data.DoctorImportService
 import java.io.File
@@ -114,6 +116,9 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
     var localBackupBusyTitle by remember { mutableStateOf("") }
     var localBackupResult by remember { mutableStateOf<DashboardBackupResult?>(null) }
     var showExcelExportConfirmation by remember { mutableStateOf(false) }
+    var showSharePackageExportConfirmation by remember { mutableStateOf(false) }
+    var includeSharePackageAttachments by remember { mutableStateOf(false) }
+    var sharePackageExportBusy by remember { mutableStateOf(false) }
     var exportDoctorSearch by remember { mutableStateOf("") }
     var selectedExportSpecialtyIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var selectedExportDoctorIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
@@ -161,6 +166,35 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
             } catch (error: Exception) {
                 Toast.makeText(context, (if (isArabic) "فشل تصدير Excel: " else "Excel export failed: ") + (error.localizedMessage ?: ""), Toast.LENGTH_LONG).show()
             }
+        }
+    }
+    val sharePackageExportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/zip")
+    ) { uri ->
+        if (uri != null) scope.launch {
+            sharePackageExportBusy = true
+            try {
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openOutputStream(uri)?.use { output ->
+                        SharePackageExporter.export(
+                            context, database, filteredExportDoctors.map { it.id }.toSet(),
+                            includeSharePackageAttachments, output, isArabic
+                        )
+                    } ?: error("Unable to open selected destination")
+                }
+                Toast.makeText(
+                    context,
+                    if (isArabic) "تم تصدير ملف المشاركة بنجاح" else "Share package exported successfully",
+                    Toast.LENGTH_LONG
+                ).show()
+            } catch (error: Exception) {
+                Toast.makeText(
+                    context,
+                    (if (isArabic) "فشل تصدير ملف المشاركة: " else "Share package export failed: ") +
+                        (error.localizedMessage ?: ""),
+                    Toast.LENGTH_LONG
+                ).show()
+            } finally { sharePackageExportBusy = false }
         }
     }
     val fullBackupExportLauncher = rememberLauncherForActivityResult(
@@ -453,6 +487,203 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
         )
     }
 
+    if (showSharePackageExportConfirmation) {
+        androidx.compose.material3.AlertDialog(
+            containerColor = AppDialogContainerColor(),
+            shape = RoundedCornerShape(10.dp),
+            onDismissRequest = { if (!sharePackageExportBusy) showSharePackageExportConfirmation = false },
+            title = { Text(if (isArabic) "مشاركة بيانات التطبيق" else "Share app data") },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 480.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        if (isArabic) "لا يتضمن الزيارات أو الخطة الأسبوعية أو المتابعات"
+                        else "Visits, weekly plan and follow-ups are not included.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(if (isArabic) "التخصصات" else "Specialties", fontWeight = FontWeight.SemiBold)
+                    LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                        item {
+                            Column {
+                                specialties.forEach { specialty ->
+                                    Surface(
+                                        color = AppSelectionRowColor(),
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Checkbox(
+                                                checked = specialty.id in selectedExportSpecialtyIds,
+                                                onCheckedChange = { checked ->
+                                                    selectedExportSpecialtyIds = if (checked) selectedExportSpecialtyIds + specialty.id
+                                                    else selectedExportSpecialtyIds - specialty.id
+                                                }
+                                            )
+                                            Text(specialty.name, modifier = Modifier.weight(1f))
+                                        }
+                                    }
+                                }
+                                if (doctorsWithoutSpecialty.isNotEmpty()) {
+                                    Surface(
+                                        color = AppSelectionRowColor(),
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Checkbox(
+                                                checked = NO_SPECIALTY_EXPORT_ID in selectedExportSpecialtyIds,
+                                                onCheckedChange = { checked ->
+                                                    selectedExportSpecialtyIds = if (checked) selectedExportSpecialtyIds + NO_SPECIALTY_EXPORT_ID
+                                                    else selectedExportSpecialtyIds - NO_SPECIALTY_EXPORT_ID
+                                                }
+                                            )
+                                            Text(if (isArabic) "بدون تخصص" else "No specialty", modifier = Modifier.weight(1f))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        item {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(if (isArabic) "اختيار الأطباء" else "Select doctors", fontWeight = FontWeight.SemiBold)
+                                OutlinedTextField(
+                                    value = exportDoctorSearch,
+                                    onValueChange = { exportDoctorSearch = it },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = AppFilledTextFieldColors(),
+                                    placeholder = { Text(if (isArabic) "ابحث عن طبيب..." else "Search doctors...") }
+                                )
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                    androidx.compose.material3.TextButton(
+                                        onClick = { selectedExportDoctorIds = selectedExportDoctorIds + visibleExportDoctors.map { it.id } }
+                                    ) { Text(if (isArabic) "تحديد الكل" else "Select all") }
+                                    androidx.compose.material3.TextButton(
+                                        onClick = { selectedExportDoctorIds = selectedExportDoctorIds - visibleExportDoctors.map { it.id }.toSet() }
+                                    ) { Text(if (isArabic) "مسح التحديد" else "Clear") }
+                                }
+                            }
+                        }
+                        items(visibleExportDoctors, key = { it.id }) { doctor ->
+                            Surface(
+                                color = AppSelectionRowColor(),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Checkbox(
+                                        checked = doctor.id in selectedExportDoctorIds,
+                                        onCheckedChange = { checked ->
+                                            selectedExportDoctorIds = if (checked) selectedExportDoctorIds + doctor.id
+                                            else selectedExportDoctorIds - doctor.id
+                                        }
+                                    )
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(doctor.name)
+                                        val details = listOf(doctor.specialty, doctor.area).filter { it.isNotBlank() }.joinToString(" • ")
+                                        if (details.isNotBlank()) {
+                                            Text(details, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Surface(
+                        color = AppSelectionRowColor(),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                if (isArabic) "تضمين المرفقات والصور" else "Include attachments and photos",
+                                modifier = Modifier.weight(1f)
+                            )
+                            Switch(
+                                checked = includeSharePackageAttachments,
+                                onCheckedChange = { includeSharePackageAttachments = it }
+                            )
+                        }
+                    }
+                    Text(
+                        (if (isArabic) "عدد الأطباء المُشارَك بهم: " else "Doctors to share: ") + filteredExportDoctors.size,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            },
+            confirmButton = {
+                Row {
+                    androidx.compose.material3.TextButton(
+                        enabled = !sharePackageExportBusy,
+                        onClick = {
+                            showSharePackageExportConfirmation = false
+                            sharePackageExportLauncher.launch(SharePackageExporter.suggestedFileName())
+                        }
+                    ) { Text(if (isArabic) "حفظ الملف" else "Save file") }
+                    androidx.compose.material3.TextButton(
+                        enabled = !sharePackageExportBusy,
+                        onClick = {
+                            showSharePackageExportConfirmation = false
+                            scope.launch {
+                                sharePackageExportBusy = true
+                                try {
+                                    val sharedFile = withContext(Dispatchers.IO) {
+                                        val directory = File(context.cacheDir, "shared_exports")
+                                        if (!directory.exists() && !directory.mkdirs()) error("Unable to create shared export directory")
+                                        val file = File(directory, SharePackageExporter.suggestedFileName())
+                                        file.outputStream().use { output ->
+                                            SharePackageExporter.export(
+                                                context, database, filteredExportDoctors.map { it.id }.toSet(),
+                                                includeSharePackageAttachments, output, isArabic
+                                            )
+                                        }
+                                        file
+                                    }
+                                    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", sharedFile)
+                                    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                        type = "application/zip"
+                                        putExtra(Intent.EXTRA_STREAM, uri)
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                    context.startActivity(Intent.createChooser(sendIntent, if (isArabic) "مشاركة ملف بيانات التطبيق" else "Share app data file"))
+                                } catch (error: Exception) {
+                                    Toast.makeText(
+                                        context,
+                                        (if (isArabic) "فشل تصدير ملف المشاركة: " else "Share package export failed: ") +
+                                            (error.localizedMessage ?: ""),
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                } finally { sharePackageExportBusy = false }
+                            }
+                        }
+                    ) { Text(if (isArabic) "مشاركة" else "Share") }
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(
+                    enabled = !sharePackageExportBusy,
+                    onClick = { showSharePackageExportConfirmation = false }
+                ) { Text(if (isArabic) "إلغاء" else "Cancel") }
+            }
+        )
+    }
+
     pendingRestoreUri?.let { selectedUri ->
         androidx.compose.material3.AlertDialog(
             containerColor = AppDialogContainerColor(),
@@ -511,6 +742,22 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                     Text(if (isArabic) "إلغاء" else "Cancel")
                 }
             }
+        )
+    }
+
+    if (sharePackageExportBusy) {
+        androidx.compose.material3.AlertDialog(
+            containerColor = AppDialogContainerColor(),
+            shape = RoundedCornerShape(10.dp),
+            onDismissRequest = {},
+            title = { Text(if (isArabic) "جارٍ إنشاء ملف المشاركة..." else "Creating share package...") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    Text(if (isArabic) "من فضلك انتظر حتى تنتهي العملية." else "Please wait for the operation to finish.")
+                }
+            },
+            confirmButton = {}
         )
     }
 
@@ -635,6 +882,14 @@ fun DashboardScreen(isArabic: Boolean, padding: PaddingValues) {
                                 } else Text("Export list as Excel file")
                             },
                             onClick = { exportMenuExpanded = false; showExcelExportConfirmation = true }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(if (isArabic) "مشاركة بيانات التطبيق (ملف MRM)" else "Share app data (MRM file)") },
+                            onClick = {
+                                exportMenuExpanded = false
+                                includeSharePackageAttachments = false
+                                showSharePackageExportConfirmation = true
+                            }
                         )
                         DropdownMenuItem(
                             text = { Text(if (isArabic) "نسخة كاملة من التطبيق" else "Full app backup") },

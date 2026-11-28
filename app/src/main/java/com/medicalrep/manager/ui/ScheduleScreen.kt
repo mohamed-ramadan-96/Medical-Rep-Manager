@@ -916,13 +916,12 @@ private fun AvailabilityFormDialog(
                                     )
                                 }
                             }
-                            OutlinedTextField(
-                    colors = AppFilledTextFieldColors(),
+                            NotesTextField(
                     value = draft.notes,
                     onValueChange = { value -> drafts = drafts.toMutableList().also { it[index] = draft.copy(notes = value) } },
+                    isArabic = isArabic,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    shape = RoundedCornerShape(10.dp),
                     label = { Text(if (isArabic) "ملاحظات الفترة (اختياري)" else "Period notes (optional)") },
                     placeholder = { Text(if (isArabic) "مثال: بالحجز فقط" else "e.g. By appointment only") }
                 )

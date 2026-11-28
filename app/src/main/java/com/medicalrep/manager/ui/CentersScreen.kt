@@ -1045,15 +1045,14 @@ private fun CenterFormDialog(
                                             onClick = { workingHoursTimePickerTarget = index to false }
                                         )
                                     }
-                                    OutlinedTextField(
-                    colors = AppFilledTextFieldColors(),
+                                    NotesTextField(
                     value = slot.notes,
                     onValueChange = { value ->
-                                            workSlots = workSlots.toMutableList().also { it[index] = slot.copy(notes = value) }
-                                        },
+                        workSlots = workSlots.toMutableList().also { it[index] = slot.copy(notes = value) }
+                    },
+                    isArabic = isArabic,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    shape = RoundedCornerShape(10.dp),
                     placeholder = { Text(if (isArabic) "ملاحظات الفترة (اختياري)" else "Period notes (optional)") }
                 )
                                 }
@@ -1062,14 +1061,13 @@ private fun CenterFormDialog(
                     }
                 }
                 item {
-                    OutlinedTextField(
-                    colors = AppFilledTextFieldColors(),
+                    NotesTextField(
                     value = notes,
                     onValueChange = { notes = it },
+                    isArabic = isArabic,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = false,
                     minLines = 1,
-                    shape = RoundedCornerShape(10.dp),
                     placeholder = { Text(if (isArabic) "ملاحظات" else "Notes") }
                 )
                 }

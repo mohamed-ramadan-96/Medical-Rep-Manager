@@ -2038,15 +2038,14 @@ private fun DoctorFormDialog(
                                                 onClick = { availabilityTimePickerTarget = index to false }
                                             )
                                         }
-                                        OutlinedTextField(
-                    colors = AppFilledTextFieldColors(),
+                                        NotesTextField(
                     value = draft.notes,
                     onValueChange = { value ->
-                                                availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(notes = value) }
-                                            },
+                        availabilityDrafts = availabilityDrafts.toMutableList().also { it[index] = draft.copy(notes = value) }
+                    },
+                    isArabic = isArabic,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    shape = RoundedCornerShape(10.dp),
                     label = { Text(if (isArabic) "ملاحظات الفترة (اختياري)" else "Period notes (optional)") },
                     placeholder = { Text(if (isArabic) "مثال: بالحجز فقط" else "e.g. By appointment only") }
                 )
@@ -2121,11 +2120,10 @@ private fun DoctorFormDialog(
                     }
                 }
                 item {
-                    OutlinedTextField(
-                    colors = AppFilledTextFieldColors(),
-                    shape = RoundedCornerShape(10.dp),
+                    NotesTextField(
                     value = notes,
                     onValueChange = { notes = it },
+                    isArabic = isArabic,
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 2,
                     label = { Text(if (isArabic) "ملاحظات" else "Notes") }

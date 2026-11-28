@@ -162,6 +162,8 @@ data class WeeklyPlanEntryEntity(
 
 @Dao
 interface DoctorVisitDao {
+    @Query("SELECT * FROM doctor_visits WHERE doctorId = :doctorId ORDER BY visitedAt ASC, id ASC")
+    suspend fun getForDoctor(doctorId: Long): List<DoctorVisitEntity>
     @Query("SELECT * FROM doctor_visits ORDER BY visitedAt DESC")
     fun observeAll(): Flow<List<DoctorVisitEntity>>
 
@@ -242,6 +244,8 @@ interface WeeklyPlanDao {
 
 @Dao
 interface DoctorCenterLinkDao {
+    @Query("SELECT * FROM doctor_center_links WHERE doctorId = :doctorId ORDER BY centerId ASC")
+    suspend fun getForDoctor(doctorId: Long): List<DoctorCenterLinkEntity>
     @Query("SELECT * FROM doctor_center_links")
     fun observeAll(): Flow<List<DoctorCenterLinkEntity>>
 
@@ -257,6 +261,8 @@ interface DoctorCenterLinkDao {
 
 @Dao
 interface DoctorAvailabilityDao {
+    @Query("SELECT * FROM doctor_availability WHERE doctorId = :doctorId ORDER BY dayOfWeek ASC, startTime ASC, id ASC")
+    suspend fun getForDoctor(doctorId: Long): List<DoctorAvailabilityEntity>
     @Query("SELECT * FROM doctor_availability ORDER BY dayOfWeek ASC, startTime ASC")
     fun observeAll(): Flow<List<DoctorAvailabilityEntity>>
 
@@ -272,6 +278,8 @@ interface DoctorAvailabilityDao {
 
 @Dao
 interface DoctorAttachmentDao {
+    @Query("SELECT * FROM doctor_attachments WHERE doctorId = :doctorId ORDER BY createdAt ASC, id ASC")
+    suspend fun getForShare(doctorId: Long): List<DoctorAttachmentEntity>
     @Query("SELECT doctorId AS ownerId, COUNT(*) AS count FROM doctor_attachments GROUP BY doctorId")
     fun observeAttachmentCounts(): Flow<List<AttachmentCount>>
 
@@ -296,6 +304,8 @@ interface DoctorAttachmentDao {
 
 @Dao
 interface CenterAttachmentDao {
+    @Query("SELECT * FROM center_attachments WHERE centerId = :centerId ORDER BY createdAt ASC, id ASC")
+    suspend fun getForShare(centerId: Long): List<CenterAttachmentEntity>
     @Query("SELECT centerId AS ownerId, COUNT(*) AS count FROM center_attachments GROUP BY centerId")
     fun observeAttachmentCounts(): Flow<List<AttachmentCount>>
 
@@ -320,6 +330,8 @@ interface CenterAttachmentDao {
 
 @Dao
 interface DoctorDao {
+    @Query("SELECT * FROM doctors WHERE id IN (:ids) ORDER BY name COLLATE NOCASE ASC, id ASC")
+    suspend fun getByIds(ids: List<Long>): List<DoctorEntity>
     @Query("SELECT * FROM doctors WHERE id = :id")
     suspend fun getById(id: Long): DoctorEntity?
 
@@ -367,6 +379,8 @@ interface DoctorDao {
 
 @Dao
 interface MedicalCenterDao {
+    @Query("SELECT * FROM medical_centers WHERE id IN (:ids) ORDER BY name COLLATE NOCASE ASC, id ASC")
+    suspend fun getByIds(ids: List<Long>): List<MedicalCenterEntity>
     @Query("SELECT * FROM medical_centers ORDER BY name COLLATE NOCASE ASC")
     fun observeAll(): Flow<List<MedicalCenterEntity>>
 

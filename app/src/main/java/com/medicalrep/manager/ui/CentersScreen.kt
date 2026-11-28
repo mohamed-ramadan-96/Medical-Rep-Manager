@@ -208,6 +208,9 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val doctorDao = database.doctorDao()
     val centerAvailabilityDao = database.centerAvailabilityDao()
     val centerAvailability by centerAvailabilityDao.observeAll().collectAsState(initial = emptyList())
+    val centerIdsWithAttachments by database.centerAttachmentDao()
+        .observeCenterIdsWithAttachments().collectAsState(initial = emptyList())
+    val centerIdsWithAttachmentsSet = remember(centerIdsWithAttachments) { centerIdsWithAttachments.toSet() }
     val doctorCenterLinks by database.doctorCenterLinkDao().observeAll().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     val centers by dao.observeAll().collectAsState(initial = emptyList())
@@ -434,7 +437,13 @@ fun CentersScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                                         }
                                     }
                                     IconButton(modifier = Modifier.size(32.dp), onClick = { attachmentsCenter = center }) {
-                                        Icon(Icons.Default.AttachFile, contentDescription = if (isArabic) "المرفقات" else "Attachments", modifier = Modifier.size(18.dp))
+                                        Icon(
+                                            Icons.Default.AttachFile,
+                                            contentDescription = if (isArabic) "المرفقات" else "Attachments",
+                                            tint = if (center.id in centerIdsWithAttachmentsSet) MaterialTheme.colorScheme.primary
+                                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                            modifier = Modifier.size(18.dp)
+                                        )
                                     }
                                     IconButton(modifier = Modifier.size(32.dp), onClick = { editing = center; showForm = true }) {
                                         Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit", modifier = Modifier.size(18.dp))

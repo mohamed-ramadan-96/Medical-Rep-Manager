@@ -264,6 +264,9 @@ interface DoctorAvailabilityDao {
 
 @Dao
 interface DoctorAttachmentDao {
+    @Query("SELECT DISTINCT doctorId FROM doctor_attachments")
+    fun observeDoctorIdsWithAttachments(): Flow<List<Long>>
+
     @Query("SELECT * FROM doctor_attachments WHERE doctorId = :doctorId ORDER BY createdAt DESC")
     fun observeForDoctor(doctorId: Long): Flow<List<DoctorAttachmentEntity>>
 
@@ -285,6 +288,9 @@ interface DoctorAttachmentDao {
 
 @Dao
 interface CenterAttachmentDao {
+    @Query("SELECT DISTINCT centerId FROM center_attachments")
+    fun observeCenterIdsWithAttachments(): Flow<List<Long>>
+
     @Query("SELECT * FROM center_attachments WHERE centerId = :centerId ORDER BY createdAt DESC")
     fun observeForCenter(centerId: Long): Flow<List<CenterAttachmentEntity>>
 

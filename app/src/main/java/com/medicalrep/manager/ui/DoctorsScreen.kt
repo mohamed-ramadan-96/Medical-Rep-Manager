@@ -459,6 +459,9 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
     val availability by database.doctorAvailabilityDao().observeAll().collectAsState(initial = emptyList())
     val doctorCenterLinks by database.doctorCenterLinkDao().observeAll().collectAsState(initial = emptyList())
     val visits by database.doctorVisitDao().observeAll().collectAsState(initial = emptyList())
+    val doctorIdsWithAttachments by database.doctorAttachmentDao()
+        .observeDoctorIdsWithAttachments().collectAsState(initial = emptyList())
+    val doctorIdsWithAttachmentsSet = remember(doctorIdsWithAttachments) { doctorIdsWithAttachments.toSet() }
     val pinnedPreferences = remember(context) {
         context.getSharedPreferences("doctor_pins", android.content.Context.MODE_PRIVATE)
     }
@@ -653,6 +656,7 @@ fun DoctorsScreen(isArabic: Boolean, padding: androidx.compose.foundation.layout
                         centerName = centerNameByDoctor[doctor.id].orEmpty(),
                         lastVisitAt = visits.asSequence().filter { it.doctorId == doctor.id }.maxOfOrNull { it.visitedAt },
                         isPinned = doctor.id.toString() in pinnedDoctorIds,
+                        hasAttachments = doctor.id in doctorIdsWithAttachmentsSet,
                         isArabic = isArabic,
                         onTogglePin = {
                             val doctorIdKey = doctor.id.toString()
@@ -926,6 +930,7 @@ private fun DoctorCard(
     centerName: String,
     lastVisitAt: Long?,
     isPinned: Boolean,
+    hasAttachments: Boolean,
     isArabic: Boolean,
     onTogglePin: () -> Unit,
     onEdit: () -> Unit,
@@ -1059,7 +1064,13 @@ private fun DoctorCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(modifier = Modifier.size(32.dp), onClick = onAttachments) {
-                    Icon(Icons.Default.AttachFile, contentDescription = if (isArabic) "المرفقات" else "Attachments", modifier = Modifier.size(18.dp))
+                    Icon(
+                        Icons.Default.AttachFile,
+                        contentDescription = if (isArabic) "المرفقات" else "Attachments",
+                        tint = if (hasAttachments) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
                 IconButton(modifier = Modifier.size(32.dp), onClick = onEdit) {
                     Icon(Icons.Default.Edit, contentDescription = if (isArabic) "تعديل" else "Edit", modifier = Modifier.size(18.dp))

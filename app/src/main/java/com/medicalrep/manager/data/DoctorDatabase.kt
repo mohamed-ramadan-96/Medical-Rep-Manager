@@ -405,6 +405,9 @@ interface SpecialtyDao {
     @Query("SELECT * FROM specialties ORDER BY name COLLATE NOCASE ASC")
     fun observeAll(): Flow<List<SpecialtyEntity>>
 
+    @Query("SELECT * FROM specialties")
+    suspend fun getAll(): List<SpecialtyEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(specialty: SpecialtyEntity): Long
 

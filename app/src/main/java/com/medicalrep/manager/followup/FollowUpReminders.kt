@@ -1,12 +1,15 @@
 package com.medicalrep.manager.followup
 
 import android.app.NotificationChannel
+import android.annotation.SuppressLint
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.work.CoroutineWorker
 import androidx.work.Data
@@ -86,6 +89,7 @@ class FollowUpReminderWorker(
     workerParams: WorkerParameters
 ) : CoroutineWorker(appContext, workerParams) {
 
+    @SuppressLint("MissingPermission")
     override suspend fun doWork(): Result {
         val visitId = inputData.getLong(KEY_VISIT_ID, -1L)
         val doctorId = inputData.getLong(KEY_DOCTOR_ID, -1L)
@@ -104,6 +108,15 @@ class FollowUpReminderWorker(
         }
         val doctor = database.doctorDao().getById(doctorId) ?: return Result.success()
         if (!NotificationManagerCompat.from(applicationContext).areNotificationsEnabled()) {
+            return Result.success()
+        }
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                applicationContext,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
             return Result.success()
         }
 
@@ -141,8 +154,9 @@ class FollowUpReminderWorker(
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .build()
 
-        runCatching {
+        try {
             NotificationManagerCompat.from(applicationContext).notify(visitId.toInt(), notification)
+        } catch (_: SecurityException) {
         }
         return Result.success()
     }

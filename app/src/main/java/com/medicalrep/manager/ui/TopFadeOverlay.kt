@@ -38,19 +38,20 @@ internal fun Modifier.topFadeBehindStickyHeader(
                 )
             }
 
-            val solidHeight = 6.dp.toPx()
-            val fadeHeight = 28.dp.toPx()
+            val solidHeight = 10.dp.toPx()
+            val fadeHeight = 30.dp.toPx()
+            val lipOverlap = 2.dp.toPx()
 
-            // The leading lip follows the same fade strength instead of hiding content at rest.
+            // Overlap the header background slightly to avoid a fractional-pixel seam.
+            // The lip follows the same fade strength instead of hiding content at rest.
             drawRect(
                 color = backgroundColor.copy(alpha = fadeAlpha),
-                topLeft = Offset(0f, size.height),
-                size = Size(size.width, solidHeight)
+                topLeft = Offset(0f, size.height - lipOverlap),
+                size = Size(size.width, solidHeight + lipOverlap)
             )
             drawRect(
                 brush = Brush.verticalGradient(
                     0f to backgroundColor.copy(alpha = fadeAlpha),
-                    0.65f to backgroundColor.copy(alpha = fadeAlpha * 0.96f),
                     1f to backgroundColor.copy(alpha = 0f),
                     startY = size.height + solidHeight,
                     endY = size.height + fadeHeight
